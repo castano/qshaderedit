@@ -1,0 +1,47 @@
+
+- display line and column numbers to status bar.
+
+Output panel:
+- error highlighter.
+- scroll output when errors.
+- parse error line, color dynamically, allow click on error.
+
+Parameter panel:
+- Fix problem with boolean value:
+  QComboBox::setProperty("currentItem", value) failed: property invalid, read-only or does not exist
+  QComboBox::property("currentItem") failed: property invalid, read-only or does not exist
+- fix file picker.
+- improve focus handling in file picker.
+- add color picker for color parameters.
+- update parameters on the fly. Use slider?
+
+Textures:
+- texture resource manager. or use Qt's?
+- GLSL texture parameters and texture units.
+- parse texture arguments.
+- texture parameter widget.
+
+Effects:
+- complete cgfx support -> set parameter values, preserve parameter values after rebuild, texture/sampler parameters.
+- add support for texture parameters.
+- add glfx support.
+- integrated help.
+
+Performance panel:
+- add effect performance interface.
+- add performance panel to display performance info.
+- use NVShaderPerf.
+
+Scene:
+- add more shapes.
+- add support for geometry file formats and simple scenes.
+- compute normals, tangents, binormals.
+
+KDE integration:
+- port to KDE4.
+- add icons.
+- use ktexteditor interface.
+- add support for autocompletion and syntax highlight.
+- highlight errors.
+
+

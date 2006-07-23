@@ -1,0 +1,19 @@
+0.1.2
+	Improved syntax highlight by Lars Uebernickel <larsuebernickel@gmx.de>.
+	Custom syntax highlight for each effect type by Lars Uebernickel.
+	Fix crash when the gl view was repainted while loading a new effect.
+	Improve 3d view manipulation.
+	Message panel improvements by Lars.
+
+0.1.1
+	Reorganize sources to create debian packages.
+	Add runtime check for the presence of cgfx.
+	Fix set parameters in cgfx.
+	Fix paste not being enabled.
+	Integrate patches from Karl Robillard <krobillard@san.rr.com> to save
+	settings and enable drag and drop.
+	Add partial support for ARB assembly vertex and fragment programs.
+
+0.1.0
+	First public release!
+
