@@ -14,6 +14,10 @@ void AtiGlslOutputParser::parseLine(const QString& line)
 		m_type = MessagePanel::Error;
 		m_line = -1;
 	}
+	else if (line.startsWith("Warning:")) {
+		m_type = MessagePanel::Warning;
+		m_line = -1;
+	}
 	else {
 		m_type = MessagePanel::Info;
 		m_line = -1;
