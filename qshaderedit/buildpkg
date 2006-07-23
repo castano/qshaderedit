@@ -1,0 +1,8 @@
+#! /bin/sh
+
+tar zcvf qshaderedit-`cat VERSION`.tar.gz \
+	--exclude '.*' --exclude debian --exclude '*~' --exclude buildpkg \
+	--exclude 'qshaderedit.kdev*' \
+	--exclude test --exclude glew --exclude glfx --exclude build \
+	--exclude releases --exclude Makefile --exclude 'qshaderedit-*.tar.gz' \
+	-C .. qshaderedit
