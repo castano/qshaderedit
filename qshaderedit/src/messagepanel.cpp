@@ -64,13 +64,15 @@ void MessagePanel::log(const QString& s, Type type, int inputNumber, int line, i
 
 void MessagePanel::log(const QString& s, int inputNumber, OutputParser* parser)
 {
-	if (!parser)
+	if (parser == NULL) {
 		log(s, MessagePanel::Error, inputNumber);
-
-	QStringList lines = s.trimmed().split('\n', QString::SkipEmptyParts);
-	foreach (QString line, lines) {
-		parser->parseLine(line);
-		log(line, parser->type(), inputNumber, parser->line(), parser->column());
+	}
+	else {
+		QStringList lines = s.trimmed().split('\n', QString::SkipEmptyParts);
+		foreach (QString line, lines) {
+			parser->parseLine(line);
+			log(line, parser->type(), inputNumber, parser->line(), parser->column());
+		}
 	}
 }
 
