@@ -13,20 +13,20 @@
 // FilePicker Widget.
 //
 
-FileEditor::FileEditor(QWidget * parent /*= 0*/) : QWidget(parent) 
+FileEditor::FileEditor(QWidget * parent /*= 0*/) : QWidget(parent)
 {
 	setAutoFillBackground(true);
-	
+
 	QHBoxLayout * m_layout = new QHBoxLayout(this);
 	m_layout->setMargin(0);
 	m_layout->setSpacing(0);
-	
+
 	m_lineEdit = new QLineEdit(this);
 	m_lineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::MinimumExpanding));
 	m_lineEdit->setFrame(false);
 	m_layout->addWidget(m_lineEdit);
 	setFocusProxy(m_lineEdit);
-	
+
 	QToolButton * button = new QToolButton(this);
 	button->setToolButtonStyle(Qt::ToolButtonTextOnly);
 	button->setText("...");
@@ -34,7 +34,7 @@ FileEditor::FileEditor(QWidget * parent /*= 0*/) : QWidget(parent)
 	m_layout->addWidget(button);
 	connect(button, SIGNAL(clicked()), this, SLOT(openFileDialog()));
 }
-	
+
 void FileEditor::openFileDialog()
 {
 	QString fileName = QFileDialog::getOpenFileName(this, "Choose file", "", "Images (*.png *.jpg)");
@@ -64,13 +64,13 @@ QWidget * ParameterDelegate::createEditor(QWidget * parent, const QStyleOptionVi
 {
 	Q_UNUSED(option);
 	Q_UNUSED(index);
-	
+
 	const ParameterTableModel * model = qobject_cast<const ParameterTableModel *>(index.model());
 	Q_ASSERT(model != NULL);
-	
+
 	if( model->useNumericEditor(index) || model->useColorEditor(index) ) {
 		QVariant value = model->data(index, Qt::EditRole);
-		
+
 		if( value.type() == QVariant::Double ) {
 			QDoubleSpinBox * editor = new QDoubleSpinBox(parent);
 			editor->setRange(-1000, 1000);
@@ -87,7 +87,7 @@ QWidget * ParameterDelegate::createEditor(QWidget * parent, const QStyleOptionVi
 		connect(editor, SIGNAL(done(QWidget*)), this, SIGNAL(closeEditor(QWidget*)));
 		return editor;
 	}
-	
+
 	// default
 	return QItemDelegate::createEditor(parent, option, index);
 }
@@ -96,10 +96,10 @@ void ParameterDelegate::setEditorData(QWidget * editor, const QModelIndex & inde
 {
 	const ParameterTableModel * model = qobject_cast<const ParameterTableModel *>(index.model());
 	Q_ASSERT(model != NULL);
-	
+
 	if( model->useNumericEditor(index) ) {
 		QVariant value = model->data(index, Qt::EditRole);
-		
+
 		if( value.type() == QVariant::Double ) {
 			double value = model->data(index, Qt::DisplayRole).toDouble();
 			QDoubleSpinBox * spinBox = static_cast<QDoubleSpinBox *>(editor);
@@ -109,12 +109,12 @@ void ParameterDelegate::setEditorData(QWidget * editor, const QModelIndex & inde
 	}
 	else if( model->useFileEditor(index) ) {
 		QVariant value = model->data(index, Qt::EditRole);
-		
+
 		FileEditor * fileEditor = static_cast<FileEditor *>(editor);
 		fileEditor->setText(value.toString());
 		return;
 	}
-	
+
 	// default
 	QItemDelegate::setEditorData(editor, index);
 }
@@ -123,10 +123,10 @@ void ParameterDelegate::setModelData(QWidget * editor, QAbstractItemModel * abst
 {
 	ParameterTableModel * model = qobject_cast<ParameterTableModel *>(abstractModel);
 	Q_ASSERT(model != NULL);
-	
+
 	if( model->useNumericEditor(index) ) {
 		QVariant value = model->data(index, Qt::EditRole);
-		
+
 		if( value.type() == QVariant::Double ) {
 			QDoubleSpinBox * spinBox = static_cast<QDoubleSpinBox *>(editor);
 			spinBox->interpretText();
@@ -139,7 +139,7 @@ void ParameterDelegate::setModelData(QWidget * editor, QAbstractItemModel * abst
 		model->setData(index, fileEditor->text());
 		return;
 	}
-	
+
 	// default
 	QItemDelegate::setModelData(editor, model, index);
 }
@@ -206,7 +206,7 @@ QVariant ParameterTableModel::data(const QModelIndex &index, int role) const
 	if (!index.isValid()) {
 		return QVariant();
 	}
-	
+
 	if( isComponent(index) ) {
 		// Parameter component.
 		if (index.column() == 0) {
@@ -251,7 +251,7 @@ QVariant ParameterTableModel::data(const QModelIndex &index, int role) const
 					return "[...]";
 				}
 				else {
-					QVariant value = m_effect->getParameterValue(parameter(index));					
+					QVariant value = m_effect->getParameterValue(parameter(index));
 					if( value.canConvert(QVariant::String) ) {
 						return value;
 					}
@@ -272,13 +272,24 @@ QVariant ParameterTableModel::data(const QModelIndex &index, int role) const
 			else if (role == Qt::EditRole) {
 				return m_effect->getParameterValue(parameter(index));
 			}
+			else if (role == Qt::DecorationRole) {
+				Effect::EditorType editorType = m_effect->getParameterEditor(parameter(index));
+				if (editorType == Effect::EditorType_Color) {
+					QVariantList value = m_effect->getParameterValue(parameter(index)).toList();
+					QColor color;
+					color.setRgbF(value.at(0).toDouble(), value.at(1).toDouble(), value.at(2).toDouble());
+					QPixmap pm(10, 10);
+					pm.fill(color);
+					return pm;
+				}
+			}
 		}
 	}
 
 	if (role == Qt::EditRole) {
 		return QVariant();
 	}
-	
+
 	return QVariant();
 }
 
@@ -317,7 +328,7 @@ bool ParameterTableModel::setData(const QModelIndex &index, const QVariant &valu
 	Q_UNUSED(index);
 	Q_UNUSED(value);
 	Q_UNUSED(role);
-	
+
 	if (!index.isValid() || index.column() != 1)
 	{
 		return false;
@@ -326,7 +337,7 @@ bool ParameterTableModel::setData(const QModelIndex &index, const QVariant &valu
 	{
 		return false;
 	}
-	
+
 	if (role == Qt::EditRole) {
 		if( isComponent(index) ) {
 			// Parameter component.
@@ -346,7 +357,7 @@ bool ParameterTableModel::setData(const QModelIndex &index, const QVariant &valu
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
@@ -418,8 +429,8 @@ bool ParameterTableModel::useNumericEditor(const QModelIndex &index) const
 {
 	Q_ASSERT(m_effect != NULL);
 	Effect::EditorType editor = m_effect->getParameterEditor(parameter(index));
-	return editor == Effect::EditorType_Scalar || 
-		editor == Effect::EditorType_Vector || 
+	return editor == Effect::EditorType_Scalar ||
+		editor == Effect::EditorType_Vector ||
 		editor == Effect::EditorType_Matrix;
 }
 
@@ -459,16 +470,16 @@ void ParameterPanel::initWidget()
 {
 	m_model = new ParameterTableModel(this);
 	connect(m_model, SIGNAL(dataChanged(QModelIndex, QModelIndex)), this, SIGNAL(parameterChanged()));
-	
+
 	m_delegate = new ParameterDelegate(this);
-	
+
 	m_table = new QTreeView(this);
 	m_table->setModel(m_model);
 	m_table->setItemDelegate(m_delegate);
 	m_table->header()->setStretchLastSection(true);
 	m_table->header()->setClickable(false);
 	//	m_table->setIndentation(0);	// @@ This would be nice if it didn't affect the roots.
-	
+
 	setWidget(m_table);
 }
 
