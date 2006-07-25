@@ -12,6 +12,16 @@ int main(int argc, char **argv)
 	
 	QShaderEdit * shaderEdit = new QShaderEdit();
 	
+	/*
+	QStyle * arthurStyle = new ArthurStyle();
+	shaderEdit.setStyle(arthurStyle);
+
+	QList<QWidget *> widgets = qFindChildren<QWidget *>(shaderEdit);
+	foreach(QWidget * w, widgets) {
+		w->setStyle(arthurStyle);
+	}
+	*/
+	
 	//app.setApplicationName(QApplication::tr("QShaderEditor"));
     return app.exec();
 }
