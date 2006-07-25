@@ -6,21 +6,22 @@
 class QGLContext;
 
 
+// Simple texture manager.
 class TexManager {
 public:
 	
-	TexManager(QGLContext * ctx) : m_context(ctx) 
-	{
-	}
+	// get singleton instance.
+	static TexManager * instance();
+
+
+	TexManager(QGLContext * ctx);
+	~TexManager();
 	
-	virtual ~TexManager()
-	{
-	}
+	uint addTexture(QString name);
+	uint getTexture(QString name);
+	void releaseTexture(QString name);
 	
-	uint AddTexture(QString name);
-	uint GetTexture(QString name);
-	void ReleaseTexture(QString name);
-	
+
 private:
 	
 	QGLContext * m_context;
@@ -28,7 +29,7 @@ private:
 };
 
 
-
+// Image plugin interface.
 class ImagePlugin
 {
 public:

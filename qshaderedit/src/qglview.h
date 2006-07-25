@@ -11,6 +11,7 @@ class QWheelEvent;
 class QMouseEvent;
 class Effect;
 class MessagePanel;
+class TexManager;
 
 class QGLView : public QGLWidget
 {
@@ -60,6 +61,7 @@ private:
 	
 	GLuint m_dlist;	
 	
+	TexManager * m_textureManager;
 };
 
-#endif
+#endif // QGLVIEW_H

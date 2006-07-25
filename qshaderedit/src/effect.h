@@ -12,6 +12,34 @@ class QByteArray;
 class MessagePanel;
 class EffectFactory;
 
+struct Parameter
+{
+	enum BaseType {
+		BaseType_Float,
+		BaseType_Int,
+		BaseType_Bool,
+		BaseType_String,
+		BaseType_Texture
+	};
+	enum EditorType {
+		EditorType_None,
+		EditorType_Scalar,
+		EditorType_Color,
+		EditorType_Vector,
+		EditorType_Matrix,
+		EditorType_File
+	};
+
+	QString m_name;
+	QVariant m_value;
+	BaseType m_baseType;
+	int m_width;
+	int m_height;
+
+	EditorType m_editorType;
+	QString m_description;
+};
+
 class Effect : public QObject
 {
 public:
@@ -72,8 +100,9 @@ public:
 	virtual void endPass() = 0;
 	virtual void end() = 0;
 	
-	private:
-		EffectFactory const * const m_factory;
+private:
+	EffectFactory const * const m_factory;
+
 };
 
 class EffectFactory : public QObject

@@ -259,6 +259,12 @@ QVariant ParameterTableModel::data(const QModelIndex &index, int role) const
 						return "[" + value.toStringList().join(", ") + "]";
 					}
 					else {
+						/*if(value.isValid()) {
+							printf("!! %s\n", value.typeName());
+						}
+						else {
+							printf("!! invalid value returned by getParameterEditor %d\n", index);
+						}*/
 						printf("!!");
 					}
 				}
@@ -454,11 +460,11 @@ void ParameterPanel::initWidget()
 	m_model = new ParameterTableModel(this);
 	connect(m_model, SIGNAL(dataChanged(QModelIndex, QModelIndex)), this, SIGNAL(parameterChanged()));
 	
-	//m_delegate = new ParameterDelegate(this);
+	m_delegate = new ParameterDelegate(this);
 	
 	m_table = new QTreeView(this);
 	m_table->setModel(m_model);
-	//m_table->setItemDelegate(m_delegate);
+	m_table->setItemDelegate(m_delegate);
 	m_table->header()->setStretchLastSection(true);
 	m_table->header()->setClickable(false);
 	//	m_table->setIndentation(0);	// @@ This would be nice if it didn't affect the roots.

@@ -21,8 +21,8 @@ SET(SRCS
 	teapot.cpp
 	newdialog.h
 	newdialog.cpp
-	nobuild/texmanager.h
-	nobuild/texmanager.cpp
+	texmanager.h
+	texmanager.cpp
 	outputparser.h
 	outputparser.cpp)
 

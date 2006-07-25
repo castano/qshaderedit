@@ -55,12 +55,35 @@ namespace {
 	
 	static QtImagePlugin s_imageLoader;
 	
+	static TexManager * s_texManager = NULL;
+
 } // namespace
 
 
+// static
+TexManager * TexManager::instance()
+{
+	Q_ASSERT(s_texManager != NULL);
+	return s_texManager;
+}
+
+/// Constructor.
+TexManager::TexManager(QGLContext * ctx) : m_context(ctx)
+{
+	Q_ASSERT(s_texManager == NULL);
+	s_texManager = this;
+}
+
+/// Destructor.
+TexManager::~TexManager()
+{
+	Q_ASSERT(s_texManager != NULL);
+	s_texManager = NULL;
+}
+
 
 /// Add a texture object for the given file name. Increase the reference count.
-uint TexManager::AddTexture(QString name)
+uint TexManager::addTexture(QString name)
 {
 	if( s_textureMap.contains(name) ) {
 		Texture & texture = s_textureMap[name];
@@ -78,7 +101,7 @@ uint TexManager::AddTexture(QString name)
 }
 
 /// Get the texture object for the given name.
-uint GetTexture(QString name) 
+uint TexManager::getTexture(QString name) 
 {
 	if( s_textureMap.contains(name) ) {
 		Texture & texture = s_textureMap[name];
@@ -88,7 +111,7 @@ uint GetTexture(QString name)
 }
 
 /// Release the texture object associated to the given file name. Decrease the reference count.
-void TexManager::ReleaseTexture(QString name)
+void TexManager::releaseTexture(QString name)
 {
 	Q_ASSERT( s_textureMap.contains(name) );
 	

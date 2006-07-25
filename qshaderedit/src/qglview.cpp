@@ -1,15 +1,12 @@
 #include "qglview.h"
 #include "effect.h"
 #include "messagepanel.h"
+#include "texmanager.h"
 
 #include <QtCore/QUrl>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QWheelEvent>
 
-#if HAVE_NVIDIA_CG
-#include <Cg/cg.h>
-#include <Cg/cgGL.h>
-#endif
 
 extern void drawTeapot();
 
@@ -119,12 +116,19 @@ void QGLView::initializeGL()
 	glNewList(m_dlist, GL_COMPILE);
 	drawTeapot();
 	glEndList();
+
+	// Create texture manager.
+	m_textureManager = new TexManager(const_cast<QGLContext *>(context()));
 }
 
 void QGLView::resetGL()
 {
 	if( m_dlist != 0 ) {
 		glDeleteLists(m_dlist, 1);
+	}
+
+	if( m_textureManager == NULL ) {
+		delete m_textureManager;
 	}
 }
 

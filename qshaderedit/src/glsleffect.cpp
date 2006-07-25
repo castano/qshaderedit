@@ -2,6 +2,7 @@
 #include "effect.h"
 #include "messagepanel.h"
 #include "outputparser.h"
+#include "texmanager.h"
 
 #include <math.h>
 
@@ -56,6 +57,10 @@ namespace {
 		QVariant value;
 		GLint location;
 		GLenum type;
+		
+		GLenum target;
+		int unit;
+		GLuint tex;
 	};
 	
 	// GLSL texture unit.
@@ -581,13 +586,13 @@ private:
 	
 	void resetParameters()
 	{
-		for(int i = 0; i < m_texUnitArray.count(); i++) {
+		/*for(int i = 0; i < m_texUnitArray.count(); i++) {
 			resetSampler(i);
 		}
-		m_texUnitArray.clear();		
+		m_texUnitArray.clear();*/
 		
 		m_timeUniform = -1;
-				
+		
 		qSwap(m_oldParameterArray, m_parameterArray);
 		m_parameterArray.clear();
 	}
@@ -651,12 +656,41 @@ private:
 				}
 			}
 			
-			if( param.type == GL_SAMPLER_2D ) {
+			/*if( param.type == GL_SAMPLER_2D_ARB ) {
 				GLSLTexUnit texUnit;
 				texUnit.parameter = m_parameterArray.count() - 1;
 				m_texUnitArray.append(texUnit);
+			}*/
+		}
+
+		int unit = 0;
+
+		// Init texture parameters.
+		foreach(GLSLParameter parameter, m_parameterArray) {
+
+			// @@ Only 2d samples right now.
+			if( parameter.type == GL_SAMPLER_2D_ARB ) {
+				parameter.target = GL_TEXTURE_2D;
+				parameter.unit = 0; // unit++;
+				printf("unit %d\n", parameter.unit);
+				
+				QString fileName = parameter.value.toString();
+				
+				glActiveTextureARB(GL_TEXTURE0_ARB + parameter.unit);
+				glBindTexture(parameter.target, parameter.tex);
+				
+				if(!fileName.isEmpty()) {
+					parameter.tex = TexManager::instance()->addTexture(fileName);
+				}
+				else {
+					parameter.tex = TexManager::instance()->addTexture("default.png");
+				}
+			}
+			else {
+				parameter.unit = 0;
 			}
 		}
+		
 	}
 	
 	void setParameters()
@@ -667,9 +701,9 @@ private:
 		}
 		
 		//foreach(GLSLTexUnit t, m_texUnitArray) {
-		for(int i = 0; i < m_texUnitArray.count(); i++) {
+		/*for(int i = 0; i < m_texUnitArray.count(); i++) {
 			setSampler(i);
-		}
+		}*/
 		
 		// Set standard parameters.
 		if( m_timeUniform != -1 ) {
@@ -679,8 +713,6 @@ private:
 	
 	void setParameter(const GLSLParameter & param)
 	{
-		// @@ What about textures?
-		
 		switch( param.type ) {
 			case GL_FLOAT:
 				glUniform1fARB(param.location, float(param.value.toDouble()));
@@ -772,11 +804,16 @@ private:
 			case GL_FLOAT_MAT4_ARB:
 				// @@ TBD
 				break;
-			case GL_SAMPLER_1D_ARB:
+		//	case GL_SAMPLER_1D_ARB:
 			case GL_SAMPLER_2D_ARB:
-			case GL_SAMPLER_3D_ARB:
-			case GL_SAMPLER_CUBE_ARB:
-			case GL_SAMPLER_2D_RECT_ARB:
+		//	case GL_SAMPLER_3D_ARB:
+		//	case GL_SAMPLER_CUBE_ARB:
+		//	case GL_SAMPLER_2D_RECT_ARB:
+				printf("unit %d\n", param.unit);
+				Q_ASSERT(param.unit == 0);
+				glUniform1iARB(param.location, param.unit);
+				glActiveTextureARB(GL_TEXTURE0_ARB + param.unit);
+				glBindTexture(param.target, param.tex);
 				break;
 			case GL_SAMPLER_1D_SHADOW_ARB:
 			case GL_SAMPLER_2D_SHADOW_ARB:
@@ -785,6 +822,7 @@ private:
 		}
 	}
 	
+#if 0
 	void setSampler(int i) {
 		
 		GLSLTexUnit & texUnit = m_texUnitArray[i];
@@ -846,7 +884,8 @@ private:
 				break;
 		}
 	}
-	
+#endif
+
 	QVariant getParameterValue(const GLSLParameter & param)
 	{
 		// Try to get the old value.
