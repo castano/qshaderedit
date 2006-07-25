@@ -6,6 +6,7 @@
 
 #include <math.h>
 
+#include <QtCore/QDebug>	// !!!
 #include <QtCore/QObject>
 #include <QtCore/QFile>
 #include <QtCore/QByteArray>
@@ -58,16 +59,10 @@ namespace {
 		GLint location;
 		GLenum type;
 		
+		// Only for samplers:
 		GLenum target;
 		int unit;
 		GLuint tex;
-	};
-	
-	// GLSL texture unit.
-	struct GLSLTexUnit
-	{
-		int parameter;
-		GLuint texObject;
 	};
 
 }
@@ -90,8 +85,6 @@ private:
 	
 	QVector<GLSLParameter> m_parameterArray;
 	QVector<GLSLParameter> m_oldParameterArray;
-	
-	QVector<GLSLTexUnit> m_texUnitArray;
 	
 	OutputParser* m_outputParser;
 
@@ -655,39 +648,27 @@ private:
 					m_parameterArray.push_back(param);
 				}
 			}
-			
-			/*if( param.type == GL_SAMPLER_2D_ARB ) {
-				GLSLTexUnit texUnit;
-				texUnit.parameter = m_parameterArray.count() - 1;
-				m_texUnitArray.append(texUnit);
-			}*/
 		}
 
+		// Init texture parameters.
+		int parameterNum = m_parameterArray.count();
 		int unit = 0;
 
-		// Init texture parameters.
-		foreach(GLSLParameter parameter, m_parameterArray) {
+		for(int i = 0; i < parameterNum; i++) {
+			GLSLParameter & parameter = m_parameterArray[i];
 
 			// @@ Only 2d samples right now.
 			if( parameter.type == GL_SAMPLER_2D_ARB ) {
 				parameter.target = GL_TEXTURE_2D;
-				parameter.unit = 0; // unit++;
-				printf("unit %d\n", parameter.unit);
+				parameter.unit = unit++;
 				
 				QString fileName = parameter.value.toString();
-				
-				glActiveTextureARB(GL_TEXTURE0_ARB + parameter.unit);
-				glBindTexture(parameter.target, parameter.tex);
-				
 				if(!fileName.isEmpty()) {
 					parameter.tex = TexManager::instance()->addTexture(fileName);
 				}
 				else {
 					parameter.tex = TexManager::instance()->addTexture("default.png");
 				}
-			}
-			else {
-				parameter.unit = 0;
 			}
 		}
 		
@@ -699,11 +680,6 @@ private:
 		foreach(GLSLParameter p, m_parameterArray) {
 			setParameter(p);
 		}
-		
-		//foreach(GLSLTexUnit t, m_texUnitArray) {
-		/*for(int i = 0; i < m_texUnitArray.count(); i++) {
-			setSampler(i);
-		}*/
 		
 		// Set standard parameters.
 		if( m_timeUniform != -1 ) {
@@ -804,13 +780,11 @@ private:
 			case GL_FLOAT_MAT4_ARB:
 				// @@ TBD
 				break;
-		//	case GL_SAMPLER_1D_ARB:
+			case GL_SAMPLER_1D_ARB:
 			case GL_SAMPLER_2D_ARB:
-		//	case GL_SAMPLER_3D_ARB:
-		//	case GL_SAMPLER_CUBE_ARB:
-		//	case GL_SAMPLER_2D_RECT_ARB:
-				printf("unit %d\n", param.unit);
-				Q_ASSERT(param.unit == 0);
+			case GL_SAMPLER_3D_ARB:
+			case GL_SAMPLER_CUBE_ARB:
+			case GL_SAMPLER_2D_RECT_ARB:
 				glUniform1iARB(param.location, param.unit);
 				glActiveTextureARB(GL_TEXTURE0_ARB + param.unit);
 				glBindTexture(param.target, param.tex);
@@ -822,70 +796,6 @@ private:
 		}
 	}
 	
-#if 0
-	void setSampler(int i) {
-		
-		GLSLTexUnit & texUnit = m_texUnitArray[i];
-		const GLSLParameter & param = m_parameterArray[texUnit.parameter];
-		
-		switch( param.type ) {
-			case GL_SAMPLER_1D_ARB:
-			case GL_SAMPLER_2D_ARB:
-			case GL_SAMPLER_3D_ARB:
-			case GL_SAMPLER_CUBE_ARB:
-			case GL_SAMPLER_2D_RECT_ARB:
-			case GL_SAMPLER_1D_SHADOW_ARB:
-			case GL_SAMPLER_2D_SHADOW_ARB:
-			case GL_SAMPLER_2D_RECT_SHADOW_ARB:
-			{
-				QString fileName = param.value.toString();
-				if( !fileName.isEmpty() ) {
-					glUniform1iARB(param.location, i);
-					glActiveTextureARB( GL_TEXTURE0_ARB + i );
-					
-					// @@ Hack!
-					/*if( texUnit.texObject != 0 ) {
-						QImage image(fileName);
-						if( !image.isNull() ) {
-							Q_ASSERT(QGLContext::currentContext() != NULL);
-							//texUnit.texObject = const_cast<QGLContext *>(QGLContext::currentContext())->bindTexture(image);
-						}
-						else {
-							// @@ Set fileName to null?
-						}
-					}*/
-				}
-				break;
-			}
-		}
-	}
-	
-	void resetSampler(int i) {
-		GLSLTexUnit & texUnit = m_texUnitArray[i];
-		const GLSLParameter & param = m_parameterArray[texUnit.parameter];
-		
-		switch( param.type ) {
-			case GL_SAMPLER_1D_ARB:
-			case GL_SAMPLER_2D_ARB:
-			case GL_SAMPLER_3D_ARB:
-			case GL_SAMPLER_CUBE_ARB:
-			case GL_SAMPLER_2D_RECT_ARB:
-			case GL_SAMPLER_1D_SHADOW_ARB:
-			case GL_SAMPLER_2D_SHADOW_ARB:
-			case GL_SAMPLER_2D_RECT_SHADOW_ARB:
-				glActiveTextureARB( GL_TEXTURE0_ARB + i );
-				glBindTexture(GL_TEXTURE_2D, 0);
-				//Q_ASSERT(QGLContext::currentContext() != NULL);
-				
-				/*if( texUnit.texObject != 0 ) {
-					//const_cast<QGLContext *>(QGLContext::currentContext())->deleteTexture(texUnit.texObject);
-					texUnit.texObject = 0;
-				}*/
-				break;
-		}
-	}
-#endif
-
 	QVariant getParameterValue(const GLSLParameter & param)
 	{
 		// Try to get the old value.
@@ -1258,14 +1168,21 @@ private:
 			}
 			param.value = valueList;
 		}
-		
-		/*else if( param.type == GL_SAMPLER_1D_ARB || param.type == GL_SAMPLER_2D_ARB || param.type == GL_SAMPLER_3D_ARB ||
+		else if( param.type == GL_SAMPLER_1D_ARB || param.type == GL_SAMPLER_2D_ARB || param.type == GL_SAMPLER_3D_ARB ||
 			param.type == GL_SAMPLER_CUBE_ARB || param.type == GL_SAMPLER_2D_RECT_ARB)
 		{
-			if( tokenList[4] == "load" ) {
-				// @@ TBD
+			QRegExp loadRegExp("^\\s*load\\(\"(.*)\"\\)\\s*$");
+			
+			if( !loadRegExp.exactMatch(tokens[3]) ) {
+				// @@ Display warning.
+				return;
 			}
-		}*/
+			
+			param.value = loadRegExp.cap(1);
+		}
+		else {
+			qDebug() << "unknown parameter type";
+		}
 		
 		m_parameterArray.append(param);
 	}
