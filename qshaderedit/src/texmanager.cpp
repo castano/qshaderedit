@@ -10,51 +10,53 @@
 namespace {
 
 	struct Texture {
-		int refCount;		
+		int refCount;
 		uint texObj;
 	};
 
 	QMap<QString, Texture> s_textureMap;
-	
-	
+
+
 	class QtImagePlugin
 	{
 	public:
-		
+
 		virtual bool canLoad(QString name) const
 		{
 			Q_UNUSED(name);
 			return true;
 		}
-		
+
 		virtual bool load(QGLContext * context, QString name, uint * obj) const
 		{
 			//const QGLContext * context = QGLContext::currentContext();
 			Q_ASSERT(context != NULL);
-			
+
 			if( name.endsWith(".dds") ) {
 				*obj = context->bindTexture(name);
 			}
 			else {
 				QImage image(name);
+				if (image.isNull())
+					return false;
 				*obj = context->bindTexture(image);
 			}
-			
+
 			/*
 			glGenTextures(1, obj);
 			glBindTexture(GL_TEXTURE_2D, *obj);
-			
+
 			// if
-			
+
 			QImage image(
 			*/
-			
+
 			return true;
 		}
 	};
-	
+
 	static QtImagePlugin s_imageLoader;
-	
+
 	static TexManager * s_texManager = NULL;
 
 } // namespace
@@ -90,18 +92,18 @@ uint TexManager::addTexture(QString name)
 		texture.refCount++;
 		return texture.texObj;
 	}
-	
+
 	if( s_imageLoader.canLoad(name) ) {
 		Texture texture;
 		if( s_imageLoader.load(m_context, name, &texture.texObj) ) {
-			texture.refCount = 1;			
+			texture.refCount = 1;
 			s_textureMap.insert(name, texture);
 		}
 	}
 }
 
 /// Get the texture object for the given name.
-uint TexManager::getTexture(QString name) 
+uint TexManager::getTexture(QString name)
 {
 	if( s_textureMap.contains(name) ) {
 		Texture & texture = s_textureMap[name];
@@ -114,7 +116,7 @@ uint TexManager::getTexture(QString name)
 void TexManager::releaseTexture(QString name)
 {
 	Q_ASSERT( s_textureMap.contains(name) );
-	
+
 	Texture texture = s_textureMap.value(name);
 	texture.refCount--;
 	if( texture.refCount == 0 ) {
