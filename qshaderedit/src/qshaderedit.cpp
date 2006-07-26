@@ -359,16 +359,20 @@ void QShaderEdit::updateEditor()
 		int inputNum = m_effect->getInputNum();
 		for(int i = 0; i < inputNum; i++) {
 			QTextEdit * textEdit = m_editor->addEditor(m_effect->getInputName(i));
+			
+			Highlighter * hl = new Highlighter(textEdit->document());
+			hl->setRules(m_effect->factory()->highlightingRules());
+			hl->setMultiLineCommentStart(m_effect->factory()->multiLineCommentStart());
+			hl->setMultiLineCommentEnd(m_effect->factory()->multiLineCommentEnd());
+			
 			textEdit->setPlainText(m_effect->getInput(i));
 			textEdit->document()->setModified(false);
-
-			Highlighter* hl = new Highlighter(textEdit->document());
-			//TODO why does m_effect->factory() return NULL?
-			hl->setRules(m_effectFactory->highlightingRules());
-			hl->setMultiLineCommentStart(m_effectFactory->multiLineCommentStart());
-			hl->setMultiLineCommentEnd(m_effectFactory->multiLineCommentEnd());
 		}
 	}
+	
+	// @@ This is not enough, the highligher modifies the document and triggers the textChanged event!
+	// Stop the timer, that was triggered by setPlainText.
+	m_timer->stop();
 	
 	m_modified = false;
 }
