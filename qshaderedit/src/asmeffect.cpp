@@ -5,13 +5,12 @@
 
 #include <math.h>
 
+#include <QtCore/QDebug>
 #include <QtCore/QObject>
 #include <QtCore/QFile>
 #include <QtCore/QByteArray>
 #include <QtCore/QTime>
 #include <QtCore/QVariant>
-
-#include <QtGui/QImage>
 
 #include <GL/glew.h>
 
@@ -293,6 +292,9 @@ public:
 		if( checkProgramError(output, 0) ) {
 			succeed = false;
 		}
+		else {
+			ParseProgram(m_vertexProgramText);
+		}
 		glDisable( GL_VERTEX_PROGRAM_ARB );
 		
 		if(output != NULL) output->info("Compiling fragment program...");
@@ -302,10 +304,14 @@ public:
 		if( checkProgramError(output, 1) ) {
 			succeed = false;
 		}
+		else {
+			ParseProgram(m_fragmentProgramText);
+		}
 		glDisable( GL_FRAGMENT_PROGRAM_ARB );
 		
 		return succeed;
 	}	
+	
 	
 	// Parameter info.
 	virtual int getParameterNum() const
@@ -315,23 +321,20 @@ public:
 	
 	virtual QString getParameterName(int idx) const
 	{
-	//	Q_ASSERT(m_program != 0);
-	//	Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-	//	return m_parameterArray[idx].name;
-		return 0;
+		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
+		return m_parameterArray[idx].name;
 	}
 	
 	virtual QVariant getParameterValue(int idx) const
 	{
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		// @@ TBD
 		return m_parameterArray[idx].value;
 	}
 	
 	virtual void setParameterValue(int idx, const QVariant & value)
 	{
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		// @@ TBD
+		m_parameterArray[idx].value = value;
 	}
 	
 	virtual EditorType getParameterEditor(int idx) const
@@ -443,6 +446,48 @@ private:
 		}
 		
 		return false;
+	}
+	
+	void ParseProgram(const QByteArray & code)
+	{
+		// Get parameters. @@ Create these regular expressions only once.
+		QRegExp paramRegExp("\\s*PARAM\\s+(\\w+)(?:\\[(\\d+)\\])?\\s*=\\s*(\\S.*)");
+		QRegExp commentRegExp("#.*$");
+		
+		int start = 0;
+		int end = qMin(code.indexOf(';'), code.indexOf('\n'));
+		
+		while( end != -1 ) {
+			QString statement = code.mid(start, end-start);
+			
+			if(!commentRegExp.exactMatch(statement)) {
+				if(paramRegExp.exactMatch(statement)) {
+					QString name = paramRegExp.cap(1);
+					QString size = paramRegExp.cap(2);
+					QString value = paramRegExp.cap(3);
+					
+					if(size.isEmpty()) {
+						AddVectorParameter(name, value);
+					}
+					else {
+						AddMatrixParameter(name, size.toInt(), value);
+					}
+				}
+			}
+			
+			start = end+1;
+			end = qMin(code.indexOf(';', end+1), code.indexOf('\n', end+1));
+		}
+	}
+	
+	void AddVectorParameter(const QString & name, const QString & value)
+	{
+		qDebug() << "Vector:" << name << "=" << value;
+	}
+	
+	void AddMatrixParameter(const QString & name, int size, const QString & value)
+	{
+		qDebug() << "Matrix:" << QString(name).append("[").append(QString::number(size)).append("]") << "=" << value;
 	}
 	
 };
