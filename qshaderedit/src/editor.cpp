@@ -11,9 +11,18 @@ Editor::Editor(QWidget * parent) : QTabWidget(parent)
 
 	connect(this, SIGNAL(currentChanged(int)), this, SLOT(onCurrentChanged(int)));
 
-//	m_font.setFamily("monospace");
-//	m_font.setFixedPitch(true);
-//	m_font.setPointSize(10);
+#if defined(Q_OS_DARWIN)
+	m_font.setFamily("Monaco");
+	m_font.setPointSize(11);
+#elif defined(Q_OS_WIN32)
+	m_font.setFamily("Courier");
+	m_font.setPointSize(8);
+#else
+	m_font.setFamily("Monospace");
+	m_font.setPointSize(8);
+#endif
+	m_font.setFixedPitch(true);
+//	m_font.setStyleHint(QFont::Courier, QFont::PreferQuality);
 }
 
 QTextEdit * Editor::currentTextEdit() const
@@ -95,12 +104,13 @@ QTextEdit * Editor::addEditor(const QString & name)
 {
 	QTextEdit * textEdit = new QTextEdit();
 	this->addTab(textEdit, name);
-//	textEdit->setFont(m_font);
-	textEdit->setFontFamily("Monospace");
+	textEdit->setFont(m_font);
+//	textEdit->setFontFamily("Monospace");
 //	textEdit->setFontFamily("Courier");
-	textEdit->setFontPointSize(8);
+//	textEdit->setFontPointSize(8);
 	textEdit->setLineWrapMode(QTextEdit::NoWrap);
 	textEdit->setTabStopWidth(28);
+	textEdit->setAcceptRichText(false);
 
 	connect(textEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
 	connect(textEdit, SIGNAL(cursorPositionChanged()), this, SIGNAL(cursorPositionChanged()));

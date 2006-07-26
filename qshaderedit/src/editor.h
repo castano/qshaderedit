@@ -43,7 +43,7 @@ protected slots:
 	void onRedoAvailable(bool available);
 
 private:
-	
+	QFont m_font;
 };
 
 
