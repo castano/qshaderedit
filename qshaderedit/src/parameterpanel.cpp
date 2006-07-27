@@ -8,6 +8,7 @@
 #include <QtGui/QToolButton>
 #include <QtGui/QFileDialog>
 
+#include <QtCore/QtDebug>
 
 //
 // FilePicker Widget.
@@ -84,6 +85,7 @@ QWidget * ParameterDelegate::createEditor(QWidget * parent, const QStyleOptionVi
 		QVariant value = model->data(index, Qt::EditRole);
 		FileEditor * editor = new FileEditor(parent);
 		editor->installEventFilter(const_cast<ParameterDelegate*>(this));
+		connect(editor, SIGNAL(done(QWidget*)), this, SIGNAL(commitData(QWidget*)));
 		connect(editor, SIGNAL(done(QWidget*)), this, SIGNAL(closeEditor(QWidget*)));
 		return editor;
 	}
@@ -437,9 +439,9 @@ bool ParameterTableModel::useNumericEditor(const QModelIndex &index) const
 bool ParameterTableModel::useFileEditor(const QModelIndex &index) const
 {
 	Q_ASSERT(m_effect != NULL);
-	//Effect::EditorType editor = m_effect->getParameterEditor(parameter(index));
-	//return editor == Effect::EditorType_File;
-	return false;
+	Effect::EditorType editor = m_effect->getParameterEditor(parameter(index));
+	return editor == Effect::EditorType_File;
+	//return false;
 }
 
 

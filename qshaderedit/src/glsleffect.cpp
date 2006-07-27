@@ -30,7 +30,7 @@ namespace {
 		"	v_V = (gl_ModelViewMatrix[3] - gl_Vertex).xyz;\n"
 		"	v_N = gl_NormalMatrix * gl_Normal;\n"
 		"}\n";
-	
+
 	// Default fragment shader.
 	static const char * s_fragmentShaderText =
 		"varying vec3 v_V;\n"
@@ -45,12 +45,12 @@ namespace {
 		"	vec3 specular = vec3(1.0, 1.0, 1.0) * pow(max(dot(R, L), 0.0), 8.0);\n\n"
 		"	gl_FragColor = vec4(ambient + diffuse + specular, 1.0);\n"
 		"}\n";
-	
+
 	// GLSL shader file tags.
 	static const char * s_vertexShaderTag = "[VertexShader]\n";
 	static const char * s_fragmentShaderTag = "[FragmentShader]\n";
 	static const char * s_parametersTag = "[Parameters]\n";
-	
+
 	// GLSL Parameter.
 	struct GLSLParameter
 	{
@@ -58,7 +58,7 @@ namespace {
 		QVariant value;
 		GLint location;
 		GLenum type;
-		
+
 		// Only for samplers:
 		GLenum target;
 		int unit;
@@ -72,24 +72,24 @@ namespace {
 class GLSLEffect : public Effect
 {
 private:
-	
+
 	GLhandleARB m_vertexShader;
 	GLhandleARB m_fragmentShader;
 	GLhandleARB m_program;
-	
+
 	QByteArray m_vertexShaderText;
 	QByteArray m_fragmentShaderText;
 
 	QTime m_time;
 	GLint m_timeUniform;
-	
+
 	QVector<GLSLParameter> m_parameterArray;
 	QVector<GLSLParameter> m_oldParameterArray;
-	
+
 	OutputParser* m_outputParser;
 
 public:
-	
+
 	// Ctor.
 	GLSLEffect(const EffectFactory * factory) : Effect(factory),
 		m_vertexShader(0),
@@ -108,26 +108,26 @@ public:
 		else if (strcmp(vendor, "NVIDIA Corporation") == 0)
 			m_outputParser = new NvidiaOutputParser;
 	}
-	
+
 	// Dtor.
 	virtual ~GLSLEffect()
 	{
 		deleteProgram();
 		delete m_outputParser;
 	}
-	
-	
+
+
 	// Load the effect from the given file.
 	virtual void load(QFile * file)
 	{
 		Q_ASSERT(file != NULL);
-		
+
 		m_vertexShaderText.clear();
 		m_fragmentShaderText.clear();
-		
+
 		QByteArray line;
 		while (!file->atEnd()) {
-			
+
 			if( line.startsWith(s_vertexShaderTag) ) {
 				// Read vertex shader.
 				while (!file->atEnd()) {
@@ -137,10 +137,10 @@ public:
 					}
 					m_vertexShaderText.push_back(line);
 				}
-				
+
 				continue;
 			}
-			
+
 			if( line.startsWith(s_fragmentShaderTag) ) {
 				// Read fragment shader.
 				while (!file->atEnd()) {
@@ -150,10 +150,10 @@ public:
 					}
 					m_fragmentShaderText.push_back(line);
 				}
-				
+
 				continue;
 			}
-			
+
 			if( line.startsWith(s_parametersTag) ) {
 				// Parse parameters.
 				while (!file->atEnd()) {
@@ -166,53 +166,53 @@ public:
 				}
 				continue;
 			}
-			
+
 			line = file->readLine();
 		}
-		
+
 		m_time.start();
 	}
-	
+
 	// Save the effect in the given file.
 	virtual void save(QFile * file)
 	{
 		Q_ASSERT(file != NULL);
-		
+
 		// [VertexShader]
 		file->write(s_vertexShaderTag, strlen(s_vertexShaderTag));
 		file->write(m_vertexShaderText);
 		if(!m_vertexShaderText.endsWith('\n')) {
 			file->write("\n");
 		}
-		
+
 		// [FragmentShader]
 		file->write(s_fragmentShaderTag, strlen(s_fragmentShaderTag));
 		file->write(m_fragmentShaderText);
 		if(!m_fragmentShaderText.endsWith('\n')) {
 			file->write("\n");
 		}
-		
+
 		if( this->getParameterNum() > 0 ) {
 			// [Parameters]
 			file->write(s_parametersTag, strlen(s_parametersTag));
-			
+
 			foreach(GLSLParameter p, m_parameterArray) {
 				QString str = getParameterAssignment(p);
 				file->write(str.toLatin1());
 			}
 		}
 	}
-	
-	
+
+
 	virtual int getInputNum()
 	{
 		return 2;
 	}
-	
+
 	virtual QString getInputName(int i)
 	{
 		Q_ASSERT(i == 0 || i == 1);
-		
+
 		if( i == 0 ) {
 			return tr("Vertex Shader");
 		}
@@ -220,153 +220,156 @@ public:
 			return tr("Fragment Shader");
 		}
 	}
-	
+
 	virtual const QByteArray & getInput(int i) const
 	{
 		Q_ASSERT(i == 0 || i == 1);
-		
+
 		if( i == 0 ) {
 			return m_vertexShaderText;
 		}
 		else {
 			return m_fragmentShaderText;
-		}		
-	}	
-	
+		}
+	}
+
 	virtual void setInput(int i, const QByteArray & txt)
 	{
 		Q_ASSERT(i == 0 || i == 1);
-		
+
 		if( i == 0 ) {
 			m_vertexShaderText = txt;
 		}
 		else {
 			m_fragmentShaderText = txt;
-		}		
+		}
 	}
-	
+
 	virtual bool build(MessagePanel * output)
 	{
 		// Delete previous effect.
 		deleteProgram();
-		
+
 		Q_ASSERT( m_vertexShader == 0 );
 		m_vertexShader = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
-		
+
 		Q_ASSERT( m_fragmentShader == 0 );
 		m_fragmentShader = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
-		
+
 		Q_ASSERT( m_program == 0 );
 		m_program = glCreateProgramObjectARB();
-		
+
 		if(output != NULL) output->clear();
-		
+
 		if(output != NULL) output->info("Compiling vertex shader...");
 		const char * vertexStrings[] = { m_vertexShaderText.data() };
 		glShaderSourceARB(m_vertexShader, 1, vertexStrings, NULL);
 		glCompileShaderARB(m_vertexShader);
-		
+
 		// Get error log.
 		QByteArray infoLog;
 		int charsWritten, infoLogLength;
 		if(output != NULL) {
-			glGetObjectParameterivARB(m_vertexShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);		
+			glGetObjectParameterivARB(m_vertexShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
 			infoLog.resize(infoLogLength);
 			glGetInfoLogARB(m_vertexShader, infoLogLength, &charsWritten, infoLog.data());
 			output->log(infoLog, 0, m_outputParser);
 		}
-		
+
 		if(output != NULL) output->info("Compiling fragment shader...");
 		const char * fragmentStrings[] = { m_fragmentShaderText.data() };
 		glShaderSourceARB(m_fragmentShader, 1, fragmentStrings, NULL);
 		glCompileShaderARB(m_fragmentShader);
-		
+
 		// Get error log.
 		if(output != NULL) {
 			infoLog.clear();
-			glGetObjectParameterivARB(m_fragmentShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);		
+			glGetObjectParameterivARB(m_fragmentShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
 			infoLog.resize(infoLogLength);
 			glGetInfoLogARB(m_fragmentShader, infoLogLength, &charsWritten, infoLog.data());
 			output->log(infoLog, 1, m_outputParser);
 		}
-		
+
 		// Check compilation.
 		GLint vertexCompileSucceed = GL_FALSE;
 		glGetObjectParameterivARB(m_vertexShader, GL_OBJECT_COMPILE_STATUS_ARB, &vertexCompileSucceed);
 		if( vertexCompileSucceed == GL_FALSE ) {
 			return false;
 		}
-		
+
 		GLint fragmentCompileSucceed = GL_FALSE;
 		glGetObjectParameterivARB(m_fragmentShader, GL_OBJECT_COMPILE_STATUS_ARB, &fragmentCompileSucceed);
 		if( fragmentCompileSucceed == GL_FALSE ) {
 			return false;
-		}		
-		
+		}
+
 		// Link the program.
 		if(output != NULL) output->info("Linking...");
 		glAttachObjectARB(m_program, m_vertexShader);
 		glAttachObjectARB(m_program, m_fragmentShader);
 		glLinkProgramARB(m_program);
-		
+
 		// Get error log.
 		if(output != NULL) {
 			infoLog.clear();
-			glGetObjectParameterivARB(m_program, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);		
+			glGetObjectParameterivARB(m_program, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
 			infoLog.resize(infoLogLength);
 			glGetInfoLogARB(m_program, infoLogLength, &charsWritten, infoLog.data());
 			output->log(infoLog, -1, m_outputParser);
 		}
-		
+
 		// Test linker result.
 		GLint linkSucceed = GL_FALSE;
 		glGetObjectParameterivARB(m_program, GL_OBJECT_LINK_STATUS_ARB, &linkSucceed);
 		if( linkSucceed == GL_FALSE ) {
 			return false;
 		}
-		
+
 		initParameters();
-		
+
 		return true;
 	}
-	
-	
+
+
 	// Parameter info.
 	virtual int getParameterNum() const
 	{
 		return m_parameterArray.count();
 	}
-	
+
 	virtual QString getParameterName(int idx) const
 	{
 		Q_ASSERT(m_program != 0);
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
 		return m_parameterArray[idx].name;
 	}
-	
+
 	virtual QVariant getParameterValue(int idx) const
 	{
 		Q_ASSERT(m_program != 0);
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
 		return m_parameterArray[idx].value;
 	}
-	
+
 	virtual void setParameterValue(int idx, const QVariant & value)
 	{
 		Q_ASSERT(m_program != 0);
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		
+
 		GLSLParameter & param = m_parameterArray[idx];
 		param.value = value;
+
+		if (param.type == GL_SAMPLER_2D_ARB)
+			param.tex = TexManager::instance()->addTexture(value.toString());
 	}
-	
+
 	virtual EditorType getParameterEditor(int idx) const
 	{
 		Q_ASSERT(m_program != 0);
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		
+
 		const GLSLParameter & param = m_parameterArray[idx];
-		
+
 		switch( param.type ) {
 			case GL_FLOAT:
 			case GL_INT:
@@ -404,14 +407,14 @@ public:
 		}
 		return EditorType_None;
 	}
-	
-	virtual int getParameterRows(int idx) const 
+
+	virtual int getParameterRows(int idx) const
 	{
 		Q_ASSERT(m_program != 0);
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		
+
 		const GLSLParameter & param = m_parameterArray[idx];
-		
+
 		switch( param.type ) {
 			case GL_FLOAT:
 			case GL_INT:
@@ -425,7 +428,7 @@ public:
 			case GL_FLOAT_VEC3_ARB:
 			case GL_INT_VEC3_ARB:
 			case GL_BOOL_VEC3_ARB:
-			case GL_FLOAT_MAT3_ARB:	
+			case GL_FLOAT_MAT3_ARB:
 				return 3;
 			case GL_FLOAT_VEC4_ARB:
 			case GL_INT_VEC4_ARB:
@@ -444,14 +447,14 @@ public:
 		}
 		return 0;
 	}
-	
+
 	virtual int getParameterColumns(int idx) const
 	{
 		Q_ASSERT(m_program != 0);
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		
+
 		const GLSLParameter & param = m_parameterArray[idx];
-		
+
 		switch( param.type ) {
 			case GL_FLOAT:
 			case GL_INT:
@@ -484,75 +487,75 @@ public:
 		}
 		return 0;
 	}
-	
+
 	virtual bool isValid() const
 	{
 		return m_program != 0;
 	}
-	
+
 	virtual bool isAnimated() const
 	{
 		return m_timeUniform != -1;
 	}
-	
-	
+
+
 	// Technique info.
 	virtual int getTechniqueNum() const
 	{
 		return 1;
 	}
-	
+
 	virtual QString getTechniqueName(int) const
 	{
 		return tr("Default");
 	}
-	
+
 	virtual void selectTechnique(int)
 	{
 		// nothing to do here.
 	}
-	
+
 	// Pass info.
 	virtual int getPassNum() const
 	{
 		return 1;
 	}
-	
+
 	// Rendering.
 	virtual void begin()
 	{
 		Q_ASSERT(m_program != 0);
-		
+
 		glEnable (GL_CULL_FACE);
 		glEnable (GL_DEPTH_TEST);
 		glDepthFunc(GL_LEQUAL);
-		
+
 		// Setup ligh parameters
 		float light_vector[4] = {1.0f/sqrt(3.0f), 1.0f/sqrt(3.0f), 1.0f/sqrt(3.0f), 0.0f};
 		glLightfv( GL_LIGHT0, GL_POSITION, light_vector );
-		
+
 		glUseProgramObjectARB(m_program);
-		
+
 		// Set uniforms.
 		setParameters();
 	}
-	
+
 	virtual void beginPass(int )
 	{
 		// nothing to do.
 	}
-	
+
 	virtual void endPass()
 	{
 	}
-	
+
 	virtual void end()
 	{
 		glUseProgramObjectARB(0); // ???
 	}
-	
+
 private:
-	
+
 	void deleteProgram()
 	{
 		if( m_program != 0 ) {
@@ -573,19 +576,19 @@ private:
 			glDeleteObjectARB(m_fragmentShader);
 			m_fragmentShader = 0;
 		}
-		
+
 		//resetParameters();
 	}
-	
+
 	void resetParameters()
 	{
 		/*for(int i = 0; i < m_texUnitArray.count(); i++) {
 			resetSampler(i);
 		}
 		m_texUnitArray.clear();*/
-		
+
 		m_timeUniform = -1;
-		
+
 		qSwap(m_oldParameterArray, m_parameterArray);
 		m_parameterArray.clear();
 	}
@@ -594,41 +597,41 @@ private:
 	{
 		resetParameters();
 		//m_parameterArray.clear();
-		
+
 		if( m_program == 0 ) {
 			return;
 		}
-		
+
 		// Get number of texture units.
 		//GLint texUnitNum = 8;
 		//glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &texUnitNum);
 		//m_texUnitArray.resize(texUnitNum);
-		
+
 		// @@ Assign samplers to texture units?
-		
+
 		GLint count = 0;
 		glGetObjectParameterivARB(m_program, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &count);
-		
+
 		for(int i = 0; i < count; i++) {
 			char str[1024];
 			GLsizei length;
 			GLint size;
 			GLenum type;
 			glGetActiveUniformARB(m_program, i, 1024, &length, &size, &type, str);
-			
+
 			QString name(str);
-			
+
 			// skip gl uniforms.
 			if( name.startsWith("gl_") ) {
 				continue;
 			}
-			
+
 			// Get standard uniforms.
 			if( name.toLower() == "time" ) {
 				m_timeUniform = glGetUniformLocationARB(m_program, str);
 				continue;
 			}
-			
+
 			// Add parameter.
 			GLSLParameter param;
 			param.type = type;
@@ -661,7 +664,7 @@ private:
 			if( parameter.type == GL_SAMPLER_2D_ARB ) {
 				parameter.target = GL_TEXTURE_2D;
 				parameter.unit = unit++;
-				
+
 				QString fileName = parameter.value.toString();
 				if(!fileName.isEmpty()) {
 					parameter.tex = TexManager::instance()->addTexture(fileName);
@@ -671,22 +674,22 @@ private:
 				}
 			}
 		}
-		
+
 	}
-	
+
 	void setParameters()
 	{
 		// Set user parameters
 		foreach(GLSLParameter p, m_parameterArray) {
 			setParameter(p);
 		}
-		
+
 		// Set standard parameters.
 		if( m_timeUniform != -1 ) {
 			glUniform1fARB(m_timeUniform, float(m_time.elapsed()));
 		}
 	}
-	
+
 	void setParameter(const GLSLParameter & param)
 	{
 		switch( param.type ) {
@@ -795,7 +798,7 @@ private:
 				break;
 		}
 	}
-	
+
 	QVariant getParameterValue(const GLSLParameter & param)
 	{
 		// Try to get the old value.
@@ -805,7 +808,7 @@ private:
 				return p.value;
 			}
 		}
-		
+
 		// Get new one.
 		switch( param.type ) {
 			case GL_FLOAT:
@@ -821,7 +824,7 @@ private:
 				glGetUniformfvARB(m_program, param.location, fvalue);
 				list << fvalue[0] << fvalue[1];
 				return list;
-			}				
+			}
 			case GL_FLOAT_VEC3_ARB:
 			{
 				float fvalue[3];
@@ -829,7 +832,7 @@ private:
 				glGetUniformfvARB(m_program, param.location, fvalue);
 				list << fvalue[0] << fvalue[1] << fvalue[2];
 				return list;
-			}				
+			}
 			case GL_FLOAT_VEC4_ARB:
 			{
 				float fvalue[4];
@@ -837,7 +840,7 @@ private:
 				glGetUniformfvARB(m_program, param.location, fvalue);
 				list << fvalue[0] << fvalue[1] << fvalue[2] << fvalue[3];
 				return list;
-			}				
+			}
 			case GL_INT:
 			{
 				int ivalue[1];
@@ -939,10 +942,10 @@ private:
 			case GL_SAMPLER_2D_RECT_SHADOW_ARB:
 				break;
 		}
-		
+
 		return QVariant();
 	}
-	
+
 	static QString getTypeName(GLint type)
 	{
 		switch( type ) {
@@ -993,14 +996,14 @@ private:
 			case GL_SAMPLER_2D_RECT_SHADOW_ARB:
 				return "samplerRECTShadow";
 		}
-		
+
 		return "";
 	}
-	
+
 	static QString getParameterAssignment(const GLSLParameter & param)
 	{
 		QString typeName = getTypeName(param.type);
-		
+
 		switch( param.type ) {
 			case GL_FLOAT:
 			case GL_INT:
@@ -1033,31 +1036,31 @@ private:
 			case GL_SAMPLER_2D_RECT_SHADOW_ARB:
 				return typeName + " " + param.name + " = load(\"" + param.value.toString() + "\");\n";
 		}
-		
+
 		return "";
 	}
-	
+
 	static GLint getType(QString str)
 	{
 		if( str == "float" ) return GL_FLOAT;
 		if( str == "vec2" ) return GL_FLOAT_VEC2_ARB;
 		if( str == "vec3" ) return GL_FLOAT_VEC3_ARB;
 		if( str == "vec4" ) return GL_FLOAT_VEC4_ARB;
-		
+
 		if( str == "int" ) return GL_INT;
 		if( str == "ivec2" ) return GL_INT_VEC2_ARB;
 		if( str == "ivec3" ) return GL_INT_VEC3_ARB;
 		if( str == "ivec4" ) return GL_INT_VEC4_ARB;
-		
+
 		if( str == "bool" ) return GL_BOOL;
 		if( str == "bvec2" ) return GL_BOOL_VEC2_ARB;
 		if( str == "bvec3" ) return GL_BOOL_VEC3_ARB;
 		if( str == "bvec4" ) return GL_BOOL_VEC4_ARB;
-		
+
 		if( str == "mat2" ) return GL_FLOAT_MAT2_ARB;
 		if( str == "mat3" ) return GL_FLOAT_MAT3_ARB;
 		if( str == "mat4" ) return GL_FLOAT_MAT4_ARB;
-		
+
 		if( str == "sampler1D" ) return GL_SAMPLER_1D_ARB;
 		if( str == "sampler2D" ) return GL_SAMPLER_2D_ARB;
 		if( str == "sampler3D" ) return GL_SAMPLER_3D_ARB;
@@ -1066,10 +1069,10 @@ private:
 		if( str == "sampler1DShadow" ) return GL_SAMPLER_1D_SHADOW_ARB;
 		if( str == "sampler2DShadow" ) return GL_SAMPLER_2D_SHADOW_ARB;
 		if( str == "samplerRECTShadow" ) return GL_SAMPLER_2D_RECT_SHADOW_ARB;
-		
+
 		return GL_ZERO;
 	}
-	
+
 	static GLint getBaseType(GLint type)
 	{
 		switch( type ) {
@@ -1104,8 +1107,8 @@ private:
 		}
 		return type;
 	}
-	
-	
+
+
 	// Hacky parameter parser.
 	void parseParameter(QString line)
 	{
@@ -1113,25 +1116,25 @@ private:
 			// Skip C++ comments.
 			return;
 		}
-		
+
 		QRegExp paramRegExp("^\\s*(\\w+)\\s+(\\w+)\\s*=(.*);\\s*$");
-		
+
 		if( !paramRegExp.exactMatch(line) ) {
 			// @@ Display warning.
 			return;
 		}
-		
+
 		QStringList tokens =  paramRegExp.capturedTexts();
 		const int count = tokens.count();
 		Q_ASSERT(count == 4);
-		
+
 		GLSLParameter param;
 		param.type = getType(tokens[1]);
 		param.name = tokens[2];
 		param.location = -1;
-		
+
 		QString value = tokens[3].trimmed();
-		
+
 		if( param.type == GL_FLOAT ) {
 			param.value = value;
 			param.value.convert(QVariant::Double);
@@ -1147,9 +1150,9 @@ private:
 			int begin = value.indexOf("(");
 			int end = value.indexOf(")");
 			QStringList args = value.mid(begin+1, end-begin-1).split(",");
-			
+
 			int baseType = getBaseType(param.type);
-			
+
 			// Convert the components.
 			QVariantList valueList;
 			foreach(QString arg, args) {
@@ -1172,18 +1175,18 @@ private:
 			param.type == GL_SAMPLER_CUBE_ARB || param.type == GL_SAMPLER_2D_RECT_ARB)
 		{
 			QRegExp loadRegExp("^\\s*load\\(\"(.*)\"\\)\\s*$");
-			
+
 			if( !loadRegExp.exactMatch(tokens[3]) ) {
 				// @@ Display warning.
 				return;
 			}
-			
+
 			param.value = loadRegExp.cap(1);
 		}
 		else {
 			qDebug() << "unknown parameter type";
 		}
-		
+
 		m_parameterArray.append(param);
 	}
 };
@@ -1196,27 +1199,27 @@ class GLSLEffectFactory : public EffectFactory
 	{
 		return GLEW_ARB_fragment_shader && GLEW_ARB_vertex_shader && GLEW_ARB_shader_objects && GLEW_ARB_shading_language_100;
 	}
-	
+
 	virtual QString name() const
 	{
 		return tr("GLSL Shader");
 	}
-	
+
 	virtual QString namePlural() const
 	{
 		return tr("GLSL Shaders");
 	}
-	
+
 	virtual QString extension() const
 	{
 		return "glsl";
 	}
-	
+
 	virtual QIcon icon() const
 	{
 		return QIcon();
 	}
-	
+
 	virtual Effect * createEffect() const
 	{
 		Q_ASSERT(isSupported());
@@ -1269,7 +1272,7 @@ class GLSLEffectFactory : public EffectFactory
 
 		rule.type = Highlighter::Number;
 		rule.pattern = QRegExp("\\b[-+]?\\d*\\.?\\d+([eE][-+]?\\d+)?\\b");
-		
+
 		rules.append(rule);
 
 		rule.type = Highlighter::Comment;
