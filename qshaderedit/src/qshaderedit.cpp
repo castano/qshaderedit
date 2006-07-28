@@ -190,6 +190,7 @@ void QShaderEdit::createMenus()
 void QShaderEdit::createToolbars()
 {
 	m_fileToolBar = new QToolBar(tr("File Toolbar"), this);
+	m_fileToolBar->setObjectName("FileToolBar");
 	this->addToolBar(m_fileToolBar);
 
 	m_fileToolBar->addAction(m_newAction);
@@ -197,6 +198,7 @@ void QShaderEdit::createToolbars()
 	m_fileToolBar->addAction(m_saveAction);
 
 	m_techniqueToolBar = new QToolBar(tr("Technique Toolbar"), this);
+	m_techniqueToolBar->setObjectName("TechniqueToolBar");
 	this->addToolBar(m_techniqueToolBar);
 
 	m_techniqueCombo = new QComboBox();
@@ -223,12 +225,14 @@ void QShaderEdit::createStatusbar()
 void QShaderEdit::createDockWindows()
 {
 	m_logViewDock = new MessagePanel(tr("Messages"), this);
+	m_logViewDock->setObjectName("MessagesDock");
 	m_logViewDock->setAllowedAreas(Qt::BottomDockWidgetArea);
 	m_logViewDock->setVisible(false);
 	addDockWidget(Qt::BottomDockWidgetArea, m_logViewDock);
 	connect(m_logViewDock, SIGNAL(messageClicked(int, int, int)), m_editor, SLOT(gotoLine(int, int, int)));
 
 	m_sceneViewDock = new QDockWidget(tr("Scene"), this);
+	m_sceneViewDock->setObjectName("SceneDock");
 	m_sceneViewDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
 	if( QGLFormat::hasOpenGL() )
@@ -252,6 +256,7 @@ void QShaderEdit::createDockWindows()
 	addDockWidget(Qt::RightDockWidgetArea, m_sceneViewDock);
 
 	m_paramViewDock = new ParameterPanel(tr("Parameters"), this);
+	m_paramViewDock->setObjectName("ParameterDock");
 	m_paramViewDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 	addDockWidget(Qt::RightDockWidgetArea, m_paramViewDock);
 	connect(m_paramViewDock, SIGNAL(parameterChanged()), this, SLOT(setModified()));
@@ -263,6 +268,9 @@ void QShaderEdit::loadSettings()
 
     pref.beginGroup("MainWindow");
     resize(pref.value("size", QSize(640,480)).toSize());
+	QByteArray state = pref.value("state").toByteArray();
+	if (!state.isEmpty())
+		restoreState(state);
     pref.endGroup();
 
     m_autoCompile = pref.value("autoCompile", true).toBool();
@@ -275,6 +283,7 @@ void QShaderEdit::saveSettings()
 
     pref.beginGroup("MainWindow");
     pref.setValue("size", size());
+	pref.setValue("state", saveState());
     pref.endGroup();
 
     pref.setValue("autoCompile", m_autoCompile);
