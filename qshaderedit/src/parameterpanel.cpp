@@ -57,6 +57,80 @@ void FileEditor::setText(const QString & str)
 }
 
 
+//
+// DoubleNumInput
+//
+
+DoubleNumInput::DoubleNumInput(QWidget * parent) : QWidget(parent)
+{
+	setAutoFillBackground(true);
+
+	m_spinBox = new QDoubleSpinBox(this);
+	m_spinBox->setRange(0.0, 1.0);
+	m_spinBox->setDecimals(2);
+	m_spinBox->setSingleStep(0.1);
+	connect(m_spinBox, SIGNAL(valueChanged(double)), this, SLOT(spinBoxValueChanged(double)));
+
+	m_slider = new QSlider(Qt::Horizontal, this);
+	m_slider->setRange(0, 10);
+	connect(m_slider, SIGNAL(valueChanged(int)), this, SLOT(sliderValueChanged(int)));
+
+	QHBoxLayout * layout = new QHBoxLayout(this);
+	layout->setMargin(2);
+	layout->addWidget(m_slider);
+	layout->addWidget(m_spinBox);
+
+	setFocusProxy(m_slider);
+}
+
+double DoubleNumInput::value() const
+{
+	return m_spinBox->value();
+}
+
+void DoubleNumInput::setSingleStep(double step)
+{
+	m_spinBox->setSingleStep(step);
+	m_slider->setRange(
+		qRound(m_spinBox->minimum() / m_spinBox->singleStep()),
+		qRound(m_spinBox->maximum() / m_spinBox->singleStep()));
+}
+
+void DoubleNumInput::setPageStep(double step)
+{
+	m_slider->setPageStep(qRound(step / m_spinBox->singleStep()));
+}
+
+void DoubleNumInput::setDecimals(int decimals)
+{
+	m_spinBox->setDecimals(decimals);
+}
+
+void DoubleNumInput::setRange(double min, double max)
+{
+	m_spinBox->setRange(min, max);
+	m_slider->setRange(qRound(min / m_spinBox->singleStep()), qRound(max / m_spinBox->singleStep()));
+}
+
+void DoubleNumInput::setValue(double value)
+{
+	m_spinBox->setValue(value);
+	m_slider->setValue(qRound(value / m_spinBox->singleStep()));
+}
+
+void DoubleNumInput::sliderValueChanged(int value)
+{
+	double dvalue = (double)value * m_spinBox->singleStep();
+	m_spinBox->setValue(dvalue);
+}
+
+void DoubleNumInput::spinBoxValueChanged(double value)
+{
+	int ivalue = qRound(value / m_spinBox->singleStep());
+	m_slider->setValue(ivalue);
+	emit valueChanged(value);
+}
+
 
 //
 // ParameterDelegate
@@ -70,7 +144,7 @@ QWidget * ParameterDelegate::createEditor(QWidget * parent, const QStyleOptionVi
 	const ParameterTableModel * model = qobject_cast<const ParameterTableModel *>(index.model());
 	Q_ASSERT(model != NULL);
 
-	if( model->useNumericEditor(index) || model->useColorEditor(index) ) {
+	if( model->useNumericEditor(index)  ) {
 		QVariant value = model->data(index, Qt::EditRole);
 
 		if( value.type() == QVariant::Double ) {
@@ -79,8 +153,18 @@ QWidget * ParameterDelegate::createEditor(QWidget * parent, const QStyleOptionVi
 			editor->setSingleStep( 0.1 );
 			editor->setDecimals( 3 );
 			editor->installEventFilter(const_cast<ParameterDelegate*>(this));
+			connect(editor, SIGNAL(valueChanged(double)), this, SLOT(editorValueChanged()));
 			return editor;
 		}
+	}
+	else if( model->useColorEditor(index) ) {
+		QVariant value = model->data(index, Qt::EditRole);
+		DoubleNumInput * editor = new DoubleNumInput(parent);
+		editor->setSingleStep(0.05);
+		editor->setPageStep(0.1);
+		editor->installEventFilter(const_cast<ParameterDelegate*>(this));
+		connect(editor, SIGNAL(valueChanged(double)), this, SLOT(editorValueChanged()));
+		return editor;
 	}
 	else if( model->useFileEditor(index) ) {
 		QVariant value = model->data(index, Qt::EditRole);
@@ -110,6 +194,11 @@ void ParameterDelegate::setEditorData(QWidget * editor, const QModelIndex & inde
 			return;
 		}
 	}
+	else if( model->useColorEditor(index) ) {
+		double value = model->data(index, Qt::EditRole).toDouble();
+		DoubleNumInput * input = static_cast<DoubleNumInput*>(editor);
+		input->setValue(value);
+	}
 	else if( model->useFileEditor(index) ) {
 		QVariant value = model->data(index, Qt::EditRole);
 
@@ -136,6 +225,11 @@ void ParameterDelegate::setModelData(QWidget * editor, QAbstractItemModel * abst
 			model->setData(index, spinBox->value());
 			return;
 		}
+	}
+	else if( model->useColorEditor(index) ) {
+		DoubleNumInput * input = static_cast<DoubleNumInput*>(editor);
+		model->setData(index, input->value());
+		return;
 	}
 	else if( model->useFileEditor(index) ) {
 		FileEditor * fileEditor = static_cast<FileEditor *>(editor);
@@ -166,12 +260,17 @@ bool ParameterDelegate::eventFilter(QObject* object, QEvent* event)
 			QKeyEvent *keyEvent = (QKeyEvent*)event;
 			// ignore key up and down events to allow for keyboard navigation in the view
 			if (keyEvent->key() == Qt::Key_Up || keyEvent->key() == Qt::Key_Down) {
-				event->ignore();
 				return true;
 			}
 	}
 
 	return QItemDelegate::eventFilter(object, event);
+}
+
+void ParameterDelegate::editorValueChanged()
+{
+	if (sender() && sender()->isWidgetType())
+		emit commitData(static_cast<QWidget *>(sender()));
 }
 
 
@@ -445,6 +544,8 @@ int ParameterTableModel::component(const QModelIndex &index)
 bool ParameterTableModel::useColorEditor(const QModelIndex &index) const
 {
 	Q_ASSERT(m_effect != NULL);
+	if (!index.isValid())
+		return false;
 	Effect::EditorType editor = m_effect->getParameterEditor(parameter(index));
 	return editor == Effect::EditorType_Color;
 }
@@ -452,6 +553,8 @@ bool ParameterTableModel::useColorEditor(const QModelIndex &index) const
 bool ParameterTableModel::useNumericEditor(const QModelIndex &index) const
 {
 	Q_ASSERT(m_effect != NULL);
+	if (!index.isValid())
+		return false;
 	Effect::EditorType editor = m_effect->getParameterEditor(parameter(index));
 	return editor == Effect::EditorType_Scalar ||
 		editor == Effect::EditorType_Vector ||
@@ -461,6 +564,8 @@ bool ParameterTableModel::useNumericEditor(const QModelIndex &index) const
 bool ParameterTableModel::useFileEditor(const QModelIndex &index) const
 {
 	Q_ASSERT(m_effect != NULL);
+	if (!index.isValid())
+		return false;
 	Effect::EditorType editor = m_effect->getParameterEditor(parameter(index));
 	return editor == Effect::EditorType_File;
 	//return false;

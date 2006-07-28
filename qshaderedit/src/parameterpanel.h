@@ -8,7 +8,7 @@
 
 class QTableView;
 class Effect;
-
+class QDoubleSpinBox;
 
 
 class FileEditor : public QWidget
@@ -33,6 +33,36 @@ private:
 };
 
 
+class DoubleNumInput: public QWidget
+{
+	Q_OBJECT
+public:
+	DoubleNumInput(QWidget * parent = 0);
+
+	double value() const;
+
+	void setSingleStep(double step);
+	void setPageStep(double step);
+	void setDecimals(int decimals);
+	void setRange(double min, double max);
+
+public slots:
+	void setValue(double value);
+
+signals:
+	void valueChanged(double value);
+
+private slots:
+	void spinBoxValueChanged(double value);
+	void sliderValueChanged(int value);
+
+private:
+	QDoubleSpinBox * m_spinBox;
+	QSlider * m_slider;
+};
+
+
+
 class ParameterDelegate : public QItemDelegate
 {
 	Q_OBJECT
@@ -50,6 +80,9 @@ public:
 	virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const;
 
 	virtual bool eventFilter(QObject* object, QEvent* event);
+
+private slots:
+	void editorValueChanged();
 };
 
 
