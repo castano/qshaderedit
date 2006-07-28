@@ -7,8 +7,9 @@
 #include <QtGui/QHBoxLayout>
 #include <QtGui/QToolButton>
 #include <QtGui/QFileDialog>
-
-#include <QtCore/QtDebug>
+#include <QtGui/QApplication>
+#include <QtGui/QPainter>
+#include <QtGui/QKeyEvent>
 
 //
 // FilePicker Widget.
@@ -152,6 +153,27 @@ void ParameterDelegate::updateEditorGeometry(QWidget * editor, const QStyleOptio
 	editor->setGeometry(option.rect);
 }
 
+QSize ParameterDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+	return QItemDelegate::sizeHint(option, index) + QSize(4, 4);
+}
+
+bool ParameterDelegate::eventFilter(QObject* object, QEvent* event)
+{
+	switch (event->type()) {
+		case QEvent::KeyPress:
+		case QEvent::KeyRelease:
+			QKeyEvent *keyEvent = (QKeyEvent*)event;
+			// ignore key up and down events to allow for keyboard navigation in the view
+			if (keyEvent->key() == Qt::Key_Up || keyEvent->key() == Qt::Key_Down) {
+				event->ignore();
+				return true;
+			}
+	}
+
+	return QItemDelegate::eventFilter(object, event);
+}
+
 
 //
 // ParameterTableModel
@@ -280,7 +302,7 @@ QVariant ParameterTableModel::data(const QModelIndex &index, int role) const
 					QVariantList value = m_effect->getParameterValue(parameter(index)).toList();
 					QColor color;
 					color.setRgbF(value.at(0).toDouble(), value.at(1).toDouble(), value.at(2).toDouble());
-					QPixmap pm(10, 10);
+					QPixmap pm(12, 12);
 					pm.fill(color);
 					return pm;
 				}
@@ -480,6 +502,9 @@ void ParameterPanel::initWidget()
 	m_table->setItemDelegate(m_delegate);
 	m_table->header()->setStretchLastSection(true);
 	m_table->header()->setClickable(false);
+	m_table->setAlternatingRowColors(true);
+	m_table->setEditTriggers(QAbstractItemView::AllEditTriggers);
+
 	//	m_table->setIndentation(0);	// @@ This would be nice if it didn't affect the roots.
 
 	setWidget(m_table);
