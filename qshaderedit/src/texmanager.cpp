@@ -16,50 +16,68 @@ namespace {
 
 	QMap<QString, Texture> s_textureMap;
 
+	static TexManager * s_texManager = NULL;
 
+	// Image plugin that supports all the image types that Qt supports.
 	class QtImagePlugin
 	{
 	public:
-
+	
 		virtual bool canLoad(QString name) const
 		{
 			Q_UNUSED(name);
 			return true;
 		}
-
-		virtual bool load(QGLContext * context, QString name, uint * obj) const
-		{
-			//const QGLContext * context = QGLContext::currentContext();
-			Q_ASSERT(context != NULL);
-
-			if( name.endsWith(".dds") ) {
-				*obj = context->bindTexture(name);
+	
+		virtual bool load(QString name, uint * obj) const
+		{		
+			QImage image;
+			if( name.isEmpty() || !image.load(name) ) {
+				image.load(":/images/default.png");
 			}
-			else {
-				QImage image(name);
-				if (image.isNull())
-					return false;
-				*obj = context->bindTexture(image);
-			}
-
-			/*
+		
 			glGenTextures(1, obj);
 			glBindTexture(GL_TEXTURE_2D, *obj);
-
-			// if
-
-			QImage image(
-			*/
-
+		
+			if(GLEW_SGIS_generate_mipmap || GLEW_VERSION_1_4) {
+				glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+			}
+		
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_ABGR_EXT, GL_UNSIGNED_BYTE, image.bits());
+		
 			return true;
 		}
 	};
 
+	// @@ Add dds plugin.
+	// @@ Add exr plugin.
+	// @@ Add hdr plugin.
+
 	static QtImagePlugin s_imageLoader;
 
-	static TexManager * s_texManager = NULL;
-
 } // namespace
+
+
+
+
+/// Constructor.
+GLTexture::GLTexture(const QString & name)
+{
+	// @@ TBD
+}
+
+/// Destructor.
+GLTexture::~GLTexture()
+{
+	// @@ TBD
+}
+
+/// Cast operator.
+/*GLTexture::operator uint() const
+{
+	return 0;
+}*/
+
 
 
 // static
@@ -70,7 +88,7 @@ TexManager * TexManager::instance()
 }
 
 /// Constructor.
-TexManager::TexManager(QGLContext * ctx) : m_context(ctx)
+TexManager::TexManager()
 {
 	Q_ASSERT(s_texManager == NULL);
 	s_texManager = this;
@@ -95,11 +113,13 @@ uint TexManager::addTexture(QString name)
 
 	if( s_imageLoader.canLoad(name) ) {
 		Texture texture;
-		if( s_imageLoader.load(m_context, name, &texture.texObj) ) {
+		if( s_imageLoader.load(name, &texture.texObj) ) {
 			texture.refCount = 1;
 			s_textureMap.insert(name, texture);
 		}
+		return texture.texObj;
 	}
+	return 0;
 }
 
 /// Get the texture object for the given name.

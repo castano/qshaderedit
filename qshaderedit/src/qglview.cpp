@@ -118,7 +118,7 @@ void QGLView::initializeGL()
 	glEndList();
 
 	// Create texture manager.
-	m_textureManager = new TexManager(const_cast<QGLContext *>(context()));
+	m_textureManager = new TexManager();
 }
 
 void QGLView::resetGL()

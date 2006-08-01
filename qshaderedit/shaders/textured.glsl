@@ -32,4 +32,3 @@ void main () {
 }
 
 [Parameters]
-sampler2D tex = load("default.png");

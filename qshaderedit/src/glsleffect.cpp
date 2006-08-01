@@ -359,8 +359,11 @@ public:
 		GLSLParameter & param = m_parameterArray[idx];
 		param.value = value;
 
-		if (param.type == GL_SAMPLER_2D_ARB)
+		if (param.type == GL_SAMPLER_2D_ARB) {
+			// @@ Release the previous texture.
+			
 			param.tex = TexManager::instance()->addTexture(value.toString());
+		}
 	}
 
 	virtual EditorType getParameterEditor(int idx) const
@@ -666,15 +669,9 @@ private:
 				parameter.unit = unit++;
 
 				QString fileName = parameter.value.toString();
-				if(!fileName.isEmpty()) {
-					parameter.tex = TexManager::instance()->addTexture(fileName);
-				}
-				else {
-					parameter.tex = TexManager::instance()->addTexture("default.png");
-				}
+				parameter.tex = TexManager::instance()->addTexture(fileName);
 			}
 		}
-
 	}
 
 	void setParameters()

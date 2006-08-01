@@ -43,11 +43,16 @@ SET(MOC_SRCS
 SET(UIC_SRCS
 	newdialog.ui)
 
+SET(RCC_SRCS
+	qshaderedit.qrc)
+
+
 #CONFIGURE_FILE(${QShaderEdit_SOURCE_DIR}/config.h.in ${QShaderEdit_SOURCE_DIR}/config.h)
 
 QT4_WRAP_UI(UICS ${UIC_SRCS})
+QT4_ADD_RESOURCES(RCCS ${RCC_SRCS})
 QT4_WRAP_CPP(MOCS ${MOC_SRCS})
 
-ADD_EXECUTABLE(qshaderedit MACOSX_BUNDLE ${SRCS} ${MOCS} ${UICS})
+ADD_EXECUTABLE(qshaderedit MACOSX_BUNDLE ${SRCS} ${MOCS} ${UICS} ${RCCS})
 TARGET_LINK_LIBRARIES(qshaderedit ${LIBS})
 INSTALL_TARGETS(/bin qshaderedit)

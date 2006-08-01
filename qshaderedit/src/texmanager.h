@@ -3,8 +3,6 @@
 
 #include <QtCore/QString>
 
-class QGLContext;
-
 
 // Simple texture manager.
 class TexManager {
@@ -14,18 +12,26 @@ public:
 	static TexManager * instance();
 
 
-	TexManager(QGLContext * ctx);
+	TexManager();
 	~TexManager();
 	
 	uint addTexture(QString name);
 	uint getTexture(QString name);
 	void releaseTexture(QString name);
 	
+};
 
+// @@ Texture class to handle refcounting automatically.
+class GLTexture
+{
+public:
+	GLTexture(const QString & name);
+	~GLTexture();
+	
+	operator uint() const;
+	
 private:
-	
-	QGLContext * m_context;
-	
+	// @@ private data.
 };
 
 
@@ -34,7 +40,7 @@ class ImagePlugin
 {
 public:
 	virtual bool canLoad(QString name) const = 0;
-	virtual bool load(QGLContext * ctx, QString name, uint * obj) const = 0;
+	virtual bool load(QString name, uint * obj) const = 0;
 };
 
 
