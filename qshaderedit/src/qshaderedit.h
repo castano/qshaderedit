@@ -57,7 +57,7 @@ protected:
 	void createStatusbar();
 	void createDockWindows();
 	
-	void closeEffect();
+	bool closeEffect();
 	
 	void updateWindowTitle();
 	void updateActions();

@@ -290,10 +290,39 @@ void QShaderEdit::saveSettings()
     pref.setValue("openDir", m_openDir);
 }
 
-void QShaderEdit::closeEffect()
+bool QShaderEdit::closeEffect()
 {
 	// Delete effect.
 	m_sceneView->resetEffect();
+	
+	if( m_effectFactory != NULL && m_modified ) {
+		QString fileName;
+		if( m_file != NULL ) {
+			QFileInfo info(*m_file);
+			fileName = info.fileName();
+		}
+		else
+		{
+			QString extension = m_effectFactory->extension();
+			fileName = tr("untitled") + "." + extension;
+		}
+
+		while(true) {
+			int answer = QMessageBox::question(this, tr("Save modified files"), tr("Do you want to save '%1' before closing?").arg(fileName), QMessageBox::Yes, QMessageBox::No, QMessageBox::Cancel);
+			if( answer == QMessageBox::Yes ) {
+				if( save() ) {
+					break;
+				}
+			}
+			else if( answer == QMessageBox::Cancel ) {
+				return false;
+			}
+			else {
+				break;
+			}
+		}
+	}
+
 	delete m_effect;
 	m_effect = NULL;
 
@@ -305,6 +334,8 @@ void QShaderEdit::closeEffect()
 	// Delete effect file.
 	delete m_file;
 	m_file = NULL;
+	
+	return true;
 }
 
 void QShaderEdit::updateWindowTitle()
@@ -454,37 +485,13 @@ void QShaderEdit::cursorPositionChanged()
 void QShaderEdit::closeEvent(QCloseEvent * event)
 {
 	Q_ASSERT(event != NULL);
-
-	if( m_effectFactory != NULL && m_modified ) {
-		QString fileName;
-		if( m_file != NULL ) {
-			QFileInfo info(*m_file);
-			fileName = info.fileName();
-		}
-		else
-		{
-			QString extension = m_effectFactory->extension();
-			fileName = tr("untitled") + "." + extension;
-		}
-
-		while(true) {
-			int answer = QMessageBox::question(this, tr("Save modified files"), tr("Do you want to save '%1' before closing?").arg(fileName), QMessageBox::Yes, QMessageBox::No, QMessageBox::Cancel);
-			if( answer == QMessageBox::Yes ) {
-				if( save() ) {
-					break;
-				}
-			}
-			else if( answer == QMessageBox::Cancel ) {
-				event->ignore();
-				return;
-			}
-			else {
-				break;
-			}
-		}
+	
+	if (closeEffect()) {
+		event->accept();
+		saveSettings();
 	}
-    saveSettings();
-	event->accept();
+	else
+		event->ignore();
 }
 
 void QShaderEdit::keyPressEvent(QKeyEvent * event)
