@@ -8,8 +8,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>286</width>
-    <height>154</height>
+    <width>414</width>
+    <height>220</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -47,6 +47,13 @@
       <number>6</number>
      </property>
      <item>
+      <widget class="QPushButton" name="openButton" >
+       <property name="text" >
+        <string>&amp;Open...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <spacer>
        <property name="orientation" >
         <enum>Qt::Horizontal</enum>
@@ -62,14 +69,14 @@
      <item>
       <widget class="QPushButton" name="okButton" >
        <property name="text" >
-        <string>Create</string>
+        <string>C&amp;reate</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="cancelButton" >
        <property name="text" >
-        <string>Cancel</string>
+        <string>&amp;Cancel</string>
        </property>
       </widget>
      </item>
@@ -92,8 +99,8 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel" >
-     <x>188</x>
-     <y>171</y>
+     <x>310</x>
+     <y>241</y>
     </hint>
     <hint type="destinationlabel" >
      <x>96</x>
@@ -108,8 +115,8 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel" >
-     <x>281</x>
-     <y>171</y>
+     <x>403</x>
+     <y>241</y>
     </hint>
     <hint type="destinationlabel" >
      <x>179</x>

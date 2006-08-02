@@ -23,9 +23,16 @@ NewDialog::NewDialog(QWidget *parent) : QDialog(parent)
 	
 	// Select first element.
 	ui.listWidget->setCurrentRow(0);
+	
+	connect(ui.openButton, SIGNAL(clicked()), this, SLOT(openEffect()));
 }
 
 QString NewDialog::shaderType() const
 {
 	return ui.listWidget->currentItem()->text();
+}
+
+void NewDialog::openEffect()
+{
+	done(OpenEffect);
 }

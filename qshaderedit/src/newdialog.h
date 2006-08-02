@@ -10,11 +10,18 @@
 class NewDialog : public QDialog
 {
 	Q_OBJECT
-	
+	public:
+		enum {
+			OpenEffect = 100
+		};
+		
 	public:
 		NewDialog(QWidget *parent = 0);
 		
 		QString shaderType() const;
+		
+	private slots:
+		void openEffect();
 		
 	private:
 		Ui::Dialog ui;

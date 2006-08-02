@@ -575,6 +575,10 @@ void QShaderEdit::newFile()
 				}
 			}
 		}
+		else if (result == NewDialog::OpenEffect) {
+			open();
+			return;
+		}
 	}
 
 	if( effectFactory != NULL ) {
