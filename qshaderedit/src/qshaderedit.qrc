@@ -1,5 +1,6 @@
-<RCC>
-    <qresource prefix="" >
-        <file>images/default.png</file>
+<!DOCTYPE RCC>
+<RCC version="1.0">
+	<qresource>
+    	<file>images/default.png</file>
     </qresource>
 </RCC>
