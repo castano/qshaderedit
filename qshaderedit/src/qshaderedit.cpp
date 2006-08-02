@@ -291,10 +291,7 @@ void QShaderEdit::saveSettings()
 }
 
 bool QShaderEdit::closeEffect()
-{
-	// Delete effect.
-	m_sceneView->resetEffect();
-	
+{	
 	if( m_effectFactory != NULL && m_modified ) {
 		QString fileName;
 		if( m_file != NULL ) {
@@ -322,6 +319,9 @@ bool QShaderEdit::closeEffect()
 			}
 		}
 	}
+
+	// Delete effect.
+	m_sceneView->resetEffect();
 
 	delete m_effect;
 	m_effect = NULL;
@@ -517,7 +517,8 @@ void QShaderEdit::newEffect(const EffectFactory * effectFactory)
 {
 	Q_ASSERT(effectFactory != NULL);
 
-	closeEffect();
+	if (!closeEffect())
+		return;
 
 	m_effectFactory = effectFactory;
 	m_effect = m_effectFactory->createEffect();
@@ -613,7 +614,8 @@ void QShaderEdit::open()
 
 void QShaderEdit::load( const QString& fileName )
 {
-	closeEffect();
+	if (!closeEffect())
+		return;
 
 	m_file = new QFile(fileName);
 	m_file->open(QIODevice::ReadOnly);
