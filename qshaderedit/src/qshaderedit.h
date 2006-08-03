@@ -32,8 +32,11 @@ protected slots:
     void load( const QString& fileName );
 
 	void open();
+	void openRecentFile();
+	void clearRecentFiles();
 	bool save();
 	void saveAs();
+	
 	void about();
 	
 	void setAutoCompile(bool enable);
@@ -66,38 +69,58 @@ protected:
 	
 	bool isModified();
 	void setModified(bool modified);
+
+	void setCurrentFile(const QString &fileName);
+	void updateRecentFileActions();
 	
 	// Events
 	virtual void closeEvent(QCloseEvent * event);
 	virtual void keyPressEvent(QKeyEvent * event);
+	
 	
 private:
 
     void loadSettings();
     void saveSettings();
 
+	static QString strippedName(const QString & fileName);
+	static QString strippedName(const QFile & file);
+
+
+	// Central widget.
 	Editor * m_editor;
 	
+	// Toolbars.
 	QToolBar * m_fileToolBar;
 	QToolBar * m_techniqueToolBar;
+	QComboBox * m_techniqueCombo;
 	
+	// Panels.
 	QDockWidget * m_sceneViewDock;
 	ParameterPanel * m_paramViewDock;
 	MessagePanel * m_logViewDock;
-	QLabel * m_positionLabel;
-	
 	QGLView * m_sceneView;
 
+	// Status widgets.
+	QLabel * m_positionLabel;
+
+	// Actions.
 	QAction * m_newAction;
 	QAction * m_openAction;
 	QAction * m_saveAction;
 	QAction * m_saveAsAction;
+
+	enum { MaxRecentFiles = 5 };
+	QAction * m_recentFileActions[MaxRecentFiles];	
+
+	QAction * m_recentFileSeparator;
+	QAction * m_clearRecentAction;
 	
-	QComboBox * m_techniqueCombo;
-	
+	// Timers.
 	QTimer * m_timer;	// compilation timer.
 	QTimer * m_animationTimer;
 	
+	// State.	
 	QFile * m_file;
 	const EffectFactory * m_effectFactory;
 	Effect * m_effect;

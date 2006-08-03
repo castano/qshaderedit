@@ -97,18 +97,29 @@ void QShaderEdit::createActions()
 
 	m_openAction = new QAction(tr("&Open"), this);
 	m_openAction->setShortcut(tr("Ctrl+O"));
-	m_openAction->setStatusTip(tr("Open an effect"));
+	m_openAction->setStatusTip(tr("Open an existing effect"));
 	connect(m_openAction, SIGNAL(triggered()), this, SLOT(open()));
 
 	m_saveAction = new QAction(tr("&Save"), this);
 	m_saveAction->setEnabled(false);
 	m_saveAction->setShortcut(tr("Ctrl+S"));
-	m_saveAction->setStatusTip(tr("Save this effect"));
+	m_saveAction->setStatusTip(tr("Save the effect"));
 	connect(m_saveAction, SIGNAL(triggered()), this, SLOT(save()));
 
 	m_saveAsAction = new QAction(tr("Save &As..."), this);
+	m_saveAsAction->setStatusTip(tr("Save the effect under a new name"));
 	m_saveAsAction->setEnabled(false);
 	connect(m_saveAsAction, SIGNAL(triggered()), this, SLOT(saveAs()));
+
+	for (int i = 0; i < MaxRecentFiles; ++i) {
+		m_recentFileActions[i] = new QAction(this);
+		m_recentFileActions[i]->setVisible(false);
+		connect(m_recentFileActions[i], SIGNAL(triggered()), this, SLOT(openRecentFile()));
+	}
+	
+	m_clearRecentAction = new QAction(tr("&Clear Recent"), this);
+	m_clearRecentAction->setEnabled(false);
+	connect(m_clearRecentAction, SIGNAL(triggered()), this, SLOT(clearRecentFiles()));
 }
 
 void QShaderEdit::createMenus()
@@ -119,6 +130,15 @@ void QShaderEdit::createMenus()
 
 	fileMenu->addAction(m_newAction);
 	fileMenu->addAction(m_openAction);
+	
+	QMenu * recentFileMenu = fileMenu->addMenu(tr("Open Recent"));
+	for(int i = 0; i < MaxRecentFiles; i++) {
+		recentFileMenu->addAction(m_recentFileActions[i]);
+	}
+	m_recentFileSeparator = recentFileMenu->addSeparator();
+	recentFileMenu->addAction(m_clearRecentAction);
+	updateRecentFileActions();
+	
 	fileMenu->addAction(m_saveAction);
 	fileMenu->addAction(m_saveAsAction);
 
@@ -262,41 +282,12 @@ void QShaderEdit::createDockWindows()
 	connect(m_paramViewDock, SIGNAL(parameterChanged()), this, SLOT(setModified()));
 }
 
-void QShaderEdit::loadSettings()
-{
-    QSettings pref( "Castano Inc", "QShaderEdit" );
-
-    pref.beginGroup("MainWindow");
-    resize(pref.value("size", QSize(640,480)).toSize());
-	QByteArray state = pref.value("state").toByteArray();
-	if (!state.isEmpty())
-		restoreState(state);
-    pref.endGroup();
-
-    m_autoCompile = pref.value("autoCompile", true).toBool();
-    m_openDir     = pref.value("openDir", ".").toString();
-}
-
-void QShaderEdit::saveSettings()
-{
-    QSettings pref( "Castano Inc", "QShaderEdit" );
-
-    pref.beginGroup("MainWindow");
-    pref.setValue("size", size());
-	pref.setValue("state", saveState());
-    pref.endGroup();
-
-    pref.setValue("autoCompile", m_autoCompile);
-    pref.setValue("openDir", m_openDir);
-}
-
 bool QShaderEdit::closeEffect()
 {	
 	if( m_effectFactory != NULL && m_modified ) {
 		QString fileName;
 		if( m_file != NULL ) {
-			QFileInfo info(*m_file);
-			fileName = info.fileName();
+			fileName = strippedName(*m_file);
 		}
 		else
 		{
@@ -346,8 +337,7 @@ void QShaderEdit::updateWindowTitle()
 		title = tr("Untitled");
 	}
 	else {
-		QFileInfo info(*m_file);
-		title = info.fileName();
+		title = strippedName(*m_file);
 	}
 
 	if( m_modified ) {
@@ -379,8 +369,7 @@ void QShaderEdit::updateActions()
 		fileName = tr("untitled") + "." + extension;
 	}
 	else {
-		QFileInfo info(*m_file);
-		fileName = info.fileName();
+		fileName = strippedName(*m_file);
 	}
 
 	m_saveAction->setText(tr("Save %1").arg(fileName));
@@ -616,6 +605,30 @@ void QShaderEdit::open()
 	}
 }
 
+void QShaderEdit::openRecentFile()
+{
+	QAction * action = qobject_cast<QAction *>(sender());
+	if (action) {
+		load(action->data().toString());
+	}
+}
+
+void QShaderEdit::clearRecentFiles()
+{
+	// @@ TBD
+ 	QSettings settings( "Castano Inc", "QShaderEdit" );
+	settings.setValue("recentFileList", QStringList());
+
+	/*foreach (QWidget *widget, QApplication::topLevelWidgets()) {
+		MainWindow *mainWin = qobject_cast<MainWindow *>(widget);
+		if (mainWin)
+			mainWin->updateRecentFileActions();
+	}*/
+	
+	// Only a single main window.
+	updateRecentFileActions();	
+}
+
 void QShaderEdit::load( const QString& fileName )
 {
 	if (!closeEffect())
@@ -639,6 +652,7 @@ void QShaderEdit::load( const QString& fileName )
 	updateWindowTitle();
 	updateActions();
 	updateTechniques();
+	setCurrentFile(fileName);
 
 	// Init scene view.
 	if( m_effect ) {
@@ -687,11 +701,9 @@ void QShaderEdit::saveAs()
 
 	QString fileName;
 	if( m_file != NULL ) {
-		QFileInfo info(*m_file);
-		fileName = info.fileName();
+		fileName = strippedName(*m_file);
 	}
-	else
-	{
+	else {
 		fileName = tr("untitled") + "." + fileExtension;
 	}
 
@@ -712,6 +724,50 @@ void QShaderEdit::saveAs()
 
 	updateWindowTitle();
 	updateActions();
+	setCurrentFile(fileName);
+}
+
+void QShaderEdit::setCurrentFile(const QString &fileName)
+{
+ 	QSettings settings( "Castano Inc", "QShaderEdit" );
+	QStringList files = settings.value("recentFileList").toStringList();
+	files.removeAll(fileName);
+	files.prepend(fileName);
+	while (files.size() > MaxRecentFiles)
+		files.removeLast();
+
+	settings.setValue("recentFileList", files);
+
+	/*foreach (QWidget *widget, QApplication::topLevelWidgets()) {
+		MainWindow *mainWin = qobject_cast<MainWindow *>(widget);
+		if (mainWin)
+			mainWin->updateRecentFileActions();
+	}*/
+	
+	// Only a single main window.
+	updateRecentFileActions();
+}
+
+void QShaderEdit::updateRecentFileActions()
+{
+	QSettings settings( "Castano Inc", "QShaderEdit" );
+	QStringList files = settings.value("recentFileList").toStringList();
+
+	int numRecentFiles = qMin(files.count(), (int)MaxRecentFiles);
+
+	for (int i = 0; i < numRecentFiles; ++i) {
+		QString text = tr("&%1 %2").arg(i + 1).arg(strippedName(files[i]));
+		m_recentFileActions[i]->setText(text);
+		m_recentFileActions[i]->setData(files[i]);
+		m_recentFileActions[i]->setVisible(true);
+	}
+
+	for (int i = numRecentFiles; i < MaxRecentFiles; ++i) {
+		m_recentFileActions[i]->setVisible(false);
+	}
+	
+	m_recentFileSeparator->setVisible(numRecentFiles > 0);
+	m_clearRecentAction->setEnabled(numRecentFiles > 0);
 }
 
 void QShaderEdit::about()
@@ -815,3 +871,42 @@ void QShaderEdit::setModified()
 	m_sceneView->updateGL();
 }
 
+void QShaderEdit::loadSettings()
+{
+	QSettings pref( "Castano Inc", "QShaderEdit" );
+
+	pref.beginGroup("MainWindow");
+	resize(pref.value("size", QSize(640,480)).toSize());
+	QByteArray state = pref.value("state").toByteArray();
+	if (!state.isEmpty())
+		restoreState(state);
+	pref.endGroup();
+
+	m_autoCompile = pref.value("autoCompile", true).toBool();
+	m_openDir = pref.value("openDir", ".").toString();
+}
+
+void QShaderEdit::saveSettings()
+{
+	QSettings pref( "Castano Inc", "QShaderEdit" );
+
+	pref.beginGroup("MainWindow");
+	pref.setValue("size", size());
+	pref.setValue("state", saveState());
+	pref.endGroup();
+
+	pref.setValue("autoCompile", m_autoCompile);
+	pref.setValue("openDir", m_openDir);
+}
+
+// static
+QString QShaderEdit::strippedName(const QString & fileName)
+{
+	return QFileInfo(fileName).fileName();
+}
+
+// static
+QString QShaderEdit::strippedName(const QFile & file)
+{
+	return QFileInfo(file).fileName();
+}
