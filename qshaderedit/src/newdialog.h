@@ -16,7 +16,7 @@ class NewDialog : public QDialog
 		};
 		
 	public:
-		NewDialog(QWidget *parent = 0);
+		NewDialog(QWidget *parent = 0, bool startup = false);
 		
 		QString shaderType() const;
 		

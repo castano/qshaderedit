@@ -26,7 +26,7 @@ public:
 	virtual QSize sizeHint() const;
 
 public slots:
-	void newFile();
+	void newFile(bool startup=false);
 
 protected slots:
     void load( const QString& fileName );

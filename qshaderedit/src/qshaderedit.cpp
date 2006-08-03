@@ -32,22 +32,27 @@ QShaderEdit::QShaderEdit() :
 	m_editor(NULL),
 	m_fileToolBar(NULL),
 	m_techniqueToolBar(NULL),
+	m_techniqueCombo(NULL),
 	m_sceneViewDock(NULL),
 	m_paramViewDock(NULL),
 	m_logViewDock(NULL),
-	m_positionLabel(NULL),
 	m_sceneView(NULL),
+	m_positionLabel(NULL),
 	m_openAction(NULL),
 	m_saveAction(NULL),
-	m_techniqueCombo(NULL),
+	m_recentFileSeparator(NULL),
+	m_clearRecentAction(NULL),
 	m_timer(NULL),
 	m_animationTimer(NULL),
 	m_file(NULL),
 	m_effectFactory(NULL),
 	m_effect(NULL),
 	m_modified(false),
-	m_autoCompile(true)	// @@ Save settings!!
+	m_autoCompile(true)
 {
+	// @@ Should we use this attrib?
+	//setAttribute(Qt::WA_DeleteOnClose);
+		
 	// Create central widget.
 	m_editor = new Editor(this);
 	setCentralWidget(m_editor);
@@ -75,7 +80,7 @@ QShaderEdit::QShaderEdit() :
 	// Make sure the main window is shown before the new file dialog.
 	QApplication::processEvents();
 
-	newFile();
+	newFile(true);
 }
 
 QShaderEdit::~QShaderEdit()
@@ -523,7 +528,7 @@ void QShaderEdit::newEffect(const EffectFactory * effectFactory)
 	build(true);
 }
 
-void QShaderEdit::newFile()
+void QShaderEdit::newFile(bool startup)
 {
 	// Count effect file types.
 	const QList<const EffectFactory *> & effectFactoryList = EffectFactory::factoryList();
@@ -551,7 +556,7 @@ void QShaderEdit::newFile()
 	}
 	else {
 		// Let the user choose the effect type.
-		NewDialog newDialog(this);
+		NewDialog newDialog(this, startup);
 
 		int result = newDialog.exec();
 		if( result == QDialog::Accepted ) {

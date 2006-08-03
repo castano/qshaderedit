@@ -262,6 +262,9 @@ bool ParameterDelegate::eventFilter(QObject* object, QEvent* event)
 			if (keyEvent->key() == Qt::Key_Up || keyEvent->key() == Qt::Key_Down) {
 				return true;
 			}
+			break;
+		default:
+			break;
 	}
 
 	return QItemDelegate::eventFilter(object, event);

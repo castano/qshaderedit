@@ -11,6 +11,7 @@ int main(int argc, char **argv)
 //	QApplication::setStyle(new QWindowsXPStyle);
 	
 	QShaderEdit * shaderEdit = new QShaderEdit();
+	Q_UNUSED(shaderEdit);
 	
 	/*
 	QStyle * arthurStyle = new ArthurStyle();

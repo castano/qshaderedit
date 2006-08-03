@@ -3,7 +3,7 @@
 #include "effect.h"
 
 
-NewDialog::NewDialog(QWidget *parent) : QDialog(parent)
+NewDialog::NewDialog(QWidget *parent/*=0*/, bool startup/*=false*/) : QDialog(parent)
 {
 	ui.setupUi(this);
 	
@@ -25,6 +25,11 @@ NewDialog::NewDialog(QWidget *parent) : QDialog(parent)
 	ui.listWidget->setCurrentRow(0);
 	
 	connect(ui.openButton, SIGNAL(clicked()), this, SLOT(openEffect()));
+	
+	// Display the open button only on startup.	
+	if(!startup) {
+		ui.openButton->setVisible(false);
+	}
 }
 
 QString NewDialog::shaderType() const
