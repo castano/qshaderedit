@@ -1,10 +1,15 @@
 
-- display line and column numbers to status bar.
+TODO for the release of 1.2:
+- complete cgfx support. Add support for textures in cgfx.
+- add parameters in ARB assembly effects.
+- add a mechanism to switch scenes.
+- add sphere scene and finish obj scene.
+- update website with progress, authors and svn information.
+
+- display line and column numbers to status bar. @@ I need to send an RFE to TT.
 
 Parameter panel:
-- Fix problem with boolean value:
-  QComboBox::setProperty("currentItem", value) failed: property invalid, read-only or does not exist
-  QComboBox::property("currentItem") failed: property invalid, read-only or does not exist
+- Fix problem with boolean value, apparently a bug in Qt, already reported.
 - add color picker for color parameters.
 
 Textures:
