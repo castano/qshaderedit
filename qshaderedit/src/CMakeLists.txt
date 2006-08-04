@@ -24,7 +24,9 @@ SET(SRCS
 	texmanager.h
 	texmanager.cpp
 	outputparser.h
-	outputparser.cpp)
+	outputparser.cpp
+	scene.h
+	scene.cpp)
 
 IF(FOUND_CG)
 	SET(SRCS ${SRCS} cgeffect.cpp cgfxeffect.cpp)

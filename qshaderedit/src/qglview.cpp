@@ -1,18 +1,18 @@
+
 #include "qglview.h"
 #include "effect.h"
 #include "messagepanel.h"
 #include "texmanager.h"
+#include "scene.h"
 
 #include <QtCore/QUrl>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QWheelEvent>
 
 
-extern void drawTeapot();
-
 
 QGLView::QGLView(const QGLFormat & format, QWidget *parent) : QGLWidget(format, parent),
-	m_effect(NULL), m_dlist(0)
+	m_effect(NULL), m_scene(NULL)
 {
     setAcceptDrops(true);
 }
@@ -111,25 +111,17 @@ void QGLView::initializeGL()
 	m_x = 0.0f;
 	m_y = 0.0f;
 	m_z = 5.0f;	
-	
-	m_dlist = glGenLists(1);
-	glNewList(m_dlist, GL_COMPILE);
-	drawTeapot();
-	glEndList();
 
+	m_scene = createTeapot();
+	
 	// Create texture manager.
 	m_textureManager = new TexManager();
 }
 
 void QGLView::resetGL()
 {
-	if( m_dlist != 0 ) {
-		glDeleteLists(m_dlist, 1);
-	}
-
-	if( m_textureManager == NULL ) {
-		delete m_textureManager;
-	}
+	delete m_scene;
+	delete m_textureManager;
 }
 
 
@@ -148,23 +140,19 @@ void QGLView::paintGL()
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	
-	if( m_effect != NULL && m_effect->isValid() ) {
+	if( m_effect != NULL && m_effect->isValid() && m_scene != NULL ) {
 		
 		m_effect->begin();
 		
 		for(int i = 0; i < m_effect->getPassNum(); i++) {
 			m_effect->beginPass(i);
 			
-			glCallList(m_dlist);
-			
+			m_scene->draw();
+						
 			m_effect->endPass();
 		}
 		
-		m_effect->end();
-		
-	}
-	else {
-	//	glCallList(m_dlist);
+		m_effect->end();		
 	}
 	
 	swapBuffers();	
@@ -186,9 +174,7 @@ void QGLView::updateMatrices()
 	glRotatef(m_alpha, 0, 1, 0);
 	
 	// Object transform:
-	glRotated(270.0, 1.0, 0.0, 0.0);
-	glScaled(0.5, 0.5, 0.5);
-	glTranslated(0.0, 0.0, -1.5);	
+	m_scene->transform();
 }
 
 

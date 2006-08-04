@@ -1,25 +1,16 @@
 
 - display line and column numbers to status bar.
 
-Output panel:
-- error highlighter.
-- scroll output when errors.
-- parse error line, color dynamically, allow click on error.
-
 Parameter panel:
 - Fix problem with boolean value:
   QComboBox::setProperty("currentItem", value) failed: property invalid, read-only or does not exist
   QComboBox::property("currentItem") failed: property invalid, read-only or does not exist
-- fix file picker.
-- improve focus handling in file picker.
 - add color picker for color parameters.
-- update parameters on the fly. Use slider?
 
 Textures:
-- texture resource manager. or use Qt's?
-- GLSL texture parameters and texture units.
-- parse texture arguments.
-- texture parameter widget.
+- use texture objects instead of resource manager.
+- add support for multiple image plugins.
+- add dds image plugin.
 
 Effects:
 - complete cgfx support -> set parameter values, preserve parameter values after rebuild, texture/sampler parameters.

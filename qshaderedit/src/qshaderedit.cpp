@@ -604,7 +604,7 @@ void QShaderEdit::open()
 	QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
             m_openDir, QString(tr("Effect Files (%1)")).arg(effectExtensions.join(" ")));
 
-	if( ! fileName.isEmpty() ) {
+	if( !fileName.isEmpty() ) {
         m_openDir = fileName;
         load( fileName );
 	}

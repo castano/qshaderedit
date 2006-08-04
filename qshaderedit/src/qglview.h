@@ -6,12 +6,14 @@
 
 #include <QtOpenGL/QGLWidget>
 
+
 class QRectF;
 class QWheelEvent;
 class QMouseEvent;
 class Effect;
 class MessagePanel;
 class TexManager;
+class Scene;
 
 class QGLView : public QGLWidget
 {
@@ -59,7 +61,7 @@ private:
 	
 	Effect * m_effect;
 	
-	GLuint m_dlist;	
+	Scene * m_scene;
 	
 	TexManager * m_textureManager;
 };
