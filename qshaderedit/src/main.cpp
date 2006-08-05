@@ -10,8 +10,12 @@ int main(int argc, char **argv)
 
 //	QApplication::setStyle(new QWindowsXPStyle);
 	
-	QShaderEdit * shaderEdit = new QShaderEdit();
-	Q_UNUSED(shaderEdit);
+	QString filename;
+	if (qApp->arguments().size() > 1)
+		filename = qApp->arguments().at(1);
+
+	QShaderEdit * shaderEdit = new QShaderEdit(filename);
+	
 	
 	/*
 	QStyle * arthurStyle = new ArthurStyle();

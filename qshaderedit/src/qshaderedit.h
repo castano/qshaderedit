@@ -20,17 +20,17 @@ class QShaderEdit : public QMainWindow
 {
 	Q_OBJECT
 public:
-	QShaderEdit();
+	QShaderEdit(const QString& filename = QString());
 	~QShaderEdit();
 
 	virtual QSize sizeHint() const;
 
 public slots:
 	void newFile(bool startup=false);
-
+	
 protected slots:
-    void load( const QString& fileName );
-
+	bool load( const QString& fileName );
+	
 	void open();
 	void openRecentFile();
 	void clearRecentFiles();

@@ -29,7 +29,7 @@
 
 
 /// Ctor.
-QShaderEdit::QShaderEdit() :
+QShaderEdit::QShaderEdit(const QString& filename) :
 	m_editor(NULL),
 	m_fileToolBar(NULL),
 	m_techniqueToolBar(NULL),
@@ -81,7 +81,8 @@ QShaderEdit::QShaderEdit() :
 	// Make sure the main window is shown before the new file dialog.
 	QApplication::processEvents();
 
-	newFile(true);
+	if (filename.isEmpty() || !load(filename))
+		newFile(true);
 }
 
 QShaderEdit::~QShaderEdit()
@@ -663,13 +664,14 @@ void QShaderEdit::clearRecentFiles()
 	updateRecentFileActions();	
 }
 
-void QShaderEdit::load( const QString& fileName )
+bool QShaderEdit::load( const QString& fileName )
 {
 	if (!closeEffect())
-		return;
+		return false;
 
 	m_file = new QFile(fileName);
-	m_file->open(QIODevice::ReadOnly);
+	if (!m_file->open(QIODevice::ReadOnly))
+		return false;
 
 	int idx = fileName.lastIndexOf('.');
 	QString fileExtension = fileName.mid(idx+1);
@@ -697,6 +699,8 @@ void QShaderEdit::load( const QString& fileName )
 	{
 		m_sceneView->resetEffect();
 	}
+
+	return true;
 }
 
 bool QShaderEdit::save()
