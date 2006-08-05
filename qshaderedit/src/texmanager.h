@@ -2,36 +2,27 @@
 #define TEXMANAGER_H
 
 #include <QtCore/QString>
+#include <QtCore/QSharedDataPointer>
 
 
-// Simple texture manager.
-class TexManager {
-public:
-	
-	// get singleton instance.
-	static TexManager * instance();
-
-
-	TexManager();
-	~TexManager();
-	
-	uint addTexture(QString name);
-	uint getTexture(QString name);
-	void releaseTexture(QString name);
-	
-};
-
-// @@ Texture class to handle refcounting automatically.
+// Implicitly shared texture class.
 class GLTexture
 {
 public:
-	GLTexture(const QString & name);
+	GLTexture();
+	GLTexture(const GLTexture & t);
+	void operator= (const GLTexture & t);
 	~GLTexture();
 	
-	operator uint() const;
+	static GLTexture open(const QString & name);
 	
+	uint object() const;
+	uint target() const;
+		
 private:
-	// @@ private data.
+	class Private;
+	GLTexture(Private * p);
+	QSharedDataPointer<Private> m_data;
 };
 
 
@@ -40,10 +31,10 @@ class ImagePlugin
 {
 public:
 	virtual bool canLoad(QString name) const = 0;
-	virtual bool load(QString name, uint * obj) const = 0;
+	virtual bool load(QString name, uint obj, uint * target) const = 0;
 };
 
-
+// @@ Image plugin factory.
 
 
 #endif // TEXMANAGER_H

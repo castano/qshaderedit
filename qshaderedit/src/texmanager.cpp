@@ -3,20 +3,13 @@
 
 #include <GL/glew.h>
 
+#include <QtCore/QSharedData>
+#include <QtCore/QDebug>
 #include <QtGui/QImage>
 #include <QtOpenGL/QGLContext>
 
 
 namespace {
-
-	struct Texture {
-		int refCount;
-		uint texObj;
-	};
-
-	QMap<QString, Texture> s_textureMap;
-
-	static TexManager * s_texManager = NULL;
 
 	// Image plugin that supports all the image types that Qt supports.
 	class QtImagePlugin
@@ -29,23 +22,26 @@ namespace {
 			return true;
 		}
 	
-		virtual bool load(QString name, uint * obj) const
-		{		
+		virtual bool load(QString name, uint obj, uint * target) const
+		{
+			Q_ASSERT(obj != 0);
+			Q_ASSERT(target != NULL);
+			
 			QImage image;
 			if( name.isEmpty() || !image.load(name) ) {
 				image.load(":/images/default.png");
 			}
-		
-			glGenTextures(1, obj);
-			glBindTexture(GL_TEXTURE_2D, *obj);
+
+			*target = GL_TEXTURE_2D;
+			glBindTexture(GL_TEXTURE_2D, obj);
 		
 			if(GLEW_SGIS_generate_mipmap || GLEW_VERSION_1_4) {
 				glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 			}
-		
+			
 //			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, image.bits());
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image.bits());
-		
+			
 			return true;
 		}
 	};
@@ -59,90 +55,94 @@ namespace {
 } // namespace
 
 
+class GLTexture::Private : public QSharedData
+{
+public:
+	Private() : m_object(0)
+	{
+	}
+	Private(const QString & name) : m_name(name)
+	{
+		glGenTextures(1, &m_object);
+		
+		// @@ Traverse image plugins.
+		if( s_imageLoader.canLoad(m_name) ) {
+			s_imageLoader.load(m_name, m_object, &m_target);
+		}	
+	}
+	~Private()
+	{
+		if(!m_name.isNull())
+		{
+			// Remove from the cache.
+			s_textureMap.remove(m_name);
+			qDebug() << "Eliminate" << m_name;
+		}
+		
+		if(m_object != 0) {
+			glDeleteTextures(1, &m_object);
+		}
+	}
+
+	const QString & name() const { return m_name; }
+	uint object() const { return m_object; }
+	uint target() const { return m_target; }
+
+	static QMap<QString, GLTexture::Private *> s_textureMap;
+
+private:
+	QString m_name;
+	uint m_object;
+	uint m_target;
+};
+
+//static
+QMap<QString, GLTexture::Private *> GLTexture::Private::s_textureMap;
 
 
 /// Constructor.
-GLTexture::GLTexture(const QString & name)
+GLTexture::GLTexture() : m_data(new Private)
 {
-	// @@ TBD
 }
-
-/// Destructor.
+GLTexture::GLTexture(const GLTexture & t) : m_data(t.m_data)
+{
+}
+void GLTexture::operator= (const GLTexture & t)
+{
+	m_data = t.m_data;
+}
 GLTexture::~GLTexture()
 {
-	// @@ TBD
-}
-
-/// Cast operator.
-/*GLTexture::operator uint() const
-{
-	return 0;
-}*/
-
-
-
-// static
-TexManager * TexManager::instance()
-{
-	Q_ASSERT(s_texManager != NULL);
-	return s_texManager;
 }
 
 /// Constructor.
-TexManager::TexManager()
+GLTexture::GLTexture(GLTexture::Private * p) : m_data(p)
 {
-	Q_ASSERT(s_texManager == NULL);
-	s_texManager = this;
 }
 
-/// Destructor.
-TexManager::~TexManager()
+// static
+GLTexture GLTexture::open(const QString & name)
 {
-	Q_ASSERT(s_texManager != NULL);
-	s_texManager = NULL;
+	Private * p;
+	if( Private::s_textureMap.contains(name) ) {
+		p = Private::s_textureMap[name];
+	}
+	else {
+		p = new GLTexture::Private(name);
+		Private::s_textureMap[name] = p;
+	}
+	return GLTexture(p);
 }
 
-
-/// Add a texture object for the given file name. Increase the reference count.
-uint TexManager::addTexture(QString name)
+/// Get texture object.
+uint GLTexture::object() const
 {
-	if( s_textureMap.contains(name) ) {
-		Texture & texture = s_textureMap[name];
-		texture.refCount++;
-		return texture.texObj;
-	}
-
-	if( s_imageLoader.canLoad(name) ) {
-		Texture texture;
-		if( s_imageLoader.load(name, &texture.texObj) ) {
-			texture.refCount = 1;
-			s_textureMap.insert(name, texture);
-		}
-		return texture.texObj;
-	}
-	return 0;
+	return m_data->object();
 }
 
-/// Get the texture object for the given name.
-uint TexManager::getTexture(QString name)
+/// Get texture target.
+uint GLTexture::target() const
 {
-	if( s_textureMap.contains(name) ) {
-		Texture & texture = s_textureMap[name];
-		return texture.texObj;
-	}
-	return 0;
-}
-
-/// Release the texture object associated to the given file name. Decrease the reference count.
-void TexManager::releaseTexture(QString name)
-{
-	Q_ASSERT( s_textureMap.contains(name) );
-
-	Texture texture = s_textureMap.value(name);
-	texture.refCount--;
-	if( texture.refCount == 0 ) {
-		glDeleteTextures(1, &texture.texObj);
-		s_textureMap.remove(name);
-	}
+	return m_data->target();
 }
 

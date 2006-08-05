@@ -54,6 +54,14 @@ void QGLView::resetEffect()
 	m_effect = NULL;
 }
 
+void QGLView::setScene(Scene * scene)
+{
+	if( m_scene != NULL ) {
+		delete m_scene;
+	}
+	m_scene = scene;
+}
+
 bool QGLView::init(MessagePanel * output)
 {
 	Q_ASSERT(output != NULL);
@@ -112,16 +120,12 @@ void QGLView::initializeGL()
 	m_y = 0.0f;
 	m_z = 5.0f;	
 
-	m_scene = createTeapot();
-	
-	// Create texture manager.
-	m_textureManager = new TexManager();
+	m_scene = SceneFactory::defaultScene();
 }
 
 void QGLView::resetGL()
 {
 	delete m_scene;
-	delete m_textureManager;
 }
 
 

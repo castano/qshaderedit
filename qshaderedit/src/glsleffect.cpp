@@ -60,9 +60,8 @@ namespace {
 		GLenum type;
 
 		// Only for samplers:
-		GLenum target;
 		int unit;
-		GLuint tex;
+		GLTexture tex;
 	};
 
 }
@@ -358,12 +357,7 @@ public:
 
 		GLSLParameter & param = m_parameterArray[idx];
 		param.value = value;
-
-		if (param.type == GL_SAMPLER_2D_ARB) {
-			// @@ Release the previous texture.
-			
-			param.tex = TexManager::instance()->addTexture(value.toString());
-		}
+		param.tex = GLTexture::open(value.toString());
 	}
 
 	virtual EditorType getParameterEditor(int idx) const
@@ -665,11 +659,10 @@ private:
 
 			// @@ Only 2d samples right now.
 			if( parameter.type == GL_SAMPLER_2D_ARB ) {
-				parameter.target = GL_TEXTURE_2D;
 				parameter.unit = unit++;
 
 				QString fileName = parameter.value.toString();
-				parameter.tex = TexManager::instance()->addTexture(fileName);
+				parameter.tex = GLTexture::open(fileName);
 			}
 		}
 	}
@@ -787,7 +780,7 @@ private:
 			case GL_SAMPLER_2D_RECT_ARB:
 				glUniform1iARB(param.location, param.unit);
 				glActiveTextureARB(GL_TEXTURE0_ARB + param.unit);
-				glBindTexture(param.target, param.tex);
+				glBindTexture(param.tex.target(), param.tex.object());
 				break;
 			case GL_SAMPLER_1D_SHADOW_ARB:
 			case GL_SAMPLER_2D_SHADOW_ARB:

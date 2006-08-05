@@ -6,6 +6,7 @@
 #include "parameterpanel.h"
 #include "editor.h"
 #include "newdialog.h"
+#include "scene.h"
 
 #include <QtCore/QFile>
 #include <QtCore/QTimer>
@@ -199,6 +200,22 @@ void QShaderEdit::createMenus()
 	viewMenu->addSeparator();
 	viewMenu->addAction(m_fileToolBar->toggleViewAction());
 	viewMenu->addAction(m_techniqueToolBar->toggleViewAction());
+
+	QMenu * sceneMenu = menuBar()->addMenu(tr("&Scene"));
+	QMenu * sceneSelectionMenu = sceneMenu->addMenu(tr("&Select"));
+
+	// @@ Use scene plugins to create menus.
+	const int count = SceneFactory::factoryList().count();
+	for(int i = 0; i < count; i++) {
+		const SceneFactory * factory = SceneFactory::factoryList().at(i);
+		Q_ASSERT(factory != NULL);
+
+		action = new QAction(QString("&%1 %2").arg(i+1).arg(factory->name()), this);
+		action->setData(factory->name());
+		connect(action, SIGNAL(triggered()), this, SLOT(selectScene()));
+		sceneSelectionMenu->addAction(action);
+	}
+	
 	QMenu * helpMenu = menuBar()->addMenu(tr("&Help"));
 
 	action = new QAction(tr("&About"), this);
@@ -476,6 +493,17 @@ void QShaderEdit::cursorPositionChanged()
 	//m_positionLabel->setText(QString("%1,%2").arg(23).arg(1));
 }
 
+void QShaderEdit::selectScene()
+{
+	QAction * action = qobject_cast<QAction *>(sender());
+	if( action != NULL ) {
+		const SceneFactory * factory = SceneFactory::findFactory(action->data().toString());
+		Q_ASSERT(factory != NULL);
+		m_sceneView->setScene(factory->createScene());
+	}
+}
+
+
 void QShaderEdit::closeEvent(QCloseEvent * event)
 {
 	Q_ASSERT(event != NULL);
@@ -484,8 +512,9 @@ void QShaderEdit::closeEvent(QCloseEvent * event)
 		event->accept();
 		saveSettings();
 	}
-	else
+	else {
 		event->ignore();
+	}
 }
 
 void QShaderEdit::keyPressEvent(QKeyEvent * event)

@@ -12,7 +12,6 @@ class QWheelEvent;
 class QMouseEvent;
 class Effect;
 class MessagePanel;
-class TexManager;
 class Scene;
 
 class QGLView : public QGLWidget
@@ -27,6 +26,8 @@ public:
 	void setEffect(Effect * effect);
 	void resetEffect();
 	
+	void setScene(Scene * scene);
+
 signals:
 
     void fileDropped( const QString& );
@@ -62,8 +63,6 @@ private:
 	Effect * m_effect;
 	
 	Scene * m_scene;
-	
-	TexManager * m_textureManager;
 };
 
 #endif // QGLVIEW_H

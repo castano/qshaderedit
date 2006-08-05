@@ -386,7 +386,7 @@ public:
 		//m_time.start();
 	}
 
-	~CgEffect()
+	virtual ~CgEffect()
 	{
 		cgDestroyContext(m_context);
 		delete m_outputParser;

@@ -1,6 +1,8 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+class QMenu;
+
 // @@ I'm not sure where to expose the scene selection. Here are 
 // a few options:
 // - combo box on glview toolbar.
@@ -17,14 +19,39 @@ class Scene
 {
 public:
 	virtual ~Scene() {}
-	virtual void draw() = 0;
-	virtual void transform() = 0;
+	virtual void draw() const = 0;
+	virtual void transform() const = 0;
+	virtual void setupMenu(QMenu * menu) const = 0;
 };
 
 
 // @@ TODO: Add scene factory class.
 
-Scene * createTeapot();
-Scene * createQuad();
+class SceneFactory : public QObject
+{
+public:
+	virtual QString name() const = 0;
+	virtual QString description() const = 0;
+	virtual QIcon icon() const = 0;
+	virtual Scene * createScene() const = 0;
+	
+	static const SceneFactory * findFactory(const QString & name);
+	static const QList<const SceneFactory *> & factoryList();
+	static void addFactory(const SceneFactory * factory);
+	static void removeFactory(const SceneFactory * factory);
+	static Scene * defaultScene();
+};
+
+
+#define REGISTER_SCENE_FACTORY(Factory) \
+	namespace { \
+		static Factory factory##Factory; \
+		struct Factory##Registrar { \
+			Factory##Registrar() { SceneFactory::addFactory(&factory##Factory); } \
+			~Factory##Registrar() { SceneFactory::removeFactory(&factory##Factory); } \
+		}; \
+		static Factory##Registrar registrar##Factory; \
+	}
+
 
 #endif // SCENE_H

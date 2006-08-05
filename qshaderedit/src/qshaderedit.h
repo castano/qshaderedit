@@ -49,7 +49,8 @@ protected slots:
 
 	void techniqueChanged(int index);
 	void cursorPositionChanged();
-
+	void selectScene();
+		
 protected:
 	
 	void newEffect(const EffectFactory * effectFactory);

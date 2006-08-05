@@ -1,4 +1,8 @@
 
+#include <QtCore/QString>
+#include <QtGui/QFileDialog>
+#include <QtGui/QIcon>
+
 #include "scene.h"
 
 // Include GLEW before anything else.
@@ -20,16 +24,21 @@ public:
 		}
 	}
 	
-	virtual void draw()
+	virtual void draw() const
 	{
 		glCallList(m_dlist);
 	}
 	
-	virtual void transform()
+	virtual void transform() const
 	{
 	}
+	
+	virtual void setupMenu(QMenu * menu) const
+	{
+		Q_UNUSED(menu);
+	}
 
-private:
+protected:
 	GLuint m_dlist;
 };
 
@@ -45,7 +54,7 @@ public:
 		glEndList();
 	}
 	
-	virtual void transform()
+	virtual void transform() const 
 	{
 		// Object transform:
 		glRotated(270.0, 1.0, 0.0, 0.0);
@@ -54,8 +63,33 @@ public:
 	}
 };
 
+// Teapot scene factory.
+class TeapotSceneFactory : public SceneFactory
+{
+public:
+	virtual QString name() const
+	{
+		return tr("Teapot");
+	}
+	virtual QString description() const
+	{
+		return tr("Teapot");
+	}
+	virtual QIcon icon() const
+	{
+		return QIcon();
+	}
+	virtual Scene * createScene() const
+	{
+		return new TeapotScene();
+	}
+};
 
-class QuadScene : public Scene
+REGISTER_SCENE_FACTORY(TeapotSceneFactory);
+
+
+
+class QuadScene : public DisplayListScene
 {
 public:
 	QuadScene()
@@ -83,22 +117,46 @@ public:
 	}
 };
 
+// Quad scene factory.
+class QuadSceneFactory : public SceneFactory
+{
+public:
+	virtual QString name() const
+	{
+		return tr("Quad");
+	}
+	virtual QString description() const
+	{
+		return tr("Quad");
+	}
+	virtual QIcon icon() const
+	{
+		return QIcon();
+	}
+	virtual Scene * createScene() const
+	{
+		return new QuadScene();
+	}
+};
+
+REGISTER_SCENE_FACTORY(QuadSceneFactory);
+
+
 
 class ObjScene : public DisplayListScene
 {
 public:
 	ObjScene()
 	{
-		QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-			m_openDir, QString(tr("Obj Files (%1)")).arg("*.obj"));
+//		QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
+//			m_openDir, QString(QObject::tr("Obj Files (%1)")).arg("*.obj"));
 
-		if( !fileName.isEmpty() ) {
-			m_openDir = fileName;
-			load( fileName );
-		}		
+//		if( !fileName.isEmpty() ) {
+//			load( fileName );
+//		}		
 	}
 	
-	virtual void transform()
+	virtual void transform() const
 	{
 	}
 
@@ -110,20 +168,88 @@ private:
 	}
 };
 
+// Obj scene factory.
+class ObjSceneFactory : public SceneFactory
+{
+public:
+	virtual QString name() const
+	{
+		return tr("Obj");
+	}
+	virtual QString description() const
+	{
+		return tr("Obj");
+	}
+	virtual QIcon icon() const
+	{
+		return QIcon();
+	}
+	virtual Scene * createScene() const
+	{
+		return new ObjScene();
+	}
+};
 
-// @@ TODO: Add scene factory class.
+REGISTER_SCENE_FACTORY(ObjSceneFactory);
 
-Scene * createTeapot()
+
+
+// SceneFactory
+
+namespace {
+	static QList<const SceneFactory *> * s_factoryList = NULL;
+}
+
+
+//static
+const SceneFactory * SceneFactory::findFactory(const QString & name)
+{
+	foreach(const SceneFactory * factory, factoryList()) {
+		if( factory->name() == name ) {
+			return factory;
+		}
+	}
+}
+
+//static
+const QList<const SceneFactory *> & SceneFactory::factoryList()
+{
+	static QList<const SceneFactory *> empty;
+	if(s_factoryList == NULL) {
+		return empty;
+	}
+	else {
+		return *s_factoryList;
+	}
+}
+
+//static 
+void SceneFactory::addFactory(const SceneFactory * factory)
+{
+	Q_ASSERT(factory != NULL);
+	if( s_factoryList == NULL ) {
+		s_factoryList = new QList<const SceneFactory *>();
+	}
+	s_factoryList->append(factory);
+}
+
+//static
+void SceneFactory::removeFactory(const SceneFactory * factory)
+{
+	Q_ASSERT(factory != NULL);
+
+	const int index = s_factoryList->lastIndexOf(factory);
+	Q_ASSERT(index != -1);
+	s_factoryList->removeAt(index);
+	
+	if( s_factoryList->isEmpty() ) {
+		delete s_factoryList;
+		s_factoryList = NULL;
+	}
+}
+
+// static
+Scene * SceneFactory::defaultScene()
 {
 	return new TeapotScene();
-}
-
-Scene * createQuad()
-{
-	return new QuadScene();
-}
-
-Scene * createObj()
-{
-	return new ObjScene();
 }

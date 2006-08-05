@@ -88,25 +88,19 @@ namespace {
 	static const char * s_parametersTag = "[Parameters]\n";
 	
 	// ARB Parameter.
-	struct ARBParameter
+	struct ArbParameter
 	{
 		QString name;
 		QVariant value;
+		uint rows;
+		uint columns;
 		GLint location;
-		GLenum type;
 	};
 	
-	// ARB texture unit.
-	struct ARBTexUnit
-	{
-		int parameter;
-		GLuint texObject;
-	};
-
 } // namespace
 
 
-class ARBEffect : public Effect
+class ArbEffect : public Effect
 {
 private:
 	
@@ -115,8 +109,8 @@ private:
 
 	QTime m_time;
 	
-	QVector<ARBParameter> m_parameterArray;
-	QVector<ARBParameter> m_oldParameterArray;
+	QVector<ArbParameter> m_parameterArray;
+	QVector<ArbParameter> m_oldParameterArray;
 	
 	GLuint m_vp;
 	GLuint m_fp;
@@ -126,9 +120,10 @@ private:
 public:
 	
 	// Ctor.
-	ARBEffect(const EffectFactory * factory) : Effect(factory),
+	ArbEffect(const EffectFactory * factory) : Effect(factory),
 		m_vertexProgramText(s_vertexProgramText),
-		m_fragmentProgramText(s_fragmentProgramText)
+		m_fragmentProgramText(s_fragmentProgramText),
+		m_outputParser(NULL)
 	{
 		m_time.start();
 
@@ -139,7 +134,7 @@ public:
 			m_outputParser = new NvidiaAsmOutputParser;
 	}
 	
-	virtual ~ARBEffect()
+	virtual ~ArbEffect()
 	{
 		deletePrograms();
 		delete m_outputParser;
@@ -280,6 +275,7 @@ public:
 	virtual bool build(MessagePanel * output)
 	{
 		deletePrograms();
+		resetParameters();
 		
 		bool succeed = true;
 		
@@ -293,7 +289,7 @@ public:
 			succeed = false;
 		}
 		else {
-			ParseProgram(m_vertexProgramText);
+			parseProgram(m_vertexProgramText);
 		}
 		glDisable( GL_VERTEX_PROGRAM_ARB );
 		
@@ -305,7 +301,7 @@ public:
 			succeed = false;
 		}
 		else {
-			ParseProgram(m_fragmentProgramText);
+			parseProgram(m_fragmentProgramText);
 		}
 		glDisable( GL_FRAGMENT_PROGRAM_ARB );
 		
@@ -346,13 +342,13 @@ public:
 	virtual int getParameterRows(int idx) const 
 	{
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		return 4;
+		return m_parameterArray[idx].rows;
 	}
 	
 	virtual int getParameterColumns(int idx) const
 	{
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		return 1;
+		return m_parameterArray[idx].columns;
 	}
 	
 	virtual bool isValid() const
@@ -408,7 +404,7 @@ public:
 		glBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, m_fp );
 		
 		// Set uniforms.
-	//	setParameters();
+		setParameters();
 	}
 	
 	virtual void beginPass(int )
@@ -448,7 +444,13 @@ private:
 		return false;
 	}
 	
-	void ParseProgram(const QByteArray & code)
+	void resetParameters()
+	{
+		qSwap(m_oldParameterArray, m_parameterArray);
+		m_parameterArray.clear();
+	}
+	
+	void parseProgram(const QByteArray & code)
 	{
 		// Get parameters. @@ Create these regular expressions only once.
 		QRegExp paramRegExp("\\s*PARAM\\s+(\\w+)(?:\\[(\\d+)\\])?\\s*=\\s*(\\S.*)");
@@ -467,10 +469,10 @@ private:
 					QString value = paramRegExp.cap(3);
 					
 					if(size.isEmpty()) {
-						AddVectorParameter(name, value);
+						addVectorParameter(name, value);
 					}
 					else {
-						AddMatrixParameter(name, size.toInt(), value);
+						addMatrixParameter(name, size.toInt(), value);
 					}
 				}
 			}
@@ -480,20 +482,53 @@ private:
 		}
 	}
 	
-	void AddVectorParameter(const QString & name, const QString & value)
+	void addVectorParameter(const QString & name, const QString & value)
 	{
 		qDebug() << "Vector:" << name << "=" << value;
+
+		ArbParameter param;
+		param.name = name;
+		param.location = -1;
+		
+		// Ignore params with state assignments.
+		if(value.contains("state")) {
+			return;
+		}
+
+		// scalar
+		QRegExp scalarRegExp("\\d");
+		if( scalarRegExp.exactMatch(value) ) {
+			param.value = scalarRegExp.cap().toDouble();
+			param.rows = 1;
+			param.columns = 1;
+			m_parameterArray.append(param);
+			return;
+		}
+			
+		// vector
+		QRegExp vectorRegExp("\\{(.*)\\}");
+		if( vectorRegExp.exactMatch(value) ) {
+			QString vectorValue = vectorRegExp.cap(1);
+
+			QVariantList list;
+
+			// @@ Parse scalars.
+		}
 	}
 	
-	void AddMatrixParameter(const QString & name, int size, const QString & value)
+	void addMatrixParameter(const QString & name, int size, const QString & value)
 	{
 		qDebug() << "Matrix:" << QString(name).append("[").append(QString::number(size)).append("]") << "=" << value;
 	}
 	
+	void setParameters()
+	{
+		// @@ set parameters.
+	}
 };
 
 
-class ARBEffectFactory : public EffectFactory
+class ArbEffectFactory : public EffectFactory
 {
 	virtual bool isSupported() const
 	{
@@ -523,7 +558,7 @@ class ARBEffectFactory : public EffectFactory
 	virtual Effect * createEffect() const
 	{
 		Q_ASSERT(isSupported());
-		return new ARBEffect(this);
+		return new ArbEffect(this);
 	}
 
 	virtual QList<Highlighter::Rule> highlightingRules() const
@@ -567,5 +602,5 @@ class ARBEffectFactory : public EffectFactory
 	}
 };
 
-REGISTER_EFFECT_FACTORY(ARBEffectFactory);
+REGISTER_EFFECT_FACTORY(ArbEffectFactory);
 
