@@ -257,12 +257,14 @@ bool ParameterDelegate::eventFilter(QObject* object, QEvent* event)
 	switch (event->type()) {
 		case QEvent::KeyPress:
 		case QEvent::KeyRelease:
+		{
 			QKeyEvent *keyEvent = (QKeyEvent*)event;
 			// ignore key up and down events to allow for keyboard navigation in the view
 			if (keyEvent->key() == Qt::Key_Up || keyEvent->key() == Qt::Key_Down) {
 				return true;
 			}
 			break;
+		}
 		default:
 			break;
 	}
