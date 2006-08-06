@@ -163,6 +163,8 @@ QWidget * ParameterDelegate::createEditor(QWidget * parent, const QStyleOptionVi
 		editor->setSingleStep(0.05);
 		editor->setPageStep(0.1);
 		editor->installEventFilter(const_cast<ParameterDelegate*>(this));
+		foreach (QObject* object, editor->children())
+			object->installEventFilter(const_cast<ParameterDelegate*>(this));
 		connect(editor, SIGNAL(valueChanged(double)), this, SLOT(editorValueChanged()));
 		return editor;
 	}
@@ -254,20 +256,24 @@ QSize ParameterDelegate::sizeHint(const QStyleOptionViewItem &option, const QMod
 
 bool ParameterDelegate::eventFilter(QObject* object, QEvent* event)
 {
-	switch (event->type()) {
-		case QEvent::KeyPress:
-		case QEvent::KeyRelease:
-		{
-			QKeyEvent *keyEvent = (QKeyEvent*)event;
-			// ignore key up and down events to allow for keyboard navigation in the view
-			if (keyEvent->key() == Qt::Key_Up || keyEvent->key() == Qt::Key_Down) {
+	QWidget* editor = qobject_cast<QWidget*>(object);
+	if (!editor)
+		return false;
+
+	if (event->type() == QEvent::KeyPress) {
+		QKeyEvent *keyEvent = (QKeyEvent*)event;
+		switch (keyEvent->key()) {
+			case Qt::Key_Up:
+				emit commitData(editor);
+				emit closeEditor(editor, QAbstractItemDelegate::EditPreviousItem);
 				return true;
-			}
-			break;
+
+			case Qt::Key_Down:
+				emit commitData(editor);
+				emit closeEditor(editor, QAbstractItemDelegate::EditNextItem);
+				return true;
 		}
-		default:
-			break;
-	}
+	} 
 
 	return QItemDelegate::eventFilter(object, event);
 }
