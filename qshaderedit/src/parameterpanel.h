@@ -9,6 +9,7 @@
 class QTableView;
 class Effect;
 class QDoubleSpinBox;
+class QLabel;
 
 
 class FileEditor : public QWidget
@@ -33,7 +34,36 @@ private:
 };
 
 
-class DoubleNumInput: public QWidget
+class ColorEditor: public QWidget
+{
+	Q_OBJECT
+			
+public:
+	ColorEditor(QColor color = Qt::black, QWidget* parent = 0);
+	ColorEditor(QWidget* parent = 0);
+
+	QColor color() const;
+	int components() const;
+	void setColor(QColor color, int components = 4);
+
+signals:
+	void done(QWidget* widget);
+
+private slots:
+	void openColorPicker();
+
+private:
+	void init();
+	void updateLabel();
+
+private:
+	QColor m_color;
+	int m_components;
+	QLabel* m_colorLabel;
+};
+
+
+class DoubleNumInput : public QWidget
 {
 	Q_OBJECT
 public:
@@ -51,6 +81,9 @@ public slots:
 
 signals:
 	void valueChanged(double value);
+
+protected:
+	void keyPressEvent(QKeyEvent* event);
 
 private slots:
 	void spinBoxValueChanged(double value);

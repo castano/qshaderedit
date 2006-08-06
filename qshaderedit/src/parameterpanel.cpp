@@ -10,6 +10,9 @@
 #include <QtGui/QApplication>
 #include <QtGui/QPainter>
 #include <QtGui/QKeyEvent>
+#include <QtGui/QLabel>
+#include <QtGui/QColorDialog>
+
 
 //
 // FilePicker Widget.
@@ -27,7 +30,6 @@ FileEditor::FileEditor(QWidget * parent /*= 0*/) : QWidget(parent)
 	m_lineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::MinimumExpanding));
 	m_lineEdit->setFrame(false);
 	m_layout->addWidget(m_lineEdit);
-	setFocusProxy(m_lineEdit);
 
 	QToolButton * button = new QToolButton(this);
 	button->setToolButtonStyle(Qt::ToolButtonTextOnly);
@@ -35,6 +37,8 @@ FileEditor::FileEditor(QWidget * parent /*= 0*/) : QWidget(parent)
 	button->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::MinimumExpanding));
 	m_layout->addWidget(button);
 	connect(button, SIGNAL(clicked()), this, SLOT(openFileDialog()));
+
+	setFocusProxy(m_lineEdit);
 }
 
 void FileEditor::openFileDialog()
@@ -58,6 +62,83 @@ void FileEditor::setText(const QString & str)
 
 
 //
+// Color Editor
+//
+
+ColorEditor::ColorEditor(QColor color /*= Qt::black*/, QWidget* parent /*= 0*/):
+	QWidget(parent), m_color(color)
+{
+	init();
+}
+
+ColorEditor::ColorEditor(QWidget* parent /*= 0*/): QWidget(parent)
+{
+	init();
+}
+
+void ColorEditor::init()
+{
+	m_colorLabel = new QLabel(this);
+	m_colorLabel->setAutoFillBackground(true);
+	updateLabel();
+
+	QToolButton * button = new QToolButton(this);
+	button->setToolButtonStyle(Qt::ToolButtonTextOnly);
+	button->setText("...");
+	connect(button, SIGNAL(clicked()), this, SLOT(openColorPicker()));
+
+	QHBoxLayout * layout = new QHBoxLayout(this);
+	layout->setMargin(0);
+	layout->setSpacing(0);
+	layout->addWidget(m_colorLabel);
+	layout->addWidget(button);
+	 
+	setFocusProxy(button);
+}
+
+QColor ColorEditor::color() const
+{
+	return m_color;
+}
+
+int ColorEditor::components() const
+{
+	return m_components;
+}
+
+void ColorEditor::setColor(QColor color, int components)
+{
+	m_color = color;
+	m_components = components;
+	updateLabel();
+}
+
+void ColorEditor::updateLabel()
+{
+	QString text = "[";
+	text += QString().setNum(m_color.redF(), 'g', 3) + ", ";
+	text += QString().setNum(m_color.greenF(), 'g', 3) + ", ";
+	text += QString().setNum(m_color.blueF(), 'g', 3);
+	if (m_components == 3)
+		text += "]";
+	else
+		text += ", " + QString().setNum(m_color.alphaF(), 'g', 3) + "]";
+
+	m_colorLabel->setText(text);
+}
+
+void ColorEditor::openColorPicker()
+{
+	QColor color = QColorDialog::getColor(m_color);
+	if (color.isValid()) {
+		m_color = color;
+		updateLabel();
+	}
+	emit done(this);
+}
+
+
+//
 // DoubleNumInput
 //
 
@@ -69,18 +150,18 @@ DoubleNumInput::DoubleNumInput(QWidget * parent) : QWidget(parent)
 	m_spinBox->setRange(0.0, 1.0);
 	m_spinBox->setDecimals(2);
 	m_spinBox->setSingleStep(0.1);
+	m_spinBox->setFocusProxy(this);
 	connect(m_spinBox, SIGNAL(valueChanged(double)), this, SLOT(spinBoxValueChanged(double)));
 
 	m_slider = new QSlider(Qt::Horizontal, this);
 	m_slider->setRange(0, 10);
+	m_slider->setFocusProxy(this);
 	connect(m_slider, SIGNAL(valueChanged(int)), this, SLOT(sliderValueChanged(int)));
 
 	QHBoxLayout * layout = new QHBoxLayout(this);
 	layout->setMargin(2);
 	layout->addWidget(m_slider);
 	layout->addWidget(m_spinBox);
-
-	setFocusProxy(m_slider);
 }
 
 double DoubleNumInput::value() const
@@ -116,6 +197,11 @@ void DoubleNumInput::setValue(double value)
 {
 	m_spinBox->setValue(value);
 	m_slider->setValue(qRound(value / m_spinBox->singleStep()));
+}
+
+void DoubleNumInput::keyPressEvent(QKeyEvent* event)
+{
+	m_slider->event(event);
 }
 
 void DoubleNumInput::sliderValueChanged(int value)
@@ -158,18 +244,23 @@ QWidget * ParameterDelegate::createEditor(QWidget * parent, const QStyleOptionVi
 		}
 	}
 	else if( model->useColorEditor(index) ) {
-		QVariant value = model->data(index, Qt::EditRole);
-		DoubleNumInput * editor = new DoubleNumInput(parent);
-		editor->setSingleStep(0.05);
-		editor->setPageStep(0.1);
-		editor->installEventFilter(const_cast<ParameterDelegate*>(this));
-		foreach (QObject* object, editor->children())
-			object->installEventFilter(const_cast<ParameterDelegate*>(this));
-		connect(editor, SIGNAL(valueChanged(double)), this, SLOT(editorValueChanged()));
-		return editor;
+		if (model->isComponent(index)) {
+			DoubleNumInput * editor = new DoubleNumInput(parent);
+			editor->setSingleStep(0.05);
+			editor->setPageStep(0.1);
+			editor->installEventFilter(const_cast<ParameterDelegate*>(this));
+			connect(editor, SIGNAL(valueChanged(double)), this, SLOT(editorValueChanged()));
+			return editor;
+		}
+		else {
+			ColorEditor* editor = new ColorEditor(parent);
+			editor->installEventFilter(const_cast<ParameterDelegate*>(this));
+			connect(editor, SIGNAL(done(QWidget*)), this, SIGNAL(commitData(QWidget*)));
+			connect(editor, SIGNAL(done(QWidget*)), this, SIGNAL(closeEditor(QWidget*)));
+			return editor;
+		}
 	}
 	else if( model->useFileEditor(index) ) {
-		QVariant value = model->data(index, Qt::EditRole);
 		FileEditor * editor = new FileEditor(parent);
 		editor->installEventFilter(const_cast<ParameterDelegate*>(this));
 		connect(editor, SIGNAL(done(QWidget*)), this, SIGNAL(commitData(QWidget*)));
@@ -197,9 +288,23 @@ void ParameterDelegate::setEditorData(QWidget * editor, const QModelIndex & inde
 		}
 	}
 	else if( model->useColorEditor(index) ) {
-		double value = model->data(index, Qt::EditRole).toDouble();
-		DoubleNumInput * input = static_cast<DoubleNumInput*>(editor);
-		input->setValue(value);
+		if (model->isComponent(index)) {
+			double value = model->data(index, Qt::EditRole).toDouble();
+			DoubleNumInput * input = static_cast<DoubleNumInput*>(editor);
+			input->setValue(value);
+		}
+		else {
+			QVariantList value = model->data(index, Qt::EditRole).toList();
+			QColor color;
+
+			if (value.size() == 3)
+				color.setRgbF(value.at(0).toDouble(), value.at(1).toDouble(), value.at(2).toDouble());
+			else
+				color.setRgbF(value.at(0).toDouble(), value.at(1).toDouble(), value.at(2).toDouble(), value.at(3).toDouble());
+			
+			ColorEditor * colorEditor = static_cast<ColorEditor*>(editor);
+			colorEditor->setColor(color, value.size());
+		}
 	}
 	else if( model->useFileEditor(index) ) {
 		QVariant value = model->data(index, Qt::EditRole);
@@ -208,9 +313,8 @@ void ParameterDelegate::setEditorData(QWidget * editor, const QModelIndex & inde
 		fileEditor->setText(value.toString());
 		return;
 	}
-
-	// default
-	QItemDelegate::setEditorData(editor, index);
+	else	// default
+		QItemDelegate::setEditorData(editor, index);
 }
 
 void ParameterDelegate::setModelData(QWidget * editor, QAbstractItemModel * abstractModel, const QModelIndex & index) const
@@ -229,8 +333,21 @@ void ParameterDelegate::setModelData(QWidget * editor, QAbstractItemModel * abst
 		}
 	}
 	else if( model->useColorEditor(index) ) {
-		DoubleNumInput * input = static_cast<DoubleNumInput*>(editor);
-		model->setData(index, input->value());
+		if (model->isComponent(index)) {
+			DoubleNumInput * input = static_cast<DoubleNumInput*>(editor);
+			model->setData(index, input->value());
+		}
+		else {
+			ColorEditor * colorEditor = static_cast<ColorEditor*>(editor);
+			QColor color = colorEditor->color();
+			QVariantList value;
+			value.append(color.redF());
+			value.append(color.greenF());
+			value.append(color.blueF());
+			if (colorEditor->components() == 4)
+				value.append(color.alphaF());
+			model->setData(index, value);
+		}
 		return;
 	}
 	else if( model->useFileEditor(index) ) {
@@ -384,6 +501,19 @@ QVariant ParameterTableModel::data(const QModelIndex &index, int role) const
 				if( editorType == Effect::EditorType_Matrix ) {
 					return "[...]";
 				}
+				else if (editorType == Effect::EditorType_Color) {
+					QVariantList value = m_effect->getParameterValue(parameter(index)).toList();
+					QString str = "[";
+					str += QString().number(value.at(0).toDouble(), 'g', 3) + ", ";
+					str += QString().number(value.at(1).toDouble(), 'g', 3) + ", ";
+					str += QString().number(value.at(2).toDouble(), 'g', 3);
+					if (value.size() == 3)
+						str += "]";
+					else
+						str += ", " + QString().number(value.at(3).toDouble(), 'g', 3) + "]";
+					
+					return str;
+				}
 				else {
 					QVariant value = m_effect->getParameterValue(parameter(index));
 					if( value.canConvert(QVariant::String) ) {
@@ -513,8 +643,8 @@ void ParameterTableModel::setEffect(Effect * effect)
 bool ParameterTableModel::isEditable(const QModelIndex &index) const
 {
 	if( isParameter(index) ) {
-		QVariant value = m_effect->getParameterValue(parameter(index));
-		return value.isValid() && !value.canConvert(QVariant::List);
+		Effect::EditorType type = m_effect->getParameterEditor(parameter(index));
+		return type == Effect::EditorType_Color || type == Effect::EditorType_Scalar || type == Effect::EditorType_File;
 	}
 	else {
 		// components are always editable.
