@@ -719,6 +719,7 @@ bool QShaderEdit::save()
 	}
 
 	m_file->open(QIODevice::WriteOnly);
+	updateEffectInputs();
 	m_effect->save(m_file);
 	m_file->close();
 
@@ -755,6 +756,7 @@ void QShaderEdit::saveAs()
 	m_file = new QFile(fileName);
 
 	m_file->open(QIODevice::WriteOnly);
+	updateEffectInputs();
 	m_effect->save(m_file);
 	m_file->close();
 
@@ -849,16 +851,8 @@ void QShaderEdit::keyTimeout()
 	statusBar()->showMessage(tr("Compiling..."));
 
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-
-
-	// Update the effect.
-	int inputNum = m_effect->getInputNum();
-	for(int i = 0; i < inputNum; i++) {
-		QTextEdit * textEdit = qobject_cast<QTextEdit *>(m_editor->widget(i));
-		if( textEdit != NULL ) {
-			m_effect->setInput(i, textEdit->toPlainText().toLatin1());
-		}
-	}
+	
+	updateEffectInputs();
 
 	// Compile the effect.
 	build(false);
@@ -935,6 +929,18 @@ void QShaderEdit::saveSettings()
 
 	pref.setValue("autoCompile", m_autoCompile);
 	pref.setValue("openDir", m_openDir);
+}
+
+void QShaderEdit::updateEffectInputs()
+{
+	Q_ASSERT(m_effect);
+	int inputNum = m_effect->getInputNum();
+	for(int i = 0; i < inputNum; i++) {
+		QTextEdit * textEdit = qobject_cast<QTextEdit *>(m_editor->widget(i));
+		if( textEdit != NULL ) {
+			m_effect->setInput(i, textEdit->toPlainText().toLatin1());
+		}
+	}
 }
 
 // static

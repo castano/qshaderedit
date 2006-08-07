@@ -84,6 +84,8 @@ private:
     void loadSettings();
     void saveSettings();
 
+	void updateEffectInputs();
+
 	static QString strippedName(const QString & fileName);
 	static QString strippedName(const QFile & file);
 
