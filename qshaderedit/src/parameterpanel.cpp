@@ -119,10 +119,8 @@ void ColorEditor::updateLabel()
 	text += QString().setNum(m_color.redF(), 'g', 3) + ", ";
 	text += QString().setNum(m_color.greenF(), 'g', 3) + ", ";
 	text += QString().setNum(m_color.blueF(), 'g', 3);
-	if (m_components == 3)
-		text += "]";
-	else
-		text += ", " + QString().setNum(m_color.alphaF(), 'g', 3) + "]";
+	if (m_components == 4) text += ", " + QString().setNum(m_color.alphaF(), 'g', 3);
+	text += "]";
 
 	m_colorLabel->setText(text);
 }

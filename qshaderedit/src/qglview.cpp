@@ -60,6 +60,8 @@ void QGLView::setScene(Scene * scene)
 		delete m_scene;
 	}
 	m_scene = scene;
+	resetTransform();
+	updateGL();
 }
 
 bool QGLView::init(MessagePanel * output)
@@ -223,3 +225,12 @@ void QGLView::wheelEvent(QWheelEvent *e)
 	updateGL();
 }
 
+void QGLView::resetTransform()
+{
+	m_alpha = 0.0f;
+	m_beta = 0.0f;
+	m_x = 0.0f;
+	m_y = 0.0f;
+	m_z = 5.0f;
+	updateMatrices();	
+}

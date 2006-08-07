@@ -50,7 +50,8 @@ protected:
 	void mouseReleaseEvent(QMouseEvent *event);	
 	void wheelEvent(QWheelEvent *e);
 
-
+	void resetTransform();
+	
 private:
 	
 	float m_alpha;
