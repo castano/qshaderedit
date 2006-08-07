@@ -6,7 +6,7 @@
 	Message panel improvements by Lars.
 	Improved parameter panel, dynamic updates, color preview and sliders by Lars.
 	Add recent files menu.
-
+	Add color picker.
 
 0.1.1
 	Reorganize sources to create debian packages.

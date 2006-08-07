@@ -507,11 +507,8 @@ QVariant ParameterTableModel::data(const QModelIndex &index, int role) const
 					str += QString().number(value.at(0).toDouble(), 'g', 3) + ", ";
 					str += QString().number(value.at(1).toDouble(), 'g', 3) + ", ";
 					str += QString().number(value.at(2).toDouble(), 'g', 3);
-					if (value.size() == 3)
-						str += "]";
-					else
-						str += ", " + QString().number(value.at(3).toDouble(), 'g', 3) + "]";
-					
+					if (value.size() == 4) str += ", " + QString().number(value.at(3).toDouble(), 'g', 3);
+					str += "]";
 					return str;
 				}
 				else {

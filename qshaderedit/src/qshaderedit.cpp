@@ -53,7 +53,7 @@ QShaderEdit::QShaderEdit(const QString& filename) :
 {
 	// @@ Should we use this attrib?
 	//setAttribute(Qt::WA_DeleteOnClose);
-		
+	
 	// Create central widget.
 	m_editor = new Editor(this);
 	setCentralWidget(m_editor);

@@ -357,7 +357,12 @@ public:
 
 		GLSLParameter & param = m_parameterArray[idx];
 		param.value = value;
-		param.tex = GLTexture::open(value.toString());
+		
+		if( param.type == GL_SAMPLER_1D_ARB || param.type == GL_SAMPLER_2D_ARB || param.type == GL_SAMPLER_3D_ARB ||
+			param.type == GL_SAMPLER_CUBE_ARB || param.type == GL_SAMPLER_2D_RECT_ARB )
+		{
+			param.tex = GLTexture::open(value.toString());
+		}
 	}
 
 	virtual EditorType getParameterEditor(int idx) const
@@ -657,8 +662,9 @@ private:
 		for(int i = 0; i < parameterNum; i++) {
 			GLSLParameter & parameter = m_parameterArray[i];
 
-			// @@ Only 2d samples right now.
-			if( parameter.type == GL_SAMPLER_2D_ARB ) {
+			if( parameter.type == GL_SAMPLER_1D_ARB || parameter.type == GL_SAMPLER_2D_ARB || parameter.type == GL_SAMPLER_3D_ARB ||
+				parameter.type == GL_SAMPLER_CUBE_ARB || parameter.type == GL_SAMPLER_2D_RECT_ARB)
+			{
 				parameter.unit = unit++;
 
 				QString fileName = parameter.value.toString();

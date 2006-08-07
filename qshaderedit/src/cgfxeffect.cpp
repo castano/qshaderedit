@@ -2,6 +2,7 @@
 #include "effect.h"
 #include "messagepanel.h"
 #include "outputparser.h"
+#include "texmanager.h"
 
 #include <math.h>
 
@@ -103,8 +104,13 @@ namespace {
 			bool m_visible;
 			bool m_standard;
 			Effect::EditorType m_editor;
+			
+			// Only for samplers.
+			GLTexture m_tex;
 
 		public:
+			CgParameter() {}
+			
 			CgParameter(CGparameter h) : m_handle(h)
 			{
 				Q_ASSERT(h != NULL);
@@ -114,12 +120,23 @@ namespace {
 				m_standard = isParameterStandard(m_handle);
 				m_editor = getParameterEditor(m_handle);
 				parseAnnotations();
+				
+				// load texture.
+				if( cgGetParameterClass(m_handle) == CG_PARAMETERCLASS_SAMPLER )
+				{
+					m_tex = GLTexture::open(m_value.toString());
+				}
 			}
 
 			CGparameter handle() const
 			{
 				return m_handle;
 			}
+			
+			const GLTexture & tex() const
+			{
+				return m_tex;
+			}  
 
 			const QString & name() const
 			{
@@ -133,6 +150,11 @@ namespace {
 			void setValue(const QVariant & value)
 			{
 				m_value = value;
+				
+				if( cgGetParameterClass(m_handle) == CG_PARAMETERCLASS_SAMPLER )
+				{
+					m_tex = GLTexture::open(m_value.toString());
+				}
 			}
 
 			Effect::EditorType editor() const
@@ -328,7 +350,9 @@ private:
 
 	//QTime m_time;
 
-	QList<CgParameter> m_parameterList;
+	QVector<CgParameter> m_parameterArray;
+	QVector<CgParameter> m_oldParameterArray;
+	
 	QList<CGtechnique> m_techniqueList;
 	QList<CGpass> m_passList;
 
@@ -487,8 +511,16 @@ public:
 			if(cgIsParameterUsed(parameter, m_effect))
 			{
 				CgParameter cgParameter(parameter);
+				
+				// Try to get the old value.
+				foreach(const CgParameter & p, m_oldParameterArray) {
+					if( p.name() == cgParameter.name() ) {
+						cgParameter.setValue(p.value());
+					}
+				}					
+				
 				if(!cgParameter.isHidden() && !cgParameter.isStandard()) {
-					m_parameterList.append(cgParameter);
+					m_parameterArray.append(cgParameter);
 				}
 			}
 			parameter = cgGetNextLeafParameter(parameter);
@@ -500,35 +532,35 @@ public:
 	// Parameter info.
 	virtual int getParameterNum() const
 	{
-		return m_parameterList.count();
+		return m_parameterArray.count();
 	}
 	virtual QString getParameterName(int idx) const
 	{
 		Q_ASSERT(idx < getParameterNum());
-		return m_parameterList.at(idx).name();
+		return m_parameterArray.at(idx).name();
 	}
 	virtual QVariant getParameterValue(int idx) const
 	{
 		Q_ASSERT(idx < getParameterNum());
-		return m_parameterList.at(idx).value();
+		return m_parameterArray.at(idx).value();
 	}
 	virtual void setParameterValue(int idx, const QVariant & value)
 	{
 		Q_ASSERT(idx < getParameterNum());
-		m_parameterList[idx].setValue(value);
+		m_parameterArray[idx].setValue(value);
 	}
 	virtual EditorType getParameterEditor(int idx) const
 	{
 		Q_ASSERT(idx < getParameterNum());
-		return m_parameterList[idx].editor();
+		return m_parameterArray[idx].editor();
 	}
 	virtual int getParameterRows(int idx) const
 	{
-		return m_parameterList.at(idx).rows();
+		return m_parameterArray.at(idx).rows();
 	}
 	virtual int getParameterColumns(int idx) const
 	{
-		return m_parameterList.at(idx).columns();
+		return m_parameterArray.at(idx).columns();
 	}
 
 	// Effect info.
@@ -609,7 +641,7 @@ public:
 		}
 
 		// Set user parameters.
-		foreach(const CgParameter & p, m_parameterList) {
+		foreach(const CgParameter & p, m_parameterArray) {
 			parameter = p.handle();
 			QVariant value = p.value();
 
@@ -658,7 +690,7 @@ public:
 				// @@ TBD
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_SAMPLER ) {
-				// @@ TBD
+				cgGLSetTextureParameter(parameter, p.tex().object());
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_OBJECT ) {
 				// Ignore textures and strings.
@@ -693,7 +725,9 @@ private:
 		m_technique = NULL;
 		m_pass = NULL;
 
-		m_parameterList.clear();
+		qSwap(m_oldParameterArray, m_parameterArray);
+		m_parameterArray.clear();
+		
 		m_techniqueList.clear();
 		m_passList.clear();
 	}
@@ -787,7 +821,7 @@ class CgFxEffectFactory : public EffectFactory
 
 		rule.type = Highlighter::DataType;
 		rule.pattern = QRegExp(
-			"\\b(void|float|float[1-4]|float[1-4]x[1-4]|int|int[1-4]|int[1-4]x[1-4]|bool|bool[1-4]|bool[1-4]x[1-4]"
+			"\\b(void|float|float[1-4]|float[1-4]x[1-4]|int|int[1-4]|int[1-4]x[1-4]|bool|bool[1-4]|bool[1-4]x[1-4]|"
 			"sampler[1-3]D|samplerCUBE|samplerRECT|texture|string|uniform|varying|static|const|in|out|inout)\\b");
 		rules.append(rule);
 
@@ -806,19 +840,17 @@ class CgFxEffectFactory : public EffectFactory
 			"LightModelParameters|LightModel|LightModelProducts|FrontLightModelProduct|BackLightModelProduct|LightProducts|"
 			"FrontLightProduct|BackLightProduct|TextureEnvColor|EyePlaneS|EyePlaneT|EyePlaneR|EyePlaneQ|ObjectPlaneS|ObjectPlaneT|"
 			"ObjectPlaneR|ObjectPlaneQ|FogParameters|Fog|FrontColor|BackColor|FrontSecondaryColor|BackSecondaryColor|TexCoord|FogFragCoord|Color|"
-			"SecondaryColor)|VertexProgram|FragmentProgram|DepthTestEnable|CullFaceEnable)\\b");
+			"SecondaryColor)|"
+			"WorldViewProjection(Inverse)?(Transpose)?|ModelView(Projection)?(Inverse)?(Transpose)?|View(Inverse)?(Transpose)?|"
+			"World(Inverse)?(Transpose)?|Projection(Inverse)?(Transpose)?|Time"
+			"VertexProgram|FragmentProgram|DepthTestEnable|CullFaceEnable)\\b");
 		rules.append(rule);
-
 
 		rule.type = Highlighter::BuiltinFunction;
 		rule.pattern = QRegExp(
 			"\\b(radians|degrees|sin|cos|tan|asin|acos|atan|pow|exp|log|exp2|log2|sqrt|inversesqrt|"
-			"abs|sign|floor|ceil|fract|mod|min|max|clamp|mix|step|smoothstep|length|distance|dot|cross|normalize|ftransform|"
-			"faceforward|reflect|refract|matrixCompMult|lessThan|lessThenEqual|greaterThan|greaterThanEqual|equal|notEqual|"
-			"any|all|not|texture1D|texture1DProj|texture1DLod|texture1DProjLod|texture2D|texture2DProj|texture2DLod|"
-			"texture2DProjLod|texture3D|texture3DProj|texture3DLod|texture3DProjLod|textureCube|textureCubeLod|shadow1D|"
-			"shadow2D|shadow1DProj|shadow2DProj|shadow1DLod|shadow2DLod|shadow1DProjLod|shadow2DProjLod|dFdx|dFdy|fwidth|"
-			"noise1|noise2|noise3|noise4)\\b");
+			"abs|sign|floor|ceil|fract|mod|min|max|clamp|mix|step|smoothstep|length|distance|dot|cross|normalize|"
+			"reflect|refract|matrixCompMult|tex1D|tex2D|tex3D|texCube|dFdx|dFdy|fwidth)\\b");
 		rules.append(rule);
 
 		rule.type = Highlighter::Number;

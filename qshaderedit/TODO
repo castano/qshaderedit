@@ -1,10 +1,9 @@
 
 TODO for the release of 1.2:
-- complete cgfx support. Add support for textures in cgfx.
 + add parameters in ARB assembly effects.
 - add sphere scene and finish obj scene.
 - update website with progress, authors and svn information.
-- fix double compilation bug.
+- fix double compilation bug. @@ Send RFT to TT.
 
 Misc:
 - display line and column numbers to status bar. @@ I need to send an RFE to TT.

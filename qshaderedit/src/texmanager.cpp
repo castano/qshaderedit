@@ -79,13 +79,14 @@ public:
 	{
 		if(!m_name.isNull())
 		{
+			qDebug() << "Eliminate" << m_name;
 			// Remove from the cache.
 			s_textureMap.remove(m_name);
-			qDebug() << "Eliminate" << m_name;
 		}
 		
 		if(m_object != 0) {
 			glDeleteTextures(1, &m_object);
+			m_object = 0;
 		}
 	}
 
