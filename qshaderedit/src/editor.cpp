@@ -105,9 +105,6 @@ QTextEdit * Editor::addEditor(const QString & name)
 	QTextEdit * textEdit = new QTextEdit();
 	this->addTab(textEdit, name);
 	textEdit->setFont(m_font);
-//	textEdit->setFontFamily("Monospace");
-//	textEdit->setFontFamily("Courier");
-//	textEdit->setFontPointSize(8);
 	textEdit->setLineWrapMode(QTextEdit::NoWrap);
 	textEdit->setTabStopWidth(28);
 	textEdit->setAcceptRichText(false);
