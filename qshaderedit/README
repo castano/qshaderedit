@@ -3,9 +3,7 @@ INTRODUCTION
 QShaderEdit is a simple multiplatform shader editor inspired by Apple's OpenGL Shader 
 Builder.
 
-It supports GLSL shaders and CgFx effects.
-
-This is an early release, there are bugs and many missing features.
+It supports ARB programs, GLSL shaders and CgFx effects.
 
 
 REQUIREMENTS
@@ -21,7 +19,7 @@ Optionally, if the Cg runtime is found, support for CgFx effects will be availab
 
 DOWNLOAD
 
-You can find the latest version of QShaderEdit at: 
+You can find the latest release of QShaderEdit at: 
 
 http://castano.ludicon.com/page.php?page_id=118
 
@@ -37,9 +35,17 @@ $ cmake && make
 For more info about cmake, look at cmake's documentation.
 
 
-KNOWN PROBLEMS
+DEVELOPMENT
 
-The windows binaries sometimes crash when opening cgfx effects due to some strange error 
-involving timers and threads.
-  
-  
+Latest version of the source code can be obtained at:
+
+svn co https://svn.sourceforge.net/svnroot/castano-stuff/qshaderedit qshaderedit
+
+Development is discussed in the following mailing list:
+
+https://lists.sourceforge.net/lists/listinfo/castano-stuff-qshaderedit
+
+The mailing list and the subversion repository are hosted on the following sourceforge project:
+
+http://sourceforge.net/projects/castano-stuff/
+
