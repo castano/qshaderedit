@@ -11,6 +11,37 @@
 
 namespace {
 
+	// Report OpenGL errors.
+	static void ReportGLErrors() {
+		int error = glGetError();
+
+		if( error != GL_NO_ERROR ) {
+			switch( error ) {
+				case GL_INVALID_ENUM:
+					qDebug( "*** ReportGLErrors: Invalid enum.\n" );
+				break;
+				case GL_INVALID_VALUE:
+					qDebug( "*** ReportGLErrors: Invalid value.\n" );
+				break;
+				case GL_INVALID_OPERATION:
+					qDebug( "*** ReportGLErrors: Invalid operation.\n" );
+				break;
+				case GL_STACK_OVERFLOW:
+					qDebug( "*** ReportGLErrors: Stack overflow.\n" );
+				break;
+				case GL_STACK_UNDERFLOW:
+					qDebug( "*** ReportGLErrors: Stack underflow.\n" );
+				break;
+				case GL_OUT_OF_MEMORY:
+					qDebug( "*** ReportGLErrors: Out of memory.\n" );
+				break;
+				default:
+					qDebug( "*** ReportGLErrors: Unknown error!\n" );
+			}
+		}
+	}
+	
+	
 	// Image plugin that supports all the image types that Qt supports.
 	class QtImagePlugin
 	{
@@ -35,17 +66,23 @@ namespace {
 			*target = GL_TEXTURE_2D;
 			glBindTexture(GL_TEXTURE_2D, obj);
 		
-			if(false && (GLEW_SGIS_generate_mipmap || GLEW_VERSION_1_4)) {
+			if(GLEW_SGIS_generate_mipmap || GLEW_VERSION_1_4) {
 				glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-			//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, image.bits());
+		//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, image.bits());
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image.bits());
+				
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 			}
 			else {
-				gluBuild2DMipmaps(GL_TEXTURE_2D, 4, image.width(), image.height(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image.bits());
+			//	gluBuild2DMipmaps(GL_TEXTURE_2D, 4, image.width(), image.height(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image.bits());				
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image.bits());
+				
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			}
-
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			
+			ReportGLErrors();
 			
 			return true;
 		}
