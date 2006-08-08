@@ -77,14 +77,12 @@ public:
 	}
 	~Private()
 	{
-		if(!m_name.isNull())
-		{
-			qDebug() << "Eliminate" << m_name;
+		if(m_object != 0) {
+			qDebug() << "eliminate:" << m_name;
+			
 			// Remove from the cache.
 			s_textureMap.remove(m_name);
-		}
-		
-		if(m_object != 0) {
+			
 			glDeleteTextures(1, &m_object);
 			m_object = 0;
 		}
@@ -129,6 +127,8 @@ GLTexture::GLTexture(GLTexture::Private * p) : m_data(p)
 // static
 GLTexture GLTexture::open(const QString & name)
 {
+	qDebug() << "open:" << name;
+	
 	Private * p;
 	if( Private::s_textureMap.contains(name) ) {
 		p = Private::s_textureMap[name];

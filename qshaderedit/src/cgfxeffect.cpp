@@ -4,8 +4,6 @@
 #include "outputparser.h"
 #include "texmanager.h"
 
-#include <math.h>
-
 #include <QtCore/QFile>
 #include <QtCore/QByteArray>
 #include <QtCore/QTime>
@@ -612,10 +610,6 @@ public:
 		Q_ASSERT(m_technique != NULL);
 		Q_ASSERT(m_pass == NULL);
 
-		// Setup ligh parameters
-		float light_vector[4] = {1.0f/sqrt(3.0f), 1.0f/sqrt(3.0f), 1.0f/sqrt(3.0f), 0.0f};
-		glLightfv( GL_LIGHT0, GL_POSITION, light_vector );
-
 		// Set standard parameter values.
 		CGparameter parameter = cgGetFirstLeafEffectParameter(m_effect);
 		while(parameter != NULL) {
@@ -816,7 +810,8 @@ class CgFxEffectFactory : public EffectFactory
 		Highlighter::Rule rule;
 
 		rule.type = Highlighter::Keyword;
-		rule.pattern = QRegExp("\\b(if|else|for|while|do|struct|break|continue|discard|return|technique|pass|sampler_state|compile|true|false)\\b");
+		rule.pattern = QRegExp("\\b(if|else|for|while|do|struct|break|continue|discard|return|technique|pass|sampler_state|"
+			"compile|true|false|packed|typedef)\\b");
 		rules.append(rule);
 
 		rule.type = Highlighter::DataType;
@@ -843,16 +838,20 @@ class CgFxEffectFactory : public EffectFactory
 			"SecondaryColor)|"
 			"WorldViewProjection(Inverse)?(Transpose)?|ModelView(Projection)?(Inverse)?(Transpose)?|View(Inverse)?(Transpose)?|"
 			"World(Inverse)?(Transpose)?|Projection(Inverse)?(Transpose)?|Time"
-			"VertexProgram|FragmentProgram|DepthTestEnable|CullFaceEnable)\\b");
+			"VertexProgram|FragmentProgram|DepthTestEnable|CullFaceEnable|register\\(c[1-2]+\\))\\b");
 		rules.append(rule);
 
 		rule.type = Highlighter::BuiltinFunction;
 		rule.pattern = QRegExp(
-			"\\b(radians|degrees|sin|cos|tan|asin|acos|atan|pow|exp|log|exp2|log2|sqrt|inversesqrt|"
-			"abs|sign|floor|ceil|fract|mod|min|max|clamp|mix|step|smoothstep|length|distance|dot|cross|normalize|"
-			"reflect|refract|matrixCompMult|tex1D|tex2D|tex3D|texCube|dFdx|dFdy|fwidth)\\b");
+			"\\b(abs|acos|all|any|asin|atan|atan2|ceil|clamp|cos|cosh|cross|degrees|determinant|dot|length|"
+			"max|min|radians|reflect|refract|round|saturate|sin|sinh|tan|tanh|transpose|"
+			"lerp|tex1D(proj)?|tex2D(proj)?|texRECT(proj)?|tex3D(proj)?|texCUBE(proj)?|"
+			"offsettex2D|offsettexRECT|offsettex2DScaleBias|offsettexRECTScaleBias|tex1D_dp3|tex2D_dp3x2|"
+			"texRECT_dp3x2|tex3D_dp3x3|texCUBE_dp3x3|texCUBE_reflect_dp3x3|texCUBE_reflect_eye_dp3x3|tex_dp3x2_depth|"
+			"(un)?pack_4(u)?byte|(un)?pack_2ushort|(un)?pack_2half)\\b");
 		rules.append(rule);
-
+		
+		
 		rule.type = Highlighter::Number;
 		rule.pattern = QRegExp("\\b[-+]?\\d*\\.?\\d+([eE][-+]?\\d+)?[fFhHxX]?\\b");
 		rules.append(rule);

@@ -25,8 +25,6 @@ public:
 };
 
 
-// @@ TODO: Add scene factory class.
-
 class SceneFactory : public QObject
 {
 public:

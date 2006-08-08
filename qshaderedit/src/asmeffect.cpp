@@ -87,13 +87,22 @@ namespace {
 	static const char * s_fragmentProgramTag = "[FragmentProgram]\n";
 	static const char * s_parametersTag = "[Parameters]\n";
 	
+	enum Stage {
+		Stage_Vertex,
+		Stage_Fragment,
+	};
+	enum Namespace {
+		Namespace_Local,
+		Namespace_Environment,
+	};	
+	
 	// ARB Parameter.
 	struct ArbParameter
 	{
 		QString name;
 		QVariant value;
-		uint rows;
-		uint columns;
+		Stage stage;
+		Namespace nspace;
 		GLint location;
 	};
 	
@@ -289,7 +298,7 @@ public:
 			succeed = false;
 		}
 		else {
-			parseProgram(m_vertexProgramText);
+			parseProgram(m_vertexProgramText, Stage_Vertex);
 		}
 		glDisable( GL_VERTEX_PROGRAM_ARB );
 		
@@ -301,7 +310,7 @@ public:
 			succeed = false;
 		}
 		else {
-			parseProgram(m_fragmentProgramText);
+			parseProgram(m_fragmentProgramText, Stage_Fragment);
 		}
 		glDisable( GL_FRAGMENT_PROGRAM_ARB );
 		
@@ -336,19 +345,27 @@ public:
 	virtual EditorType getParameterEditor(int idx) const
 	{
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		return EditorType_Vector;
+		
+		const ArbParameter & param = m_parameterArray[idx];
+		
+		if( param.name.contains("color", Qt::CaseInsensitive) ) {
+			return EditorType_Color;
+		}
+		else {
+			return EditorType_Vector;
+		}
 	}
 	
 	virtual int getParameterRows(int idx) const 
 	{
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		return m_parameterArray[idx].rows;
+		return 4;
 	}
 	
 	virtual int getParameterColumns(int idx) const
 	{
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		return m_parameterArray[idx].columns;
+		return 1;
 	}
 	
 	virtual bool isValid() const
@@ -450,7 +467,7 @@ private:
 		m_parameterArray.clear();
 	}
 	
-	void parseProgram(const QByteArray & code)
+	void parseProgram(const QByteArray & code, Stage stage)
 	{
 		// Get parameters. @@ Create these regular expressions only once.
 		QRegExp paramRegExp("\\s*PARAM\\s+(\\w+)(?:\\[(\\d+)\\])?\\s*=\\s*(\\S.*)");
@@ -469,10 +486,10 @@ private:
 					QString value = paramRegExp.cap(3);
 					
 					if(size.isEmpty()) {
-						addVectorParameter(name, value);
+						addVectorParameter(name, value, stage);
 					}
 					else {
-						addMatrixParameter(name, size.toInt(), value);
+						addMatrixParameter(name, size.toInt(), value, stage);
 					}
 				}
 			}
@@ -482,48 +499,72 @@ private:
 		}
 	}
 	
-	void addVectorParameter(const QString & name, const QString & value)
+	void addVectorParameter(const QString & name, const QString & value, Stage stage)
 	{
-		qDebug() << "Vector:" << name << "=" << value;
-
 		ArbParameter param;
 		param.name = name;
+		param.stage = stage;
 		param.location = -1;
 		
-		// Ignore params with state assignments.
-		if(value.contains("state")) {
-			return;
+		QRegExp localRegExp("program\\.local\\[(\\d+)\\]");
+		QRegExp envRegExp("program\\.env\\[(\\d+)\\]");
+		
+		//qDebug() << "name:" << name << "value:" << value;
+		
+		bool match = false;
+		if( localRegExp.exactMatch(value) ) {
+			param.nspace = Namespace_Local;
+			param.location = localRegExp.cap(1).toInt();
+			match = true;
 		}
-
-		// scalar
-		QRegExp scalarRegExp("\\d");
-		if( scalarRegExp.exactMatch(value) ) {
-			param.value = scalarRegExp.cap().toDouble();
-			param.rows = 1;
-			param.columns = 1;
+		else if( envRegExp.exactMatch(value) ) {
+			param.nspace = Namespace_Environment;
+			param.location = envRegExp.cap(1).toInt();
+			match = true;
+		}
+		
+		if( match ) {
+			param.value = QVariantList() << 0.0f << 0.0f << 0.0f << 0.0f;
 			m_parameterArray.append(param);
-			return;
-		}
-			
-		// vector
-		QRegExp vectorRegExp("\\{(.*)\\}");
-		if( vectorRegExp.exactMatch(value) ) {
-			QString vectorValue = vectorRegExp.cap(1);
-
-			QVariantList list;
-
-			// @@ Parse scalars.
 		}
 	}
 	
-	void addMatrixParameter(const QString & name, int size, const QString & value)
+	void addMatrixParameter(const QString & name, int size, const QString & value, Stage stage)
 	{
-		qDebug() << "Matrix:" << QString(name).append("[").append(QString::number(size)).append("]") << "=" << value;
+		// @@ Add support for parameters in the format: "program.local[0..1]"
+		//qDebug() << "value:" << value;
+		QStringList values = value.split(QRegExp("[\\{\\s,\\}]+"), QString::SkipEmptyParts);
+		if(values.count() == size) {
+			for(int i = 0; i < size; i++) {
+				addVectorParameter(name + "[" + QString::number(i) + "]", values.at(i), stage);
+			}
+		}
 	}
 	
 	void setParameters()
 	{
-		// @@ set parameters.
+		foreach(const ArbParameter & p, m_parameterArray) {
+			Q_ASSERT(p.value.canConvert(QVariant::List));
+			QVariantList list = p.value.toList();
+			Q_ASSERT(list.count() == 4);
+			
+			if( p.stage == Stage_Vertex ) {
+				if( p.nspace == Namespace_Local ) {
+					glProgramLocalParameter4dARB(GL_VERTEX_PROGRAM_ARB, p.location, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
+				}
+				else if( p.nspace == Namespace_Environment ) {
+					glProgramEnvParameter4dARB(GL_VERTEX_PROGRAM_ARB, p.location, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
+				}
+			}
+			else if( p.stage == Stage_Fragment ) {
+				if( p.nspace == Namespace_Local ) {
+					glProgramLocalParameter4dARB(GL_FRAGMENT_PROGRAM_ARB, p.location, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
+				}
+				else if( p.nspace == Namespace_Environment ) {
+					glProgramEnvParameter4dARB(GL_FRAGMENT_PROGRAM_ARB, p.location, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
+				}
+			}
+		} 
 	}
 };
 

@@ -4,8 +4,6 @@
 #include "outputparser.h"
 #include "texmanager.h"
 
-#include <math.h>
-
 #include <QtCore/QDebug>	// !!!
 #include <QtCore/QObject>
 #include <QtCore/QFile>
@@ -528,13 +526,9 @@ public:
 	{
 		Q_ASSERT(m_program != 0);
 
-		glEnable (GL_CULL_FACE);
-		glEnable (GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LEQUAL);
-
-		// Setup ligh parameters
-		float light_vector[4] = {1.0f/sqrt(3.0f), 1.0f/sqrt(3.0f), 1.0f/sqrt(3.0f), 0.0f};
-		glLightfv( GL_LIGHT0, GL_POSITION, light_vector );
 
 		glUseProgramObjectARB(m_program);
 
@@ -598,7 +592,6 @@ private:
 	void initParameters()
 	{
 		resetParameters();
-		//m_parameterArray.clear();
 
 		if( m_program == 0 ) {
 			return;

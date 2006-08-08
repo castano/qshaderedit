@@ -5,6 +5,8 @@
 #include "texmanager.h"
 #include "scene.h"
 
+#include <math.h>
+
 #include <QtCore/QUrl>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QWheelEvent>
@@ -27,8 +29,9 @@ void QGLView::dropEvent(QDropEvent *event)
 {
     QList<QUrl> urls = event->mimeData()->urls();
     event->acceptProposedAction();
-    if( urls.size() )
+	if( urls.size() ) {
         emit fileDropped( urls[0].toLocalFile() );
+	}
 }
 
 QSize QGLView::sizeHint() const
@@ -147,6 +150,10 @@ void QGLView::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	
 	if( m_effect != NULL && m_effect->isValid() && m_scene != NULL ) {
+		
+		// Setup ligh parameters @@ Move this to scene->setup() or begin()
+		float light_vector[4] = {1.2f/sqrt(3.08f), 1.0f/sqrt(3.08f), 0.8f/sqrt(3.08f), 0.0f};
+		glLightfv( GL_LIGHT0, GL_POSITION, light_vector );
 		
 		m_effect->begin();
 		

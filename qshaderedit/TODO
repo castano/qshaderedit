@@ -1,6 +1,5 @@
 
 TODO for the release of 1.2:
-+ add parameters in ARB assembly effects.
 - add sphere scene and finish obj scene.
 - update website with progress, authors and svn information.
 - fix double compilation bug. @@ Send RFT to TT.
@@ -10,16 +9,16 @@ Misc:
 
 Parameter panel:
 - Fix problem with boolean value, apparently a bug in Qt, already reported.
-- add color picker for color parameters.
+- Matrix editor.
 
 Textures:
-- reset texture in old param?
 - add support for multiple image plugins.
 - add dds image plugin.
+- add noise plugin to generate noise texture.
 
 Effects:
-- complete cgfx support -> set parameter values, preserve parameter values after rebuild, texture/sampler parameters.
-- add support for texture parameters.
+- add support for matrix parameters.
+- add support for texture parameters in ARB programs.
 - add glfx support.
 - integrated help.
 

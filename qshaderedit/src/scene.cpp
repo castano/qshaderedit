@@ -142,7 +142,83 @@ public:
 REGISTER_SCENE_FACTORY(QuadSceneFactory);
 
 
+class CubeScene : public DisplayListScene
+{
+public:
+	CubeScene()
+	{
+		m_dlist = glGenLists(1);
+		glNewList(m_dlist, GL_COMPILE);
+		glBegin(GL_QUADS);
+		
+		// Front Face
+		glNormal3f(0, 0, 1);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f,  1.0f);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f( 1.0f, -1.0f,  1.0f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);
+		// Back Face
+		glNormal3f(0, 0, -1);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f,  1.0f, -1.0f);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f( 1.0f,  1.0f, -1.0f);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);
+		// Top Face
+		glNormal3f(0, 1, 0);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f,  1.0f, -1.0f);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f,  1.0f,  1.0f);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f( 1.0f,  1.0f,  1.0f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f( 1.0f,  1.0f, -1.0f);
+		// Bottom Face
+		glNormal3f(0, -1, 0);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f( 1.0f, -1.0f, -1.0f);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f( 1.0f, -1.0f,  1.0f);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f,  1.0f);
+		// Right face
+		glNormal3f(1, 0, 0);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f( 1.0f,  1.0f, -1.0f);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f( 1.0f, -1.0f,  1.0f);
+		// Left Face
+		glNormal3f(-1, 0, 0);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
+		glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f,  1.0f);
+		glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);
+		glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f,  1.0f, -1.0f);
+		
+		glEnd();
+		glEndList();
+	}
+};
 
+// Cube scene factory.
+class CubeSceneFactory : public SceneFactory
+{
+public:
+	virtual QString name() const
+	{
+		return tr("Cube");
+	}
+	virtual QString description() const
+	{
+		return tr("Cube");
+	}
+	virtual QIcon icon() const
+	{
+		return QIcon();
+	}
+	virtual Scene * createScene() const
+	{
+		return new CubeScene();
+	}
+};
+
+REGISTER_SCENE_FACTORY(CubeSceneFactory);
+
+
+/*
 class ObjScene : public DisplayListScene
 {
 public:
@@ -191,7 +267,7 @@ public:
 };
 
 REGISTER_SCENE_FACTORY(ObjSceneFactory);
-
+*/
 
 
 // SceneFactory
