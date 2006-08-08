@@ -1,12 +1,12 @@
 0.1.2
-	Improved syntax highlight by Lars Uebernickel <larsuebernickel@gmx.de>.
-	Custom syntax highlight for each effect type by Lars Uebernickel.
-	Fix crash when the gl view was repainted while loading a new effect.
-	Improve 3d view manipulation.
+	Improved syntax highlighting by Lars Uebernickel <larsuebernickel@gmx.de>.
+	Improved 3d view manipulation.
 	Message panel improvements by Lars.
 	Improved parameter panel, dynamic updates, color preview and sliders by Lars.
 	Add recent files menu.
-	Add color picker.
+	Add parameter color picker by Lars.
+	Add support for texture parameters.
+	Add initial support for multiple scenes.
 
 0.1.1
 	Reorganize sources to create debian packages.
