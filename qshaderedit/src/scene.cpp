@@ -2,6 +2,7 @@
 #include <QtCore/QString>
 #include <QtGui/QFileDialog>
 #include <QtGui/QIcon>
+#include <QtCore/QFile>
 
 #include "scene.h"
 
@@ -218,18 +219,18 @@ public:
 REGISTER_SCENE_FACTORY(CubeSceneFactory);
 
 
-/*
+
 class ObjScene : public DisplayListScene
 {
 public:
 	ObjScene()
 	{
-//		QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-//			m_openDir, QString(QObject::tr("Obj Files (%1)")).arg("*.obj"));
+		QString fileName = QFileDialog::getOpenFileName(NULL, QObject::tr("Open File"),
+			QString(), QString(QObject::tr("Obj Files (%1)")).arg("*.obj"));
 
-//		if( !fileName.isEmpty() ) {
-//			load( fileName );
-//		}		
+		if( !fileName.isEmpty() ) {
+			load( fileName );
+		}		
 	}
 	
 	virtual void transform() const
@@ -238,9 +239,84 @@ public:
 
 	
 private:
+	struct vec3 {
+		vec3() { }
+		vec3(float _x, float _y, float _z): x(_x), y(_y), z(_z) { }
+		
+		float x, y, z;
+	};
+	
+	struct vec2 {
+		vec2() { }
+		vec2(float _s, float _t): s(_s), t(_t) { }
+		
+		float s, t;
+	};	
+	
 	void load(const QString & fileName)
 	{
-		// @@ TODO: Load obj file.
+		QFile file(fileName);
+		if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+			return;
+		
+		if (m_dlist)
+			glDeleteLists(m_dlist, 1);			
+		m_dlist = glGenLists(1);
+		glNewList(m_dlist, GL_COMPILE);
+		
+		QRegExp vertexPattern("^v\\s+(-?\\d*\\.?\\d+)\\s+(-?\\d*\\.?\\d+)\\s+(-?\\d*\\.?\\d+)");
+		QRegExp normalPattern("^vn\\s+(-?\\d*\\.?\\d+)\\s+(-?\\d*\\.?\\d+)\\s+(-?\\d*\\.?\\d+)");
+		QRegExp texcoordPattern("^vt\\s+(-?\\d*\\.?\\d+)\\s+(-?\\d*\\.?\\d+)(\\s+-?\\d*\\.?\\d+)?");
+		
+		QVector<vec3> verts, normals;
+		QVector<vec2> texcoords;
+		
+		while (!file.atEnd()) {
+			QString line = file.readLine().simplified();
+			
+			if (line.isEmpty() || line.startsWith('#'))
+				continue;
+			
+			if (line.contains(vertexPattern))
+				verts.append(vec3(vertexPattern.cap(1).toFloat(), vertexPattern.cap(2).toFloat(), vertexPattern.cap(3).toFloat()));
+			
+			else if (line.contains(normalPattern))
+				normals.append(vec3(normalPattern.cap(1).toFloat(), normalPattern.cap(2).toFloat(), normalPattern.cap(3).toFloat()));
+			
+			else if (line.contains(texcoordPattern))
+				texcoords.append(vec2(texcoordPattern.cap(1).toFloat(), texcoordPattern.cap(2).toFloat()));
+			
+			else if (line.startsWith("f ")) {
+				QStringList faces = line.split(' ');
+										
+				glBegin(GL_POLYGON);
+				
+				for (int i = 1; i < faces.size(); i++) {
+					QStringList indices = faces[i].split('/');
+					
+					int v = indices[0].toInt() -1;
+					Q_ASSERT(v >= 0 && v < verts.size());
+					
+					if (indices.size() > 1 && !indices[1].isEmpty()) {
+						int t = indices[1].toInt() -1;
+						Q_ASSERT(t >= 0 && t < texcoords.size());
+						glTexCoord2fv((GLfloat*)&texcoords[t]);
+					}
+					
+					if (indices.size() > 2) {
+						int n = indices[2].toInt() -1;
+						Q_ASSERT(n >= 0 && n < normals.size()); 
+						glNormal3fv((GLfloat*)&normals[n]);
+					}
+					
+					glVertex3fv((GLfloat*)&verts[v]);
+				}
+								
+				glEnd();
+			}			
+		}
+		
+		glEndList();
 	}
 };
 
@@ -267,7 +343,7 @@ public:
 };
 
 REGISTER_SCENE_FACTORY(ObjSceneFactory);
-*/
+
 
 
 // SceneFactory
