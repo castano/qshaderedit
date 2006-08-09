@@ -263,10 +263,11 @@ private:
 			glDeleteLists(m_dlist, 1);			
 		m_dlist = glGenLists(1);
 		glNewList(m_dlist, GL_COMPILE);
-		
-		QRegExp vertexPattern("^v\\s+(-?\\d*\\.?\\d+)\\s+(-?\\d*\\.?\\d+)\\s+(-?\\d*\\.?\\d+)");
-		QRegExp normalPattern("^vn\\s+(-?\\d*\\.?\\d+)\\s+(-?\\d*\\.?\\d+)\\s+(-?\\d*\\.?\\d+)");
-		QRegExp texcoordPattern("^vt\\s+(-?\\d*\\.?\\d+)\\s+(-?\\d*\\.?\\d+)(\\s+-?\\d*\\.?\\d+)?");
+				
+		QRegExp vertexPattern("^v\\s+(.*)\\s+(.*)\\s+(.*)");
+		QRegExp normalPattern("^vn\\s+(.*)\\s+(.*)\\s+(.*)");
+		QRegExp texcoordPattern("^vt\\s+(.*)\\s+(.*)(\\s+.*)?");
+
 		
 		QVector<vec3> verts, normals;
 		QVector<vec2> texcoords;
@@ -295,16 +296,19 @@ private:
 					QStringList indices = faces[i].split('/');
 					
 					int v = indices[0].toInt() -1;
+					if (v < 0) v += verts.size() +1;
 					Q_ASSERT(v >= 0 && v < verts.size());
 					
 					if (indices.size() > 1 && !indices[1].isEmpty()) {
 						int t = indices[1].toInt() -1;
+						if (t < 0) t += texcoords.size() +1;
 						Q_ASSERT(t >= 0 && t < texcoords.size());
 						glTexCoord2fv((GLfloat*)&texcoords[t]);
 					}
 					
 					if (indices.size() > 2) {
 						int n = indices[2].toInt() -1;
+						if (n < 0) n += normals.size() +1;
 						Q_ASSERT(n >= 0 && n < normals.size()); 
 						glNormal3fv((GLfloat*)&normals[n]);
 					}
