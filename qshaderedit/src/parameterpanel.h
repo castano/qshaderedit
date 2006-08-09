@@ -172,6 +172,7 @@ public:
 
 	ParameterPanel(const QString & title, QWidget * parent = 0, Qt::WFlags flags = 0);
 	ParameterPanel(QWidget * parent = 0, Qt::WFlags flags = 0);
+	~ParameterPanel();
 
 	virtual QSize sizeHint() const;
 

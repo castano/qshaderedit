@@ -34,6 +34,12 @@ MessagePanel::MessagePanel(QWidget * parent /*= 0*/, Qt::WFlags flags /*= 0*/) :
 	initWidget();
 }
 
+MessagePanel::~MessagePanel()
+{
+	delete m_log;
+	m_log = NULL;
+}
+
 void MessagePanel::log(const QString& s, Type type, int inputNumber, int line, int column)
 {
 	if (s.trimmed().isEmpty())

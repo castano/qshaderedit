@@ -20,6 +20,7 @@ public:
 
 	MessagePanel(const QString & title, QWidget * parent = 0, Qt::WFlags flags = 0);
 	MessagePanel(QWidget * parent = 0, Qt::WFlags flags = 0);
+	~MessagePanel();
 
 	void log(const QString& s, Type type = Info, int inputNumber = -1, int line = -1, int column = -1);
 	void log(const QString& s, int inputNumber, OutputParser* parser);

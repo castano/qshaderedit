@@ -725,6 +725,15 @@ ParameterPanel::ParameterPanel(QWidget * parent /*= 0*/, Qt::WFlags flags /*= 0*
 	initWidget();
 }
 
+ParameterPanel::~ParameterPanel()
+{
+	delete m_model;
+	m_model = NULL;
+	delete m_delegate;
+	m_delegate = NULL;
+	delete m_table;
+	m_table = NULL;
+}
 
 QSize ParameterPanel::sizeHint() const
 {
