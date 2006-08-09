@@ -71,7 +71,7 @@ ELSE (APPLE)
       )
 	# delay loading cg.dll
 	IF(CG_LIBRARY)
-		SET(CG_LIBRARY ${CG_LIBRARY} "/delayload:cg.dll")
+#		SET(CG_LIBRARY ${CG_LIBRARY} "/delayload:cg.dll")
 	ENDIF(CG_LIBRARY)
     FIND_LIBRARY( CG_GL_LIBRARY
       NAMES CgGL
@@ -85,7 +85,7 @@ ELSE (APPLE)
       )
 	# delay loading cgGL.dll
 	IF(CG_GL_LIBRARY)
-		SET(CG_GL_LIBRARY ${CG_GL_LIBRARY} "/delayload:cgGL.dll")
+#		SET(CG_GL_LIBRARY ${CG_GL_LIBRARY} "/delayload:cgGL.dll")
 	ENDIF(CG_GL_LIBRARY)
   ELSE (WIN32)
     FIND_PROGRAM( CG_COMPILER cgc
