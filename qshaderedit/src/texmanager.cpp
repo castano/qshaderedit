@@ -1,16 +1,13 @@
 
 #include "texmanager.h"
 
-#include <GL/glew.h>
-
 #include <QtCore/QSharedData>
 #include <QtCore/QDebug>
 #include <QtGui/QImage>
 #include <QtOpenGL/QGLContext>
 
-
 namespace {
-
+	
 	// Report OpenGL errors.
 	static void ReportGLErrors() {
 		int error = glGetError();
@@ -53,7 +50,7 @@ namespace {
 			return true;
 		}
 	
-		virtual bool load(QString name, uint obj, uint * target) const
+		virtual bool load(QString name, GLuint obj, GLuint * target) const
 		{
 			Q_ASSERT(obj != 0);
 			Q_ASSERT(target != NULL);
@@ -126,15 +123,15 @@ public:
 	}
 
 	const QString & name() const { return m_name; }
-	uint object() const { return m_object; }
-	uint target() const { return m_target; }
+	GLuint object() const { return m_object; }
+	GLuint target() const { return m_target; }
 
 	static QMap<QString, GLTexture::Private *> s_textureMap;
 
 private:
 	QString m_name;
-	uint m_object;
-	uint m_target;
+	GLuint m_object;
+	GLuint m_target;
 };
 
 //static
@@ -178,13 +175,13 @@ GLTexture GLTexture::open(const QString & name)
 }
 
 /// Get texture object.
-uint GLTexture::object() const
+GLuint GLTexture::object() const
 {
 	return m_data->object();
 }
 
 /// Get texture target.
-uint GLTexture::target() const
+GLuint GLTexture::target() const
 {
 	return m_data->target();
 }

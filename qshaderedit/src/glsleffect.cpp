@@ -265,7 +265,7 @@ public:
 
 		// Get error log.
 		QByteArray infoLog;
-		int charsWritten, infoLogLength;
+		GLint charsWritten, infoLogLength;
 		if(output != NULL) {
 			glGetObjectParameterivARB(m_vertexShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
 			infoLog.resize(infoLogLength);
@@ -802,13 +802,13 @@ private:
 		switch( param.type ) {
 			case GL_FLOAT:
 			{
-				float fvalue[1];
+				GLfloat fvalue[1];
 				glGetUniformfvARB(m_program, param.location, fvalue);
 				return fvalue[0];
 			}
 			case GL_FLOAT_VEC2_ARB:
 			{
-				float fvalue[2];
+				GLfloat fvalue[2];
 				QList<QVariant> list;
 				glGetUniformfvARB(m_program, param.location, fvalue);
 				list << fvalue[0] << fvalue[1];
@@ -816,7 +816,7 @@ private:
 			}
 			case GL_FLOAT_VEC3_ARB:
 			{
-				float fvalue[3];
+				GLfloat fvalue[3];
 				QList<QVariant> list;
 				glGetUniformfvARB(m_program, param.location, fvalue);
 				list << fvalue[0] << fvalue[1] << fvalue[2];
@@ -824,7 +824,7 @@ private:
 			}
 			case GL_FLOAT_VEC4_ARB:
 			{
-				float fvalue[4];
+				GLfloat fvalue[4];
 				QList<QVariant> list;
 				glGetUniformfvARB(m_program, param.location, fvalue);
 				list << fvalue[0] << fvalue[1] << fvalue[2] << fvalue[3];
@@ -832,43 +832,43 @@ private:
 			}
 			case GL_INT:
 			{
-				int ivalue[1];
+				GLint ivalue[1];
 				glGetUniformivARB(m_program, param.location, ivalue);
-				return ivalue[0];
+				return (int)ivalue[0];
 			}
 			case GL_INT_VEC2_ARB:
 			{
-				int ivalue[2];
+				GLint ivalue[2];
 				QList<QVariant> list;
 				glGetUniformivARB(m_program, param.location, ivalue);
-				list << ivalue[0] << ivalue[1];
+				list << (int)ivalue[0] << (int)ivalue[1];
 				return list;
 			}
 			case GL_INT_VEC3_ARB:
 			{
-				int ivalue[3];
+				GLint ivalue[3];
 				QList<QVariant> list;
 				glGetUniformivARB(m_program, param.location, ivalue);
-				list << ivalue[0] << ivalue[1] << ivalue[2];
+				list << (int)ivalue[0] << (int)ivalue[1] << (int)ivalue[2];
 				return list;
 			}
 			case GL_INT_VEC4_ARB:
 			{
-				int ivalue[4];
+				GLint ivalue[4];
 				QList<QVariant> list;
 				glGetUniformivARB(m_program, param.location, ivalue);
-				list << ivalue[0] << ivalue[1] << ivalue[2] << ivalue[3];
+				list << (int)ivalue[0] << (int)ivalue[1] << (int)ivalue[2] << (int)ivalue[3];
 				return list;
 			}
 			case GL_BOOL_ARB:
 			{
-				int ivalue[1];
+				GLint ivalue[1];
 				glGetUniformivARB(m_program, param.location, ivalue);
 				return ivalue[0] != 0;
 			}
 			case GL_BOOL_VEC2_ARB:
 			{
-				int ivalue[2];
+				GLint ivalue[2];
 				QList<QVariant> list;
 				glGetUniformivARB(m_program, param.location, ivalue);
 				list << (ivalue[0] != 0) << (ivalue[1] != 0);
@@ -876,7 +876,7 @@ private:
 			}
 			case GL_BOOL_VEC3_ARB:
 			{
-				int ivalue[3];
+				GLint ivalue[3];
 				QList<QVariant> list;
 				glGetUniformivARB(m_program, param.location, ivalue);
 				list << (ivalue[0] != 0) << (ivalue[1] != 0) << (ivalue[2] != 0);
@@ -884,7 +884,7 @@ private:
 			}
 			case GL_BOOL_VEC4_ARB:
 			{
-				int ivalue[4];
+				GLint ivalue[4];
 				QList<QVariant> list;
 				glGetUniformivARB(m_program, param.location, ivalue);
 				list << (ivalue[0] != 0) << (ivalue[1] != 0) << (ivalue[2] != 0) << (ivalue[3] != 0);
@@ -892,7 +892,7 @@ private:
 			}
 			case GL_FLOAT_MAT2_ARB:
 			{
-				float fvalue[2*2];
+				GLfloat fvalue[2*2];
 				QList<QVariant> list;
 				glGetUniformfvARB(m_program, param.location, fvalue);
 				for(int i = 0; i < 2*2; i++) {
@@ -902,7 +902,7 @@ private:
 			}
 			case GL_FLOAT_MAT3_ARB:
 			{
-				float fvalue[3*3];
+				GLfloat fvalue[3*3];
 				QList<QVariant> list;
 				glGetUniformfvARB(m_program, param.location, fvalue);
 				for(int i = 0; i < 3*3; i++) {
@@ -912,7 +912,7 @@ private:
 			}
 			case GL_FLOAT_MAT4_ARB:
 			{
-				float fvalue[4*4];
+				GLfloat fvalue[4*4];
 				QList<QVariant> list;
 				glGetUniformfvARB(m_program, param.location, fvalue);
 				for(int i = 0; i < 4*4; i++) {

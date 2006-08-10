@@ -449,7 +449,7 @@ private:
 	
 	bool checkProgramError(MessagePanel * output, int inputNumber = -1)
 	{
-		int position;
+		GLint position;
 		glGetIntegerv( GL_PROGRAM_ERROR_POSITION_ARB, &position );
 		if( position != -1 ) {
 			const char * error = (const char *) glGetString( GL_PROGRAM_ERROR_STRING_ARB );
