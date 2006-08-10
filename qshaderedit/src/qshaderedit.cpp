@@ -149,6 +149,8 @@ void QShaderEdit::createMenus()
 	fileMenu->addAction(m_saveAction);
 	fileMenu->addAction(m_saveAsAction);
 
+	fileMenu->addSeparator();
+
 	action = new QAction(tr("E&xit"), this);
 	action->setShortcut(tr("Ctrl+Q"));
 	action->setStatusTip(tr("Exit the application"));
