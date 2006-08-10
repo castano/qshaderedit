@@ -3,6 +3,7 @@
 #include <QtGui/QFileDialog>
 #include <QtGui/QIcon>
 #include <QtCore/QFile>
+#include <math.h>
 
 #include "scene.h"
 
@@ -235,6 +236,8 @@ public:
 	
 	virtual void transform() const
 	{
+		glScalef(m_scale, m_scale, m_scale);
+		glTranslatef(-m_center.x, -m_center.y, -m_center.z);
 	}
 
 	
@@ -251,7 +254,17 @@ private:
 		vec2(float _s, float _t): s(_s), t(_t) { }
 		
 		float s, t;
-	};	
+	};
+		
+	static float min(float a, float b) 
+	{
+		return a < b ? a : b;
+	}
+	
+	static float max(float a, float b) 
+	{
+		return a > b ? a : b;
+	}
 	
 	void load(const QString & fileName)
 	{
@@ -271,6 +284,7 @@ private:
 		
 		QVector<vec3> verts, normals;
 		QVector<vec2> texcoords;
+		vec3 vmin(1e10, 1e10, 1e10), vmax(-1e10, -1e10, -1e10);
 		
 		while (!file.atEnd()) {
 			QString line = file.readLine().simplified();
@@ -278,8 +292,17 @@ private:
 			if (line.isEmpty() || line.startsWith('#'))
 				continue;
 			
-			if (line.contains(vertexPattern))
-				verts.append(vec3(vertexPattern.cap(1).toFloat(), vertexPattern.cap(2).toFloat(), vertexPattern.cap(3).toFloat()));
+			if (line.contains(vertexPattern)) {
+				vec3 v(vertexPattern.cap(1).toFloat(), vertexPattern.cap(2).toFloat(), vertexPattern.cap(3).toFloat());
+				verts.append(v);
+				vmin.x = min(v.x, vmin.x);
+				vmin.y = min(v.y, vmin.y);
+				vmin.z = min(v.z, vmin.z);
+				
+				vmax.x = max(v.x, vmax.x);
+				vmax.y = max(v.y, vmax.y);
+				vmax.z = max(v.z, vmax.z);				
+			}
 			
 			else if (line.contains(normalPattern))
 				normals.append(vec3(normalPattern.cap(1).toFloat(), normalPattern.cap(2).toFloat(), normalPattern.cap(3).toFloat()));
@@ -321,7 +344,17 @@ private:
 		}
 		
 		glEndList();
+		
+		
+		m_center.x = (vmax.x + vmin.x) * 0.5;
+		m_center.y = (vmax.y + vmin.y) * 0.5;
+		m_center.z = (vmax.z + vmin.z) * 0.5;
+		
+		m_scale = 1.0f / max(vmax.x - m_center.x, max(vmax.y - m_center.y, vmax.z - m_center.z));
 	}
+
+	vec3 m_center;
+	float m_scale;
 };
 
 // Obj scene factory.
