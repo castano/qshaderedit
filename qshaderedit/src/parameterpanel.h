@@ -176,6 +176,9 @@ public:
 
 	virtual QSize sizeHint() const;
 
+	static const QString & lastPath();
+	static void setLastPath(const QString & lastPath);
+	
 signals:
 	void parameterChanged();
 
@@ -192,6 +195,7 @@ private:
 	ParameterDelegate * m_delegate;	// @@ Not used.
 	QTreeView * m_table;
 
+	static QString s_lastTexture; 
 };
 
 

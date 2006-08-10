@@ -227,10 +227,11 @@ public:
 	ObjScene()
 	{
 		QString fileName = QFileDialog::getOpenFileName(NULL, QObject::tr("Open File"),
-			QString(), QString(QObject::tr("Obj Files (%1)")).arg("*.obj"));
+			SceneFactory::lastFile(), QString(QObject::tr("OBJ Files (%1)")).arg("*.obj"));
 
 		if( !fileName.isEmpty() ) {
 			load( fileName );
+			SceneFactory::setLastFile( fileName );
 		}		
 	}
 	
@@ -312,7 +313,7 @@ private:
 			
 			else if (line.startsWith("f ")) {
 				QStringList faces = line.split(' ');
-										
+				
 				glBegin(GL_POLYGON);
 				
 				for (int i = 1; i < faces.size(); i++) {
@@ -338,7 +339,7 @@ private:
 					
 					glVertex3fv((GLfloat*)&verts[v]);
 				}
-								
+				
 				glEnd();
 			}			
 		}
@@ -363,11 +364,11 @@ class ObjSceneFactory : public SceneFactory
 public:
 	virtual QString name() const
 	{
-		return tr("Obj");
+		return tr("OBJ file");
 	}
 	virtual QString description() const
 	{
-		return tr("Obj");
+		return tr("WaveFront 3D Object");
 	}
 	virtual QIcon icon() const
 	{
@@ -387,6 +388,7 @@ REGISTER_SCENE_FACTORY(ObjSceneFactory);
 
 namespace {
 	static QList<const SceneFactory *> * s_factoryList = NULL;
+	static QString s_lastFile;
 }
 
 
@@ -437,8 +439,20 @@ void SceneFactory::removeFactory(const SceneFactory * factory)
 	}
 }
 
-// static
+//static
 Scene * SceneFactory::defaultScene()
 {
 	return new TeapotScene();
+}
+
+//static
+const QString & SceneFactory::lastFile()
+{
+	return s_lastFile;
+}
+
+//static 
+void SceneFactory::setLastFile(const QString & lastFile)
+{
+	s_lastFile = lastFile;
 }

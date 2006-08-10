@@ -38,6 +38,9 @@ public:
 	static void addFactory(const SceneFactory * factory);
 	static void removeFactory(const SceneFactory * factory);
 	static Scene * defaultScene();
+	
+	static const QString & lastFile();
+	static void setLastFile(const QString & lastFile);
 };
 
 

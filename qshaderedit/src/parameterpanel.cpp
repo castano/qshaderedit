@@ -14,6 +14,10 @@
 #include <QtGui/QColorDialog>
 
 
+namespace {
+	static QString s_lastPath = ".";
+}
+
 //
 // FilePicker Widget.
 //
@@ -43,9 +47,10 @@ FileEditor::FileEditor(QWidget * parent /*= 0*/) : QWidget(parent)
 
 void FileEditor::openFileDialog()
 {
-	QString fileName = QFileDialog::getOpenFileName(this, "Choose file", "", "Images (*.png *.jpg)");
+	QString fileName = QFileDialog::getOpenFileName(this, "Choose file", s_lastPath, "Images (*.png *.jpg)");
 	if( !fileName.isEmpty() ) {
 		m_lineEdit->setText(fileName);
+		s_lastPath = fileName;
 	}
 	emit done(this);
 }
@@ -771,4 +776,15 @@ void ParameterPanel::setEffect(Effect * effect)
 	m_table->resizeColumnToContents(0);
 }
 
+//static
+const QString & ParameterPanel::lastPath()
+{
+	return s_lastPath;
+}
+
+//static
+void ParameterPanel::setLastPath(const QString & lastPath)
+{
+	s_lastPath = lastPath;
+}
 

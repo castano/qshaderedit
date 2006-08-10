@@ -27,6 +27,12 @@
 #include <QtGui/QComboBox>
 #include <QtGui/QLabel>
 
+#ifdef Q_WS_MAC
+const QString rsrcPath = ":/images/mac";
+#else
+const QString rsrcPath = ":/images/win";
+#endif
+
 
 /// Ctor.
 QShaderEdit::QShaderEdit(const QString& filename) :
@@ -97,17 +103,17 @@ QSize QShaderEdit::sizeHint() const
 
 void QShaderEdit::createActions()
 {
-	m_newAction = new QAction(tr("&New"), this);
+	m_newAction = new QAction(QIcon(rsrcPath + "/filenew.png"), tr("&New"), this);
 	m_newAction->setShortcut(tr("Ctrl+N"));
 	m_newAction->setStatusTip(tr("Create a new effect"));
 	connect(m_newAction, SIGNAL(triggered()), this, SLOT(newFile()));
 
-	m_openAction = new QAction(tr("&Open"), this);
+	m_openAction = new QAction(QIcon(rsrcPath + "/fileopen.png"), tr("&Open"), this);
 	m_openAction->setShortcut(tr("Ctrl+O"));
 	m_openAction->setStatusTip(tr("Open an existing effect"));
 	connect(m_openAction, SIGNAL(triggered()), this, SLOT(open()));
 
-	m_saveAction = new QAction(tr("&Save"), this);
+	m_saveAction = new QAction(QIcon(rsrcPath + "/filesave.png"), tr("&Save"), this);
 	m_saveAction->setEnabled(false);
 	m_saveAction->setShortcut(tr("Ctrl+S"));
 	m_saveAction->setStatusTip(tr("Save the effect"));
@@ -159,14 +165,14 @@ void QShaderEdit::createMenus()
 
 	QMenu * editMenu = menuBar()->addMenu(tr("&Edit"));
 
-	action = new QAction(tr("&Undo"), this);
+	action = new QAction(QIcon(rsrcPath + "/editundo.png"), tr("&Undo"), this);
 	action->setShortcut(tr("Ctrl+Z"));
 	action->setEnabled(false);
 	connect(action, SIGNAL(triggered()), m_editor, SLOT(undo()));
 	connect(m_editor, SIGNAL(undoAvailable(bool)), action, SLOT(setEnabled(bool)));
 	editMenu->addAction(action);
 
-	action = new QAction(tr("&Redo"), this);
+	action = new QAction(QIcon(rsrcPath + "/editredo.png"), tr("&Redo"), this);
 	action->setShortcut(tr("Ctrl+Shift+Z"));
 	action->setEnabled(false);
 	connect(action, SIGNAL(triggered()), m_editor, SLOT(redo()));
@@ -175,21 +181,21 @@ void QShaderEdit::createMenus()
 
 	editMenu->addSeparator();
 
-	action = new QAction(tr("C&ut"), this);
+	action = new QAction(QIcon(rsrcPath + "/editcut.png"), tr("C&ut"), this);
 	action->setShortcut(tr("Ctrl+X"));
 	action->setEnabled(false);
 	connect(action, SIGNAL(triggered()), m_editor, SLOT(cut()));
 	connect(m_editor, SIGNAL(copyAvailable(bool)), action, SLOT(setEnabled(bool)));
 	editMenu->addAction(action);
 
-	action = new QAction(tr("&Copy"), this);
+	action = new QAction(QIcon(rsrcPath + "/editcopy.png"), tr("&Copy"), this);
 	action->setShortcut(tr("Ctrl+C"));
 	action->setEnabled(false);
 	connect(action, SIGNAL(triggered()), m_editor, SLOT(copy()));
 	connect(m_editor, SIGNAL(copyAvailable(bool)), action, SLOT(setEnabled(bool)));
 	editMenu->addAction(action);
 
-	action = new QAction(tr("&Paste"), this);
+	action = new QAction(QIcon(rsrcPath + "/editpaste.png"), tr("&Paste"), this);
 	action->setShortcut(tr("Ctrl+V"));
 	action->setEnabled(false);
 	connect(action, SIGNAL(triggered()), m_editor, SLOT(paste()));
@@ -197,12 +203,18 @@ void QShaderEdit::createMenus()
 	editMenu->addAction(action);
 
 	QMenu * viewMenu = menuBar()->addMenu(tr("&View"));
+	
+	// Should this be under the "Panels" menu? 
 	viewMenu->addAction(m_sceneViewDock->toggleViewAction());
 	viewMenu->addAction(m_paramViewDock->toggleViewAction());
 	viewMenu->addAction(m_logViewDock->toggleViewAction());
+	
 	viewMenu->addSeparator();
-	viewMenu->addAction(m_fileToolBar->toggleViewAction());
-	viewMenu->addAction(m_techniqueToolBar->toggleViewAction());
+	
+	// On KDE this should be under the "Preferences" menu.
+	QMenu * toolbarMenu = viewMenu->addMenu(tr("&Toolbars"));
+	toolbarMenu->addAction(m_fileToolBar->toggleViewAction());
+	toolbarMenu->addAction(m_techniqueToolBar->toggleViewAction());
 
 	QMenu * sceneMenu = menuBar()->addMenu(tr("&Scene"));
 	QMenu * sceneSelectionMenu = sceneMenu->addMenu(tr("&Select"));
@@ -634,10 +646,10 @@ void QShaderEdit::open()
 
 	//QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), tr("."), effectTypes.join(";"));
 	QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-            m_openDir, QString(tr("Effect Files (%1)")).arg(effectExtensions.join(" ")));
+            m_lastEffect, QString(tr("Effect Files (%1)")).arg(effectExtensions.join(" ")));
 
 	if( !fileName.isEmpty() ) {
-        m_openDir = fileName;
+        m_lastEffect = fileName;
         load( fileName );
 	}
 }
@@ -912,12 +924,15 @@ void QShaderEdit::loadSettings()
 	pref.beginGroup("MainWindow");
 	resize(pref.value("size", QSize(640,480)).toSize());
 	QByteArray state = pref.value("state").toByteArray();
-	if (!state.isEmpty())
+	if (!state.isEmpty()) {
 		restoreState(state);
+	}
 	pref.endGroup();
 
 	m_autoCompile = pref.value("autoCompile", true).toBool();
-	m_openDir = pref.value("openDir", ".").toString();
+	m_lastEffect = pref.value("lastEffect", ".").toString();
+	SceneFactory::setLastFile(pref.value("lastScene", ".").toString());
+	ParameterPanel::setLastPath(pref.value("lastParameterPath", ".").toString());
 }
 
 void QShaderEdit::saveSettings()
@@ -930,7 +945,9 @@ void QShaderEdit::saveSettings()
 	pref.endGroup();
 
 	pref.setValue("autoCompile", m_autoCompile);
-	pref.setValue("openDir", m_openDir);
+	pref.setValue("lastEffect", m_lastEffect);
+	pref.setValue("lastScene", SceneFactory::lastFile());
+	pref.setValue("lastParameterPath", ParameterPanel::lastPath());
 }
 
 void QShaderEdit::updateEffectInputs()

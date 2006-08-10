@@ -131,7 +131,7 @@ private:
 	
 	// settings.
 	bool m_autoCompile;
-	QString m_openDir;
+	QString m_lastEffect;
 };
 
 
