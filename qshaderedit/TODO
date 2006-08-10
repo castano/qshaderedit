@@ -1,5 +1,9 @@
 
-- fix double compilation bug. @@ Send RFT to TT.
+Bugs:
+- skip compilation while parameter panel is being edited.
+- fix win32 crashes while loading jpeg textures.
+- fix win32 crashes when closing the color picker and using the windows style.
+- fix double compilation bug. @@ Send RFE to TT.
 
 Misc:
 - display line and column numbers to status bar. @@ I need to send an RFE to TT.
@@ -17,6 +21,7 @@ Effects:
 - add support for matrix parameters.
 - add support for texture parameters in ARB programs.
 - add glfx support.
+- add support for custom xml effect file format.
 - integrated help.
 
 Performance panel:
@@ -26,14 +31,11 @@ Performance panel:
 
 Scene:
 - add more shapes.
-- add support for geometry file formats and simple scenes.
 - compute normals, tangents, binormals.
 
 KDE integration:
 - port to KDE4.
-- add icons.
 - use ktexteditor interface.
 - add support for autocompletion and syntax highlight.
 - highlight errors.
-
 
