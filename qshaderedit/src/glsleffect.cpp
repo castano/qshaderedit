@@ -38,10 +38,10 @@ namespace {
 		"	vec3 V = normalize(v_V);\n"
 		"	vec3 R = reflect(V, N);\n"
 		"	vec3 L = normalize(vec3(gl_LightSource[0].position));\n\n"
-		"	vec3 ambient = vec3(0.1, 0.0, 0.0);\n"
-		"	vec3 diffuse = vec3(1.0, 0.0, 0.0) * max(dot(L, N), 0.0);\n"
-		"	vec3 specular = vec3(1.0, 1.0, 1.0) * pow(max(dot(R, L), 0.0), 8.0);\n\n"
-		"	gl_FragColor = vec4(ambient + diffuse + specular, 1.0);\n"
+		"	vec4 ambient = gl_FrontMaterial.ambient;\n"
+		"	vec4 diffuse = gl_FrontMaterial.diffuse * max(dot(L, N), 0.0);\n"
+		"	vec4 specular = gl_FrontMaterial.specular * pow(max(dot(R, L), 0.0), gl_FrontMaterial.shininess);\n\n"
+		"	gl_FragColor = ambient + diffuse + specular;\n"
 		"}\n";
 
 	// GLSL shader file tags.

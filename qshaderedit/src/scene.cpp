@@ -243,6 +243,13 @@ public:
 
 	
 private:
+	struct vec4 {
+		vec4() { }
+		vec4(float _x, float _y, float _z, float _w = 1.0f): x(_x), y(_y), z(_z), w(_w) { }
+		
+		float x, y, z, w;
+	};
+	
 	struct vec3 {
 		vec3() { }
 		vec3(float _x, float _y, float _z): x(_x), y(_y), z(_z) { }
@@ -255,6 +262,24 @@ private:
 		vec2(float _s, float _t): s(_s), t(_t) { }
 		
 		float s, t;
+	};
+	
+	struct Material 
+	{
+		QString name;
+		vec4 ka, kd, ks;
+		float ns;
+		
+		Material(): ka(0.1f, 0.1f, 0.1f, 1.0f), kd(1.0f, 1.0f, 1.0f, 1.0f), ks(0.0f, 0.0f, 0.0f, 0.0f), ns(20.0f)		 
+		{ }
+		
+		void bind() 
+		{
+			glMaterialfv(GL_FRONT, GL_AMBIENT, (GLfloat*)&ka);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, (GLfloat*)&kd);
+			glMaterialfv(GL_FRONT, GL_SPECULAR, (GLfloat*)&ks);
+			glMaterialf(GL_FRONT, GL_SHININESS, (GLfloat)ns);
+		}
 	};
 		
 	static float min(float a, float b) 
@@ -274,17 +299,23 @@ private:
 			return;
 		
 		if (m_dlist)
-			glDeleteLists(m_dlist, 1);			
+			glDeleteLists(m_dlist, 1);
+			
 		m_dlist = glGenLists(1);
 		glNewList(m_dlist, GL_COMPILE);
-				
+		
+		Material def;
+		def.bind();
+		
 		QRegExp vertexPattern("^v\\s+(.*)\\s+(.*)\\s+(.*)");
 		QRegExp normalPattern("^vn\\s+(.*)\\s+(.*)\\s+(.*)");
 		QRegExp texcoordPattern("^vt\\s+(.*)\\s+(.*)(\\s+.*)?");
-
+		QRegExp mtllibPattern("^mtllib\\s+(.*\\.mtl)");
+		QRegExp usemtlPattern("^usemtl\\s+(.*)(\\#.*)?");
 		
 		QVector<vec3> verts, normals;
 		QVector<vec2> texcoords;
+		QVector<Material*> materials;
 		vec3 vmin(1e10, 1e10, 1e10), vmax(-1e10, -1e10, -1e10);
 		
 		while (!file.atEnd()) {
@@ -341,19 +372,78 @@ private:
 				}
 				
 				glEnd();
-			}			
+			}
+			
+			else if (line.contains(usemtlPattern)) {
+				QString name = usemtlPattern.cap(1);
+				foreach (Material* mat, materials) {
+					if (mat->name == name) {
+						mat->bind();
+						break;
+					}
+				} 
+			}
+			
+			else if (line.contains(mtllibPattern)) {
+				QFileInfo info(fileName);
+				QFile mtlFile(info.dir().filePath(mtllibPattern.cap(1)));
+				
+				if (!mtlFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+					qWarning("Could not open material file: %s", qPrintable(mtllibPattern.cap(1)));
+					continue;
+				}
+				
+				QRegExp newmtlPattern("^newmtl\\s(.*)(\\#.*)?");
+				QRegExp kaPattern("^Ka\\s(.*)\\s(.*)\\s(.*)");
+				QRegExp kdPattern("^Kd\\s(.*)\\s(.*)\\s(.*)");
+				QRegExp ksPattern("^Ks\\s(.*)\\s(.*)\\s(.*)");
+				QRegExp nsPattern("^Ns\\s(.*)");
+				
+				foreach (Material* mat, materials)
+					delete mat;
+				materials.clear();
+				
+				Material* current = NULL;				
+				while (!mtlFile.atEnd()) {
+					QString line = mtlFile.readLine().simplified();
+					
+					if (line.contains(newmtlPattern)) {
+						current = new Material;
+						materials.append(current);
+						current->name = newmtlPattern.cap(1);
+					} 					
+					else if (line.contains(kaPattern)) {
+						Q_ASSERT(current);
+						current->ka = vec4(kaPattern.cap(1).toFloat(), kaPattern.cap(2).toFloat(), kaPattern.cap(3).toFloat());
+					}
+					else if (line.contains(kdPattern)) {
+						Q_ASSERT(current);
+						current->kd = vec4(kdPattern.cap(1).toFloat(), kdPattern.cap(2).toFloat(), kdPattern.cap(3).toFloat());
+					}
+					else if (line.contains(ksPattern)) {
+						Q_ASSERT(current);
+						current->ks = vec4(ksPattern.cap(1).toFloat(), ksPattern.cap(2).toFloat(), ksPattern.cap(3).toFloat());
+					}
+					else if (line.contains(nsPattern)) {
+						Q_ASSERT(current);
+						current->ns = nsPattern.cap(1).toFloat();
+					}							
+				}
+			}
 		}
 		
 		glEndList();
-		
 		
 		m_center.x = (vmax.x + vmin.x) * 0.5;
 		m_center.y = (vmax.y + vmin.y) * 0.5;
 		m_center.z = (vmax.z + vmin.z) * 0.5;
 		
 		m_scale = 1.0f / max(vmax.x - m_center.x, max(vmax.y - m_center.y, vmax.z - m_center.z));
+		
+		foreach (Material* mat, materials)
+			delete mat;
 	}
-
+	
 	vec3 m_center;
 	float m_scale;
 };

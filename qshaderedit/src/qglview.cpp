@@ -155,7 +155,7 @@ void QGLView::paintGL()
 		float light_vector[4] = {1.2f/sqrt(3.08f), 1.0f/sqrt(3.08f), 0.8f/sqrt(3.08f), 0.0f};
 		glLightfv( GL_LIGHT0, GL_POSITION, light_vector );
 		
-		m_effect->begin();
+ 		m_effect->begin();
 		
 		for(int i = 0; i < m_effect->getPassNum(); i++) {
 			m_effect->beginPass(i);
