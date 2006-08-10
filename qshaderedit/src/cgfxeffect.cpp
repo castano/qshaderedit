@@ -837,7 +837,7 @@ class CgFxEffectFactory : public EffectFactory
 			"ObjectPlaneR|ObjectPlaneQ|FogParameters|Fog|FrontColor|BackColor|FrontSecondaryColor|BackSecondaryColor|TexCoord|FogFragCoord|Color|"
 			"SecondaryColor)|"
 			"WorldViewProjection(Inverse)?(Transpose)?|ModelView(Projection)?(Inverse)?(Transpose)?|View(Inverse)?(Transpose)?|"
-			"World(Inverse)?(Transpose)?|Projection(Inverse)?(Transpose)?|Time"
+			"World(Inverse)?(Transpose)?|Projection(Inverse)?(Transpose)?|Time|"
 			"VertexProgram|FragmentProgram|DepthTestEnable|CullFaceEnable|register\\(c[1-2]+\\))\\b");
 		rules.append(rule);
 
