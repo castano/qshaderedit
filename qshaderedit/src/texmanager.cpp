@@ -39,13 +39,13 @@ namespace {
 	}
 
 	// Taken from Qt, but do not mirror.
-	QImage convertToBGRA(const QImage &image)
+	static QImage convertToBGRA(const QImage &image)
 	{
 		QImage img = image;
 		if (image.format() != QImage::Format_ARGB32) {
 			img = image.convertToFormat(QImage::Format_ARGB32);
 		}
-
+		
 		if (QSysInfo::ByteOrder == QSysInfo::BigEndian) {
 			// mirror + swizzle
 			QImage res = img.copy();
@@ -71,6 +71,16 @@ namespace {
 		}
 	}
 	
+	inline static uint nextPowerOfTwo( uint x ) 
+	{
+		uint p = 1;
+		while( x > p ) {
+			p += p;
+		}
+		return p;
+	}
+	
+	
 	// Image plugin that supports all the image types that Qt supports.
 	class QtImagePlugin
 	{
@@ -94,22 +104,37 @@ namespace {
 			
 			image = convertToBGRA(image);
 			
+			int w = image.width();
+			int h = image.height();
+			
+			// Resize texture if NP2 not supported.
+			if( !GLEW_ARB_texture_non_power_of_two ) {
+				w = nextPowerOfTwo(w);
+				h = nextPowerOfTwo(h);
+			}
+			
+			// Clamp to maximum texture size.
+			int maxTextureSize = 256;
+			glGetIntegerv( GL_MAX_TEXTURE_SIZE, &maxTextureSize );
+			if( w > maxTextureSize ) w = maxTextureSize; 
+			if( h > maxTextureSize ) h = maxTextureSize; 
+			
+			if(image.width() != w || image.height() != h) {
+				image = image.scaled(w, h);
+			}
+			
 			*target = GL_TEXTURE_2D;
 			glBindTexture(GL_TEXTURE_2D, obj);
 			
 			if(GLEW_SGIS_generate_mipmap || GLEW_VERSION_1_4) {
 				glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, image.bits());
-				
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 			}
 			else {
-			//	gluBuild2DMipmaps(GL_TEXTURE_2D, 4, image.width(), image.height(), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image.bits());				
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, image.bits());
-				
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				gluBuild2DMipmaps(GL_TEXTURE_2D, 4, image.width(), image.height(), GL_BGRA, GL_UNSIGNED_BYTE, image.bits());				
 			}
 			
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			
 			ReportGLErrors();
