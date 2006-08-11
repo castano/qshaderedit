@@ -38,7 +38,7 @@ namespace {
 		}
 	}
 
-	// Taken from Qt.
+	// Taken from Qt, but do not mirror.
 	QImage convertToBGRA(const QImage &image)
 	{
 		QImage img = image;
@@ -51,7 +51,8 @@ namespace {
 			QImage res = img.copy();
 			for (int i=0; i < img.height(); i++) {
 				uint *p = (uint*) img.scanLine(i);
-				uint *q = (uint*) res.scanLine(img.height() - i - 1);
+			//	uint *q = (uint*) res.scanLine(img.height() - i - 1);
+				uint *q = (uint*) res.scanLine(i);
 				uint *end = p + img.width();
 				while (p < end) {
 					*q = ((*p << 24) & 0xff000000)
@@ -65,7 +66,8 @@ namespace {
 			return res;
 		}
 		else {
-			return img.mirrored();
+			return img;
+		//	return img.mirrored();
 		}
 	}
 	
