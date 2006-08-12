@@ -540,6 +540,12 @@ public:
 	{
 		// nothing to do.
 	}
+	
+	virtual void beginMaterialGroup()
+	{
+		// needs to be called every time the material changes on ATI hardware
+		glUseProgramObjectARB(m_program);
+	}
 
 	virtual void endPass()
 	{

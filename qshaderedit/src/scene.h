@@ -1,6 +1,9 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+#include <QtCore/QObject>
+#include <QtGui/QIcon>
+
 class QMenu;
 
 // @@ I'm not sure where to expose the scene selection. Here are 
@@ -19,7 +22,10 @@ class Scene
 {
 public:
 	virtual ~Scene() {}
-	virtual void draw() const = 0;
+	
+	// pass effect to work around ATI driver bug (Effect::beginMaterialGroup())
+	virtual void draw(class Effect* effect) const = 0;
+	
 	virtual void transform() const = 0;
 	virtual void setupMenu(QMenu * menu) const = 0;
 };

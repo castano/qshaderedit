@@ -1,14 +1,15 @@
 
-#include <QtCore/QString>
-#include <QtGui/QFileDialog>
-#include <QtGui/QIcon>
-#include <QtCore/QFile>
-#include <math.h>
-
 #include "scene.h"
+#include "effect.h"
 
 // Include GLEW before anything else.
 #include <GL/glew.h>
+
+#include <QtCore/QString>
+#include <QtGui/QFileDialog>
+#include <QtCore/QFile>
+#include <math.h>
+
 
 extern void drawTeapot();
 
@@ -26,8 +27,9 @@ public:
 		}
 	}
 	
-	virtual void draw() const
+	virtual void draw(Effect* effect) const
 	{
+		Q_UNUSED(effect);
 		glCallList(m_dlist);
 	}
 	
@@ -221,10 +223,10 @@ REGISTER_SCENE_FACTORY(CubeSceneFactory);
 
 
 
-class ObjScene : public DisplayListScene
+class ObjScene : public Scene
 {
 public:
-	ObjScene()
+	ObjScene(): m_dlistBase(0), m_dlistCount(0)
 	{
 		QString fileName = QFileDialog::getOpenFileName(NULL, QObject::tr("Open File"),
 			SceneFactory::lastFile(), QString(QObject::tr("OBJ Files (%1)")).arg("*.obj"));
@@ -240,7 +242,20 @@ public:
 		glScalef(m_scale, m_scale, m_scale);
 		glTranslatef(-m_center.x, -m_center.y, -m_center.z);
 	}
-
+	
+	virtual void draw(Effect* effect) const
+	{
+		GLuint lastList = m_dlistBase + m_dlistCount;  
+		for (GLuint n = m_dlistBase; n < lastList; n++) {
+			effect->beginMaterialGroup();
+			glCallList(n);
+		}
+	}
+	
+	virtual void setupMenu(QMenu * menu) const
+	{
+		Q_UNUSED(menu);
+	}
 	
 private:
 	struct vec4 {
@@ -281,7 +296,20 @@ private:
 			glMaterialf(GL_FRONT, GL_SHININESS, (GLfloat)ns);
 		}
 	};
-		
+	
+	struct Vertex
+	{
+		int pos;
+		int normal;
+		int texcoord;
+	};
+	
+	struct Surface 
+	{
+		Material* material;
+		QVector< QVector<Vertex> > faces;
+	};
+	
 	static float min(float a, float b) 
 	{
 		return a < b ? a : b;
@@ -298,14 +326,8 @@ private:
 		if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
 			return;
 		
-		if (m_dlist)
-			glDeleteLists(m_dlist, 1);
-			
-		m_dlist = glGenLists(1);
-		glNewList(m_dlist, GL_COMPILE);
-		
-		Material def;
-		def.bind();
+		if (m_dlistBase)
+			glDeleteLists(m_dlistBase, m_dlistCount);
 		
 		QRegExp vertexPattern("^v\\s+(.*)\\s+(.*)\\s+(.*)");
 		QRegExp normalPattern("^vn\\s+(.*)\\s+(.*)\\s+(.*)");
@@ -313,10 +335,18 @@ private:
 		QRegExp mtllibPattern("^mtllib\\s+(.*\\.mtl)");
 		QRegExp usemtlPattern("^usemtl\\s+(.*)(\\#.*)?");
 		
-		QVector<vec3> verts, normals;
+		QVector<vec3> vertices, normals;
 		QVector<vec2> texcoords;
 		QVector<Material*> materials;
+		QVector<Surface*> surfaces;
+		
 		vec3 vmin(1e10, 1e10, 1e10), vmax(-1e10, -1e10, -1e10);
+		
+		materials.append(new Material); // default Material
+		
+		Surface* currentSurface = new Surface;
+		currentSurface->material = materials[0];
+		surfaces.append(currentSurface);
 		
 		while (!file.atEnd()) {
 			QString line = file.readLine().simplified();
@@ -326,7 +356,7 @@ private:
 			
 			if (line.contains(vertexPattern)) {
 				vec3 v(vertexPattern.cap(1).toFloat(), vertexPattern.cap(2).toFloat(), vertexPattern.cap(3).toFloat());
-				verts.append(v);
+				vertices.append(v);
 				vmin.x = min(v.x, vmin.x);
 				vmin.y = min(v.y, vmin.y);
 				vmin.z = min(v.z, vmin.z);
@@ -345,43 +375,65 @@ private:
 			else if (line.startsWith("f ")) {
 				QStringList faces = line.split(' ');
 				
-				glBegin(GL_POLYGON);
+				QVector<Vertex> face;
 				
 				for (int i = 1; i < faces.size(); i++) {
 					QStringList indices = faces[i].split('/');
 					
-					int v = indices[0].toInt() -1;
-					if (v < 0) v += verts.size() +1;
-					Q_ASSERT(v >= 0 && v < verts.size());
+					Vertex v;
+					
+					v.pos = indices[0].toInt() -1;
+					if (v.pos < 0) v.pos += vertices.size() +1;
+					Q_ASSERT(v.pos >= 0 && v.pos < vertices.size());
 					
 					if (indices.size() > 1 && !indices[1].isEmpty()) {
-						int t = indices[1].toInt() -1;
-						if (t < 0) t += texcoords.size() +1;
-						Q_ASSERT(t >= 0 && t < texcoords.size());
-						glTexCoord2fv((GLfloat*)&texcoords[t]);
+						v.texcoord = indices[1].toInt() -1;
+						if (v.texcoord < 0) v.texcoord += texcoords.size() +1;
+						Q_ASSERT(v.texcoord >= 0 && v.texcoord < texcoords.size());
 					}
+					else
+						v.texcoord = -1;
 					
 					if (indices.size() > 2) {
-						int n = indices[2].toInt() -1;
-						if (n < 0) n += normals.size() +1;
-						Q_ASSERT(n >= 0 && n < normals.size()); 
-						glNormal3fv((GLfloat*)&normals[n]);
+						v.normal = indices[2].toInt() -1;
+						if (v.normal < 0) v.normal += normals.size() +1;
+						Q_ASSERT(v.normal >= 0 && v.normal < normals.size()); 
 					}
+					else
+						v.normal = -1;
 					
-					glVertex3fv((GLfloat*)&verts[v]);
+					face.append(v);
 				}
 				
-				glEnd();
+				currentSurface->faces.append(face);
 			}
 			
 			else if (line.contains(usemtlPattern)) {
 				QString name = usemtlPattern.cap(1);
-				foreach (Material* mat, materials) {
-					if (mat->name == name) {
-						mat->bind();
+				
+				currentSurface = NULL;
+				foreach (Surface* surf, surfaces) {
+					if (surf->material->name == name) {
+						currentSurface = surf;
 						break;
 					}
-				} 
+				}
+				
+				if (!currentSurface) {
+					Material* material;
+					foreach (Material* mat, materials) {
+						if (mat->name == name) {
+							material = mat;
+							break;
+						}
+					}
+					if (!material)
+						material = materials[0]; // default gl material
+					
+					currentSurface = new Surface;
+					currentSurface->material = material;
+					surfaces.append(currentSurface);
+				}				
 			}
 			
 			else if (line.contains(mtllibPattern)) {
@@ -402,6 +454,7 @@ private:
 				foreach (Material* mat, materials)
 					delete mat;
 				materials.clear();
+				materials.append(new Material); // default material
 				
 				Material* current = NULL;				
 				while (!mtlFile.atEnd()) {
@@ -432,7 +485,6 @@ private:
 			}
 		}
 		
-		glEndList();
 		
 		m_center.x = (vmax.x + vmin.x) * 0.5;
 		m_center.y = (vmax.y + vmin.y) * 0.5;
@@ -440,12 +492,48 @@ private:
 		
 		m_scale = 1.0f / max(vmax.x - m_center.x, max(vmax.y - m_center.y, vmax.z - m_center.z));
 		
+		
+		// create display lists
+		if (surfaces[0]->faces.isEmpty())
+			surfaces.remove(0);
+		m_dlistCount = surfaces.size();
+		m_dlistBase = glGenLists(m_dlistCount);
+		
+		for (int n = 0; n < m_dlistCount; n++) {
+			glNewList(m_dlistBase + n, GL_COMPILE);			
+			Surface* surf = surfaces[n];			
+			surf->material->bind();
+			
+			for (int face = 0; face < surf->faces.count(); face++) {
+				QVector<Vertex> verts = surf->faces[face];
+				
+				glBegin(GL_POLYGON);
+				for (int vert = 0; vert < verts.count(); vert++) {
+					
+					if (verts[vert].texcoord >= 0)
+						glTexCoord2fv((GLfloat*)&texcoords[verts[vert].texcoord]);
+					
+					if (verts[vert].normal >= 0)
+						glNormal3fv((GLfloat*)&normals[verts[vert].normal]);
+					
+					glVertex3fv((GLfloat*)&vertices[verts[vert].pos]);
+				}
+				glEnd();
+			}
+			
+			glEndList();
+		}		
+		
 		foreach (Material* mat, materials)
-			delete mat;
+			delete mat;		
+		foreach (Surface* surf, surfaces)
+			delete surf;
 	}
 	
 	vec3 m_center;
 	float m_scale;
+	
+	GLuint m_dlistBase, m_dlistCount;
 };
 
 // Obj scene factory.

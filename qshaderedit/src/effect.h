@@ -70,6 +70,7 @@ public:
 	// Rendering.
 	virtual void begin() = 0;
 	virtual void beginPass(int p) = 0;
+	virtual void beginMaterialGroup() { }
 	virtual void endPass() = 0;
 	virtual void end() = 0;
 	

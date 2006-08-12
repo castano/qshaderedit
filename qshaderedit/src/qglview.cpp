@@ -160,7 +160,7 @@ void QGLView::paintGL()
 		for(int i = 0; i < m_effect->getPassNum(); i++) {
 			m_effect->beginPass(i);
 			
-			m_scene->draw();
+			m_scene->draw(m_effect);
 						
 			m_effect->endPass();
 		}
@@ -168,7 +168,7 @@ void QGLView::paintGL()
 		m_effect->end();		
 	}
 	
-	swapBuffers();	
+ 	swapBuffers();	
 }
 
 
