@@ -64,6 +64,16 @@ void Editor::gotoLine(int tab, int line, int column)
 	currentWidget()->setFocus();
 }
 
+void Editor::nextTab()
+{
+	setCurrentIndex(currentIndex() +1);
+}
+
+void Editor::previousTab()
+{
+	setCurrentIndex(currentIndex() -1);	
+}
+
 void Editor::onCurrentChanged(int idx)
 {
 	Q_ASSERT(idx >= 0);

@@ -23,6 +23,8 @@ public slots:
 	void paste();
 
 	void gotoLine(int tab, int line, int column = 0);
+	void nextTab();
+	void previousTab();
 
 signals:
 	void cursorPositionChanged();

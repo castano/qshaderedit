@@ -242,6 +242,17 @@ void QShaderEdit::createMenus()
 	action->setStatusTip(tr("Show the Qt library's about box"));
 	connect(action, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
 	helpMenu->addAction(action);
+	
+	
+	action = new QAction(tr("&Next Tab"), this);
+	action->setShortcut(tr("Alt+Right"));
+	connect(action, SIGNAL(triggered()), m_editor, SLOT(nextTab()));
+	this->addAction(action);
+	
+	action = new QAction(tr("&Previous Tab"), this);
+	action->setShortcut(tr("Alt+Left"));
+	connect(action, SIGNAL(triggered()), m_editor, SLOT(previousTab()));
+	this->addAction(action);
 }
 
 void QShaderEdit::createToolbars()
