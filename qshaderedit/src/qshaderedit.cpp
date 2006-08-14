@@ -133,6 +133,10 @@ void QShaderEdit::createActions()
 	m_clearRecentAction = new QAction(tr("&Clear Recent"), this);
 	m_clearRecentAction->setEnabled(false);
 	connect(m_clearRecentAction, SIGNAL(triggered()), this, SLOT(clearRecentFiles()));
+	
+	m_compile = new QAction(tr("&Compile"), this);
+	m_compile->setShortcut(tr("F7"));
+	connect(m_compile, SIGNAL(triggered()), this, SLOT(keyTimeout()));
 }
 
 void QShaderEdit::createMenus()
@@ -155,8 +159,12 @@ void QShaderEdit::createMenus()
 	fileMenu->addAction(m_saveAction);
 	fileMenu->addAction(m_saveAsAction);
 
-	fileMenu->addSeparator();
+//	fileMenu->addSeparator();
 
+//	fileMenu->addAction(m_compile);
+	
+	fileMenu->addSeparator();
+	
 	action = new QAction(tr("E&xit"), this);
 	action->setShortcut(tr("Ctrl+Q"));
 	action->setStatusTip(tr("Exit the application"));
@@ -285,9 +293,8 @@ void QShaderEdit::createToolbars()
 void QShaderEdit::createStatusbar()
 {
 	statusBar()->showMessage(tr("Ready"));
-	//m_positionLabel = new QLabel(statusBar());
-	//statusBar()->addWidget(m_positionLabel);
-	//m_positionLabel->setText("Test!");
+	m_positionLabel = new QLabel(statusBar());
+	statusBar()->addPermanentWidget(m_positionLabel);
 }
 
 void QShaderEdit::createDockWindows()
@@ -516,7 +523,8 @@ void QShaderEdit::techniqueChanged(int index)
 
 void QShaderEdit::cursorPositionChanged()
 {
-	//m_positionLabel->setText(QString("%1,%2").arg(23).arg(1));
+	int line = m_editor->line();
+	m_positionLabel->setText(QString(tr(" Line: %1 ")).arg(line));
 }
 
 void QShaderEdit::selectScene()
@@ -551,10 +559,6 @@ void QShaderEdit::keyPressEvent(QKeyEvent * event)
 			m_editor->currentWidget()->setFocus();
 		}
 		event->accept();
-	}
-	else if( event->key() == Qt::Key_F7 ) {
-		event->ignore();
-		// @@ Trigger build when auto build is disabled.
 	}
 	else {
 		event->ignore();

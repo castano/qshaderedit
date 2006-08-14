@@ -6,8 +6,9 @@
 #include <GL/glew.h>
 
 #include <QtCore/QString>
-#include <QtGui/QFileDialog>
 #include <QtCore/QFile>
+#include <QtGui/QFileDialog>
+
 #include <math.h>
 
 
@@ -27,9 +28,20 @@ public:
 		}
 	}
 	
+
 	virtual void draw(Effect* effect) const
 	{
 		Q_UNUSED(effect);
+		
+		// Reset default material.
+		GLfloat ka[] = {0.1f, 0.0f, 0.0f, 0.0f};
+		GLfloat kd[] = {0.9f, 0.0f, 0.0f, 0.0f};
+		GLfloat ks[] = {1.0f, 1.0f, 1.0f, 0.0f};
+		glMaterialfv(GL_FRONT, GL_AMBIENT, ka);
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, kd);
+		glMaterialfv(GL_FRONT, GL_SPECULAR, ks);
+		glMaterialf(GL_FRONT, GL_SHININESS, 8);
+		
 		glCallList(m_dlist);
 	}
 	
@@ -342,10 +354,10 @@ private:
 		
 		vec3 vmin(1e10, 1e10, 1e10), vmax(-1e10, -1e10, -1e10);
 		
-		materials.append(new Material); // default Material
+		Material * defaultMaterial = new Material; 
 		
-		Surface* currentSurface = new Surface;
-		currentSurface->material = materials[0];
+		Surface * currentSurface = new Surface;
+		currentSurface->material = defaultMaterial;
 		surfaces.append(currentSurface);
 		
 		while (!file.atEnd()) {
@@ -413,6 +425,9 @@ private:
 				
 				currentSurface = NULL;
 				foreach (Surface* surf, surfaces) {
+					Q_ASSERT(surf != NULL);
+					Q_ASSERT(surf->material != NULL);
+					
 					if (surf->material->name == name) {
 						currentSurface = surf;
 						break;
@@ -420,15 +435,14 @@ private:
 				}
 				
 				if (!currentSurface) {
-					Material* material;
+					Material* material = defaultMaterial;
 					foreach (Material* mat, materials) {
+						Q_ASSERT(mat != NULL);
 						if (mat->name == name) {
 							material = mat;
 							break;
 						}
 					}
-					if (!material)
-						material = materials[0]; // default gl material
 					
 					currentSurface = new Surface;
 					currentSurface->material = material;
@@ -451,12 +465,11 @@ private:
 				QRegExp ksPattern("^Ks\\s(.*)\\s(.*)\\s(.*)");
 				QRegExp nsPattern("^Ns\\s(.*)");
 				
-				foreach (Material* mat, materials)
-					delete mat;
+				// @@ Existing surfaces are pointing to the materials that are being deleted!
+				qDeleteAll(materials);
 				materials.clear();
-				materials.append(new Material); // default material
 				
-				Material* current = NULL;				
+				Material* current = NULL;
 				while (!mtlFile.atEnd()) {
 					QString line = mtlFile.readLine().simplified();
 					
@@ -464,7 +477,7 @@ private:
 						current = new Material;
 						materials.append(current);
 						current->name = newmtlPattern.cap(1);
-					} 					
+					}
 					else if (line.contains(kaPattern)) {
 						Q_ASSERT(current);
 						current->ka = vec4(kaPattern.cap(1).toFloat(), kaPattern.cap(2).toFloat(), kaPattern.cap(3).toFloat());
@@ -480,7 +493,7 @@ private:
 					else if (line.contains(nsPattern)) {
 						Q_ASSERT(current);
 						current->ns = nsPattern.cap(1).toFloat();
-					}							
+					}	
 				}
 			}
 		}
@@ -524,10 +537,9 @@ private:
 			glEndList();
 		}		
 		
-		foreach (Material* mat, materials)
-			delete mat;		
-		foreach (Surface* surf, surfaces)
-			delete surf;
+		delete defaultMaterial;
+		qDeleteAll(materials);
+		qDeleteAll(surfaces);
 	}
 	
 	vec3 m_center;

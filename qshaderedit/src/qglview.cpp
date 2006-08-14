@@ -204,6 +204,8 @@ void QGLView::mouseMoveEvent(QMouseEvent *event)
 	if(m_button == Qt::LeftButton) {
 		m_alpha += (240.0f * (pos - m_pos).x()) / height();
 		m_beta += (240.0f * (pos - m_pos).y()) / height();
+		if(m_beta < -90) m_beta = -90;
+		else if(m_beta > 90) m_beta = 90;
 	}
 	else if(m_button == Qt::RightButton) {
 		m_x -= (4.0f * (pos - m_pos).x()) / height();

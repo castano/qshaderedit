@@ -119,6 +119,8 @@ private:
 	QAction * m_recentFileSeparator;
 	QAction * m_clearRecentAction;
 	
+	QAction * m_compile;
+	
 	// Timers.
 	QTimer * m_timer;	// compilation timer.
 	QTimer * m_animationTimer;

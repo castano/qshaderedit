@@ -1,15 +1,13 @@
 
 Bugs:
 - skip compilation while parameter panel is being edited.
-- fix win32 crashes while loading jpeg textures.
-- fix win32 crashes when closing the color picker and using the windows style.
 - fix double compilation bug. @@ Send RFE to TT.
 
 Misc:
 - display line and column numbers to status bar. @@ I need to send an RFE to TT.
 
 Parameter panel:
-- Fix problem with boolean value, apparently a bug in Qt, already reported.
+- Fix problem with boolean value, apparently a bug in Qt, already reported, bug id 125584.
 - Matrix editor.
 
 Textures:

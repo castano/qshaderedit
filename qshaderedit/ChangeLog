@@ -2,6 +2,7 @@
 	Add support for obj files.
 	Add icons.
 	Add texture and scene paths to settings.
+	Obj mesh scene plugin and mtl support.
 
 0.1.2
 	Improved syntax highlighting by Lars Uebernickel <larsuebernickel@gmx.de>.

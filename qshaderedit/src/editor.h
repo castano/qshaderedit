@@ -15,6 +15,8 @@ public:
 	QTextEdit * addEditor(const QString & name);
 	QTextEdit * currentTextEdit() const;
 
+	int line() const;
+	
 public slots:
 	void undo();
 	void redo();

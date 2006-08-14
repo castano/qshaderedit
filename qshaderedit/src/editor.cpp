@@ -4,6 +4,8 @@
 #include <QtGui/QTabBar>
 #include <QtGui/QTextEdit>
 #include <QtGui/QTextCursor>
+//#include <QtGui/QTextLayout>
+//#include <QtGui/QTextBlock>
 
 Editor::Editor(QWidget * parent) : QTabWidget(parent) 
 {
@@ -28,6 +30,18 @@ Editor::Editor(QWidget * parent) : QTabWidget(parent)
 QTextEdit * Editor::currentTextEdit() const
 {
 	return static_cast<QTextEdit *>(currentWidget());
+}
+
+int Editor::line() const
+{
+	// None of these work...
+//	return currentTextEdit()->cursorRect(currentTextEdit()->textCursor()).y();
+
+//	int position = currentTextEdit()->textCursor().position();
+//	QTextLayout * layout = currentTextEdit()->document()->findBlock(position).layout();
+//	return layout->lineForTextPosition(position).lineNumber();
+	
+	return 0;
 }
 
 // slots.
@@ -83,8 +97,8 @@ void Editor::onCurrentChanged(int idx)
 	QTextDocument * document = currentTextEdit()->document();
 	QTextCursor cursor = currentTextEdit()->textCursor();
 	
-	// @@ How do we get the position?
-	//currentTextEdit()->textCursor();
+	// update cursor position.
+	emit cursorPositionChanged();
 
 	// update copy/undo/redo available.
 	emit copyAvailable(cursor.position() != cursor.anchor());
