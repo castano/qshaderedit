@@ -249,6 +249,12 @@ public:
 		}		
 	}
 	
+	~ObjScene()
+	{
+		if (m_dlistBase)
+			glDeleteLists(m_dlistBase, m_dlistCount);
+	}
+	
 	virtual void transform() const
 	{
 		glScalef(m_scale, m_scale, m_scale);
