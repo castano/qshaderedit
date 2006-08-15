@@ -309,6 +309,83 @@ private:
 		}
 	};
 	
+	class MaterialLib
+	{
+		public:
+			~MaterialLib()
+			{
+				qDeleteAll(m_materials);
+			}
+			
+			QString name() const 
+			{
+				return m_name;
+			}
+			
+			bool load(const QString& name, const QString& fileName)
+			{
+				QFile file(fileName);
+				
+				if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+					return false;
+				
+				m_name = name;
+				
+				QRegExp newmtlPattern("^newmtl\\s(.*)(\\#.*)?");
+				QRegExp kaPattern("^Ka\\s(.*)\\s(.*)\\s(.*)");
+				QRegExp kdPattern("^Kd\\s(.*)\\s(.*)\\s(.*)");
+				QRegExp ksPattern("^Ks\\s(.*)\\s(.*)\\s(.*)");
+				QRegExp nsPattern("^Ns\\s(.*)");
+				
+				if (!m_materials.isEmpty()) {
+					qDeleteAll(m_materials);
+					m_materials.clear();
+				}
+				
+				Material* current = NULL;
+				while (!file.atEnd()) {
+					QString line = file.readLine().simplified();
+					
+					if (line.contains(newmtlPattern)) {
+						current = new Material;
+						m_materials.append(current);
+						current->name = newmtlPattern.cap(1);
+					}
+					else if (line.contains(kaPattern)) {
+						Q_ASSERT(current);
+						current->ka = vec4(kaPattern.cap(1).toFloat(), kaPattern.cap(2).toFloat(), kaPattern.cap(3).toFloat());
+					}
+					else if (line.contains(kdPattern)) {
+						Q_ASSERT(current);
+						current->kd = vec4(kdPattern.cap(1).toFloat(), kdPattern.cap(2).toFloat(), kdPattern.cap(3).toFloat());
+					}
+					else if (line.contains(ksPattern)) {
+						Q_ASSERT(current);
+						current->ks = vec4(ksPattern.cap(1).toFloat(), ksPattern.cap(2).toFloat(), ksPattern.cap(3).toFloat());
+					}
+					else if (line.contains(nsPattern)) {
+						Q_ASSERT(current);
+						current->ns = nsPattern.cap(1).toFloat();
+					}	
+				}
+				
+				return true;
+			}
+			
+			Material* material(const QString& name)
+			{
+				foreach (Material* mat, m_materials) {
+					if (mat->name == name)
+						return mat;
+				}
+				return NULL;
+			}
+			
+		private:
+			QString m_name;
+			QVector<Material*> m_materials;		
+	};
+	
 	struct Vertex
 	{
 		int pos;
@@ -349,13 +426,13 @@ private:
 		
 		QVector<vec3> vertices, normals;
 		QVector<vec2> texcoords;
-		QVector<Material*> materials;
+		QVector<MaterialLib*> materialLibs;
 		QVector<Surface*> surfaces;
 		
 		vec3 vmin(1e10, 1e10, 1e10), vmax(-1e10, -1e10, -1e10);
 		
 		Material * defaultMaterial = new Material; 
-		
+		MaterialLib * currentMaterialLib = NULL;
 		Surface * currentSurface = new Surface;
 		currentSurface->material = defaultMaterial;
 		surfaces.append(currentSurface);
@@ -423,77 +500,55 @@ private:
 			else if (line.contains(usemtlPattern)) {
 				QString name = usemtlPattern.cap(1);
 				
-				currentSurface = NULL;
-				foreach (Surface* surf, surfaces) {
-					Q_ASSERT(surf != NULL);
-					Q_ASSERT(surf->material != NULL);
-					
-					if (surf->material->name == name) {
-						currentSurface = surf;
-						break;
-					}
-				}
+				Material* material = NULL;
+				if (currentMaterialLib)
+					material = currentMaterialLib->material(name);
 				
-				if (!currentSurface) {
-					Material* material = defaultMaterial;
-					foreach (Material* mat, materials) {
-						Q_ASSERT(mat != NULL);
-						if (mat->name == name) {
-							material = mat;
+				if (!material) {
+					currentSurface = surfaces[0]; // default material
+				}
+				else {
+					currentSurface = NULL;
+					foreach (Surface* surf, surfaces) {
+						Q_ASSERT(surf != NULL);
+						Q_ASSERT(surf->material != NULL);
+					
+						if (surf->material->name == name) {
+							currentSurface = surf;
 							break;
 						}
 					}
 					
-					currentSurface = new Surface;
-					currentSurface->material = material;
-					surfaces.append(currentSurface);
-				}				
+					if (!currentSurface) {
+						currentSurface = new Surface;
+						currentSurface->material = material;
+						surfaces.append(currentSurface);
+					}
+				}
 			}
 			
-			else if (line.contains(mtllibPattern)) {
-				QFileInfo info(fileName);
-				QFile mtlFile(info.dir().filePath(mtllibPattern.cap(1)));
-				
-				if (!mtlFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-					qWarning("Could not open material file: %s", qPrintable(mtllibPattern.cap(1)));
-					continue;
+			else if (line.contains(mtllibPattern)) {				
+				QString name = mtllibPattern.cap(1);
+				currentMaterialLib = NULL;
+				foreach (MaterialLib* mtlLib, materialLibs) {
+					if (mtlLib->name() == name) {
+						currentMaterialLib = mtlLib;
+						break; 
+					}
 				}
 				
-				QRegExp newmtlPattern("^newmtl\\s(.*)(\\#.*)?");
-				QRegExp kaPattern("^Ka\\s(.*)\\s(.*)\\s(.*)");
-				QRegExp kdPattern("^Kd\\s(.*)\\s(.*)\\s(.*)");
-				QRegExp ksPattern("^Ks\\s(.*)\\s(.*)\\s(.*)");
-				QRegExp nsPattern("^Ns\\s(.*)");
-				
-				// @@ Existing surfaces are pointing to the materials that are being deleted!
-				qDeleteAll(materials);
-				materials.clear();
-				
-				Material* current = NULL;
-				while (!mtlFile.atEnd()) {
-					QString line = mtlFile.readLine().simplified();
+				if (!currentMaterialLib) {
+					QFileInfo info(fileName);
+					QString mtlLibFileName = info.dir().filePath(name); 
 					
-					if (line.contains(newmtlPattern)) {
-						current = new Material;
-						materials.append(current);
-						current->name = newmtlPattern.cap(1);
+					MaterialLib* mtlLib = new MaterialLib;
+					if (!mtlLib->load(name, mtlLibFileName)) {
+						qWarning("Could not open material file: %s", qPrintable(mtlLibFileName));
+						delete mtlLib;
+						continue;
 					}
-					else if (line.contains(kaPattern)) {
-						Q_ASSERT(current);
-						current->ka = vec4(kaPattern.cap(1).toFloat(), kaPattern.cap(2).toFloat(), kaPattern.cap(3).toFloat());
-					}
-					else if (line.contains(kdPattern)) {
-						Q_ASSERT(current);
-						current->kd = vec4(kdPattern.cap(1).toFloat(), kdPattern.cap(2).toFloat(), kdPattern.cap(3).toFloat());
-					}
-					else if (line.contains(ksPattern)) {
-						Q_ASSERT(current);
-						current->ks = vec4(ksPattern.cap(1).toFloat(), ksPattern.cap(2).toFloat(), ksPattern.cap(3).toFloat());
-					}
-					else if (line.contains(nsPattern)) {
-						Q_ASSERT(current);
-						current->ns = nsPattern.cap(1).toFloat();
-					}	
+					materialLibs.append(mtlLib);
+					currentMaterialLib = mtlLib;
 				}
 			}
 		}
@@ -538,7 +593,7 @@ private:
 		}		
 		
 		delete defaultMaterial;
-		qDeleteAll(materials);
+		qDeleteAll(materialLibs);
 		qDeleteAll(surfaces);
 	}
 	
