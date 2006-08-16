@@ -27,6 +27,7 @@ private slots:
 	void openFileDialog();
 
 signals:
+	void activated();
 	void done(QWidget *);
 
 private:
@@ -47,6 +48,7 @@ public:
 	void setColor(QColor color, int components = 4);
 
 signals:
+	void activated();
 	void done(QWidget* widget);
 
 private slots:
@@ -101,7 +103,10 @@ class ParameterDelegate : public QItemDelegate
 	Q_OBJECT
 public:
 	ParameterDelegate(QObject *parent = 0) :
-		QItemDelegate(parent) {}
+		QItemDelegate(parent), m_editorActive(false) 
+	{
+	//	connect(this, SIGNAL(closeEditor(QWidget*)), this, SLOT(editorClosed(QWidget*)));
+	}
 
 //	virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index ) const;
 //	virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const;
@@ -114,8 +119,15 @@ public:
 
 	virtual bool eventFilter(QObject* object, QEvent* event);
 
+	bool isEditorActive() const;
+	
 private slots:
 	void editorValueChanged();
+	void editorOpened();
+	void editorClosed(QWidget * editor);
+	
+private:
+	mutable bool m_editorActive;
 };
 
 
@@ -176,6 +188,8 @@ public:
 
 	virtual QSize sizeHint() const;
 
+	bool isEditorActive() const;
+	
 	static const QString & lastPath();
 	static void setLastPath(const QString & lastPath);
 	

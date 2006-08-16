@@ -1,6 +1,8 @@
 #include "parameterpanel.h"
 #include "effect.h"
 
+#include <QtCore/QDebug>
+
 #include <QtGui/QHeaderView>
 #include <QtGui/QDoubleSpinBox>
 #include <QtGui/QLineEdit>
@@ -47,6 +49,7 @@ FileEditor::FileEditor(QWidget * parent /*= 0*/) : QWidget(parent)
 
 void FileEditor::openFileDialog()
 {
+	emit activated();
 	QString fileName = QFileDialog::getOpenFileName(this, "Choose file", s_lastPath, "Images (*.png *.jpg)");
 	if( !fileName.isEmpty() ) {
 		m_lineEdit->setText(fileName);
@@ -132,6 +135,7 @@ void ColorEditor::updateLabel()
 
 void ColorEditor::openColorPicker()
 {
+	emit activated();
 	QColor color = QColorDialog::getColor(m_color);
 	if (color.isValid()) {
 		m_color = color;
@@ -258,16 +262,20 @@ QWidget * ParameterDelegate::createEditor(QWidget * parent, const QStyleOptionVi
 		else {
 			ColorEditor* editor = new ColorEditor(parent);
 			editor->installEventFilter(const_cast<ParameterDelegate*>(this));
-			connect(editor, SIGNAL(done(QWidget*)), this, SIGNAL(commitData(QWidget*)));
+			connect(editor, SIGNAL(activated()), this, SLOT(editorOpened()));
+			connect(editor, SIGNAL(done(QWidget*)), this, SIGNAL(commitData(QWidget*)));	// emit these in editorClosed
 			connect(editor, SIGNAL(done(QWidget*)), this, SIGNAL(closeEditor(QWidget*)));
+			connect(editor, SIGNAL(done(QWidget*)), this, SLOT(editorClosed(QWidget*)));
 			return editor;
 		}
 	}
 	else if( model->useFileEditor(index) ) {
 		FileEditor * editor = new FileEditor(parent);
 		editor->installEventFilter(const_cast<ParameterDelegate*>(this));
-		connect(editor, SIGNAL(done(QWidget*)), this, SIGNAL(commitData(QWidget*)));
+		connect(editor, SIGNAL(activated()), this, SLOT(editorOpened()));
+		connect(editor, SIGNAL(done(QWidget*)), this, SIGNAL(commitData(QWidget*)));	// emit these in editorClosed
 		connect(editor, SIGNAL(done(QWidget*)), this, SIGNAL(closeEditor(QWidget*)));
+		connect(editor, SIGNAL(done(QWidget*)), this, SLOT(editorClosed(QWidget*)));
 		return editor;
 	}
 
@@ -398,12 +406,26 @@ bool ParameterDelegate::eventFilter(QObject* object, QEvent* event)
 	return QItemDelegate::eventFilter(object, event);
 }
 
+bool ParameterDelegate::isEditorActive() const
+{
+	return m_editorActive;
+}
+
 void ParameterDelegate::editorValueChanged()
 {
 	if (sender() && sender()->isWidgetType())
 		emit commitData(static_cast<QWidget *>(sender()));
 }
 
+void ParameterDelegate::editorOpened()
+{
+	m_editorActive = true;
+}
+
+void ParameterDelegate::editorClosed(QWidget * editor)
+{
+	m_editorActive = false;
+}
 
 //
 // ParameterTableModel
@@ -743,6 +765,11 @@ ParameterPanel::~ParameterPanel()
 QSize ParameterPanel::sizeHint() const
 {
 	return QSize(200, 200);
+}
+
+bool ParameterPanel::isEditorActive() const
+{
+	return m_delegate->isEditorActive();
 }
 
 void ParameterPanel::initWidget()

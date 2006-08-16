@@ -322,7 +322,7 @@ public:
 			return false;
 		}
 
-		initParameters();
+		initParameters(output);
 
 		return true;
 	}
@@ -584,31 +584,19 @@ private:
 
 	void resetParameters()
 	{
-		/*for(int i = 0; i < m_texUnitArray.count(); i++) {
-			resetSampler(i);
-		}
-		m_texUnitArray.clear();*/
-
 		m_timeUniform = -1;
-
+		
 		qSwap(m_oldParameterArray, m_parameterArray);
 		m_parameterArray.clear();
 	}
 
-	void initParameters()
+	void initParameters(MessagePanel * output)
 	{
 		resetParameters();
 
 		if( m_program == 0 ) {
 			return;
 		}
-
-		// Get number of texture units.
-		//GLint texUnitNum = 8;
-		//glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &texUnitNum);
-		//m_texUnitArray.resize(texUnitNum);
-
-		// @@ Assign samplers to texture units?
 
 		GLint count = 0;
 		glGetObjectParameterivARB(m_program, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &count);
@@ -654,6 +642,10 @@ private:
 			}
 		}
 
+		// Get number of texture units.
+		GLint texUnitNum = 8;
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &texUnitNum);
+
 		// Init texture parameters.
 		int parameterNum = m_parameterArray.count();
 		int unit = 0;
@@ -664,10 +656,15 @@ private:
 			if( parameter.type == GL_SAMPLER_1D_ARB || parameter.type == GL_SAMPLER_2D_ARB || parameter.type == GL_SAMPLER_3D_ARB ||
 				parameter.type == GL_SAMPLER_CUBE_ARB || parameter.type == GL_SAMPLER_2D_RECT_ARB)
 			{
-				parameter.unit = unit++;
+				if( unit < texUnitNum ) {
+					parameter.unit = unit++;
 
-				QString fileName = parameter.value.toString();
-				parameter.tex = GLTexture::open(fileName);
+					QString fileName = parameter.value.toString();
+					parameter.tex = GLTexture::open(fileName);
+				}
+				else {
+					if(output) output->error(tr("Texture unit limit hit, ignoring parameter '%1'").arg(parameter.name));
+				}
 			}
 		}
 	}

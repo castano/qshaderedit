@@ -873,6 +873,12 @@ void QShaderEdit::shaderTextChanged()
 
 void QShaderEdit::keyTimeout()
 {
+	if( m_paramViewDock->isEditorActive() ) {
+		// Editor is active, delay compilation util it finishes.
+		m_timer->start(1500);
+		return;
+	}
+	
 	// Stop the timer.
 	m_timer->stop();
 

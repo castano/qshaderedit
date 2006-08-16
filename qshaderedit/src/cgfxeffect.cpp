@@ -502,27 +502,7 @@ public:
 	//		printf("%s\n", cgGetErrorString(error));
 	//	}
 
-		// Read parameters.
-		CGparameter parameter = cgGetFirstLeafEffectParameter(m_effect);
-		while(parameter != NULL)
-		{
-			if(cgIsParameterUsed(parameter, m_effect))
-			{
-				CgParameter cgParameter(parameter);
-				
-				// Try to get the old value.
-				foreach(const CgParameter & p, m_oldParameterArray) {
-					if( p.name() == cgParameter.name() ) {
-						cgParameter.setValue(p.value());
-					}
-				}					
-				
-				if(!cgParameter.isHidden() && !cgParameter.isStandard()) {
-					m_parameterArray.append(cgParameter);
-				}
-			}
-			parameter = cgGetNextLeafParameter(parameter);
-		}
+		initParameters();
 
 		return true;
 	}
@@ -709,18 +689,50 @@ public:
 
 private:
 
+	void resetParameters()
+	{
+		qSwap(m_oldParameterArray, m_parameterArray);
+		m_parameterArray.clear();
+	}
+	
+	void initParameters()
+	{
+		resetParameters();
+		
+		// Read parameters.
+		CGparameter parameter = cgGetFirstLeafEffectParameter(m_effect);
+		while(parameter != NULL)
+		{
+			if(cgIsParameterUsed(parameter, m_effect))
+			{
+				CgParameter cgParameter(parameter);
+				
+				// Try to get the old value.
+				foreach(const CgParameter & p, m_oldParameterArray) {
+					if( p.name() == cgParameter.name() ) {
+						cgParameter.setValue(p.value());
+					}
+				}					
+				
+				if(!cgParameter.isHidden() && !cgParameter.isStandard()) {
+					m_parameterArray.append(cgParameter);
+				}
+			}
+			parameter = cgGetNextLeafParameter(parameter);
+		}
+	}
+	
 	void freeEffect()
 	{
 		if(m_effect != NULL) {
 			cgDestroyEffect(m_effect);
 			m_effect = NULL;
 		}
-
+		
 		m_technique = NULL;
 		m_pass = NULL;
-
-		qSwap(m_oldParameterArray, m_parameterArray);
-		m_parameterArray.clear();
+		
+		// resetParameters();
 		
 		m_techniqueList.clear();
 		m_passList.clear();
