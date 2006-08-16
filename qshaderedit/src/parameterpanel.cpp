@@ -1,8 +1,6 @@
 #include "parameterpanel.h"
 #include "effect.h"
 
-#include <QtCore/QDebug>
-
 #include <QtGui/QHeaderView>
 #include <QtGui/QDoubleSpinBox>
 #include <QtGui/QLineEdit>
