@@ -47,27 +47,27 @@ struct Sphere {
 // Object database stored in constants
 #define SQR(N) (N*N)
 #define NOBJECTS 3
-Sphere object[NOBJECTS] = {
-	{
+Sphere object[NOBJECTS] = Sphere[](
+	Sphere(
 		vec3(0.0, 0.0, 0.0),
 		SQR(1.0),
 		vec3(0.0, 0.5, 1.0),
 		1.0, 1.0, 0.5,
-	},
-	{
+	),
+	Sphere(
 		vec3(1.5, -0.5, 0.0),
 		SQR(0.5),
 		vec3(0.0, 1.0, 0.0),
 		1.0, 1.0, 0.5,
-	},	
-	{
+	),	
+	Sphere(
 		vec3(0.0, -101.0, 0.0),
 		SQR(100.0),
-//		0.0, 0.0, 1.0, 1.0
+//		vec3(0.0, 0.0, 1.0),
 		vec3(1.0, 1.0, 1.0),
 		1.0, 1.0, 0.5,
-	}
-};
+	)
+);
 const float eps = 0.001;	// error epsilon
 
 float SphereIntersect(Sphere s, Ray ray, out bool hit)
