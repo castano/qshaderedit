@@ -114,7 +114,7 @@ namespace {
 			}
 			
 			// Clamp to maximum texture size.
-			int maxTextureSize = 256;
+			GLint maxTextureSize = 256;
 			glGetIntegerv( GL_MAX_TEXTURE_SIZE, &maxTextureSize );
 			if( w > maxTextureSize ) w = maxTextureSize; 
 			if( h > maxTextureSize ) h = maxTextureSize; 

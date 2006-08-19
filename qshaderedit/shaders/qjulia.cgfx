@@ -373,7 +373,7 @@ VertexOutput vp(VertexInput input)
 	output.rD = mul(dir, float3x3(gl_ModelViewMatrixInverse));
 
 	// Light position
-	output.light = mul(float4(0,1,0,1), gl_ModelViewMatrixInverse);
+	output.light = mul(float4(0,1,0,1), float4x3(gl_ModelViewMatrixInverse));
 
 	// Interpolate seeds
 	output.mu = mu;

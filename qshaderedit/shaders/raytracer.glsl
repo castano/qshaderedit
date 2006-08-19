@@ -30,7 +30,7 @@ uniform float shininess;
 
 uniform vec3 backgroundColor;
 
-sampler2D checkSampler;
+uniform sampler2D checkSampler;
 
 struct Ray {
 	vec3 o;	// origin
