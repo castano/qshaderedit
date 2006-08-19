@@ -66,9 +66,10 @@ namespace {
 			Type_IdentityMatrix,
 			Type_GLMatrix,
 			Type_Time,
-			Type_LightPosition,
-			Type_LightDirection,
-			Type_LightColor,
+			Type_ViewportSize,
+		//	Type_LightPosition,
+		//	Type_LightDirection,
+		//	Type_LightColor,
 		};
 
 		Type m_type;
@@ -346,7 +347,8 @@ private:
 
 	QByteArray m_effectText;
 
-	//QTime m_time;
+	bool m_animated;
+	QTime m_time;
 
 	QVector<CgParameter> m_parameterArray;
 	QVector<CgParameter> m_oldParameterArray;
@@ -364,7 +366,8 @@ public:
 		m_effect(NULL),
 		m_technique(NULL),
 		m_pass(NULL),
-		m_effectText(s_effectText)
+		m_effectText(s_effectText),
+		m_animated(false)
 	{
 		m_context = cgCreateContext();
 
@@ -372,40 +375,42 @@ public:
 		cgGLRegisterStates(m_context);
 
 		if( s_semanticMap.empty() ) {
-			s_semanticMap.insert("worldviewprojection", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY));
-			s_semanticMap.insert("worldviewprojectiontranspose", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_TRANSPOSE));
-			s_semanticMap.insert("worldviewprojectioninverse", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_INVERSE));
-			s_semanticMap.insert("worldviewprojectioninversetranspose", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_INVERSE_TRANSPOSE));
+			// Cg is broken and transposes all the matrices.
+			s_semanticMap.insert("worldviewprojection", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_TRANSPOSE));
+			s_semanticMap.insert("worldviewprojectiontranspose", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY));
+			s_semanticMap.insert("worldviewprojectioninverse", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_INVERSE_TRANSPOSE));
+			s_semanticMap.insert("worldviewprojectioninversetranspose", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_INVERSE));
 
-			s_semanticMap.insert("modelviewprojection", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY));
-			s_semanticMap.insert("modelviewprojectiontranspose", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_TRANSPOSE));
-			s_semanticMap.insert("modelviewprojectioninverse", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_INVERSE));
-			s_semanticMap.insert("modelviewprojectioninversetranspose", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_INVERSE_TRANSPOSE));
+			s_semanticMap.insert("modelviewprojection", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_TRANSPOSE));
+			s_semanticMap.insert("modelviewprojectiontranspose", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY));
+			s_semanticMap.insert("modelviewprojectioninverse", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_INVERSE_TRANSPOSE));
+			s_semanticMap.insert("modelviewprojectioninversetranspose", CgSemantic(CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_INVERSE));
 
-			s_semanticMap.insert("modelview", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_IDENTITY));
-			s_semanticMap.insert("modelviewtranspose", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_TRANSPOSE));
-			s_semanticMap.insert("modelviewinverse", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_INVERSE));
-			s_semanticMap.insert("modelviewinversetranspose", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_INVERSE_TRANSPOSE));
+			s_semanticMap.insert("modelview", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_TRANSPOSE));
+			s_semanticMap.insert("modelviewtranspose", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_IDENTITY));
+			s_semanticMap.insert("modelviewinverse", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_INVERSE_TRANSPOSE));
+			s_semanticMap.insert("modelviewinversetranspose", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_INVERSE));
 
-			s_semanticMap.insert("view", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_IDENTITY));
-			s_semanticMap.insert("viewtranspose", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_TRANSPOSE));
-			s_semanticMap.insert("viewinverse", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_INVERSE));
-			s_semanticMap.insert("viewinversetranspose", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_INVERSE_TRANSPOSE));
+			s_semanticMap.insert("view", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_TRANSPOSE));
+			s_semanticMap.insert("viewtranspose", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_IDENTITY));
+			s_semanticMap.insert("viewinverse", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_INVERSE_TRANSPOSE));
+			s_semanticMap.insert("viewinversetranspose", CgSemantic(CG_GL_MODELVIEW_MATRIX, CG_GL_MATRIX_INVERSE));
 
 			s_semanticMap.insert("world", CgSemantic(CgSemantic::Type_IdentityMatrix));
 			s_semanticMap.insert("worldtranspose", CgSemantic(CgSemantic::Type_IdentityMatrix));
 			s_semanticMap.insert("worldinverse", CgSemantic(CgSemantic::Type_IdentityMatrix));
 			s_semanticMap.insert("worldinversetranspose", CgSemantic(CgSemantic::Type_IdentityMatrix));
 
-			s_semanticMap.insert("projection", CgSemantic(CG_GL_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY));
-			s_semanticMap.insert("projectiontranspose", CgSemantic(CG_GL_PROJECTION_MATRIX, CG_GL_MATRIX_TRANSPOSE));
+			s_semanticMap.insert("projection", CgSemantic(CG_GL_PROJECTION_MATRIX, CG_GL_MATRIX_TRANSPOSE));
+			s_semanticMap.insert("projectiontranspose", CgSemantic(CG_GL_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY));
 
 			s_semanticMap.insert("time", CgSemantic(CgSemantic::Type_Time));
+			s_semanticMap.insert("viewportsize", CgSemantic(CgSemantic::Type_ViewportSize));
 		}
 
 		m_outputParser = new NvidiaOutputParser;
 
-		//m_time.start();
+		m_time.start();
 	}
 
 	virtual ~CgEffect()
@@ -422,7 +427,7 @@ public:
 
 		m_effectText = file->readAll();
 
-		//m_time.start();
+		m_time.start();
 	}
 
 	virtual void save(QFile * file)
@@ -549,7 +554,7 @@ public:
 
 	virtual bool isAnimated() const
 	{
-		return false;
+		return m_animated;
 	}
 
 	// Technique info.
@@ -607,7 +612,12 @@ public:
 						// @@ ???
 					}
 					else if( std.m_type == CgSemantic::Type_Time ) {
-						// @@ ???
+						cgSetParameter1f(parameter, float(m_time.elapsed()));
+					}
+					else if( std.m_type == CgSemantic::Type_ViewportSize ) {
+						GLfloat v[4];
+						glGetFloatv(GL_VIEWPORT, v);
+						cgSetParameter2f(parameter, v[2], v[3]);
 					}
 				}
 			}
@@ -623,9 +633,6 @@ public:
 			CGparameterclass parameterClass = cgGetParameterClass(parameter);
 		//	CGtype parameterType = cgGetParameterType(parameter);
 		//	CGtype parameterBaseType = cgGetParameterBaseType(parameter);
-
-			QByteArray name = p.name().toAscii();
-			const char * oldname = name;
 
 			if( parameterClass == CG_PARAMETERCLASS_SCALAR ) {
 				if( value.type() == QVariant::Double ) {
@@ -691,6 +698,8 @@ private:
 
 	void resetParameters()
 	{
+		m_animated = false;
+		
 		qSwap(m_oldParameterArray, m_parameterArray);
 		m_parameterArray.clear();
 	}
@@ -714,8 +723,22 @@ private:
 					}
 				}					
 				
+				// Add non hidden and non standard parameters.
 				if(!cgParameter.isHidden() && !cgParameter.isStandard()) {
 					m_parameterArray.append(cgParameter);
+				}
+				
+				// Process semantics of standard parameters.
+				if( cgParameter.isStandard() ) {
+					QString semantic = cgGetParameterSemantic(parameter);
+					semantic = semantic.toLower();
+					
+					if( s_semanticMap.contains(semantic) ) {
+						const CgSemantic & std = s_semanticMap[semantic];
+						if( std.m_type == CgSemantic::Type_Time ) {
+							m_animated = true;
+						}
+					}
 				}
 			}
 			parameter = cgGetNextLeafParameter(parameter);

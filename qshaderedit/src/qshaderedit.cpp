@@ -463,16 +463,27 @@ void QShaderEdit::updateEditor()
 
 void QShaderEdit::updateTechniques()
 {
-	m_techniqueCombo->clear();
-	if(m_effect == NULL) {
+	QString lastText = m_techniqueCombo->currentText();
+	
+	int count = 0;
+	if( m_effect != NULL ) {
+		count = m_effect->getTechniqueNum();
+	}
+	
+	if( count == 0 ) {
 		m_techniqueCombo->setEnabled(false);
 	}
 	else {
-		int count = m_effect->getTechniqueNum();
+		m_techniqueCombo->setEnabled(true);
+		m_techniqueCombo->clear();
+		
 		for(int i = 0; i < count; i++) {
 			m_techniqueCombo->addItem(m_effect->getTechniqueName(i));
 		}
 		m_techniqueCombo->setEnabled(count > 1);
+		
+		int idx = m_techniqueCombo->findText(lastText);
+		if( idx != -1 ) m_techniqueCombo->setCurrentIndex(idx);
 	}
 }
 

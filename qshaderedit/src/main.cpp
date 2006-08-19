@@ -2,7 +2,6 @@
 #include "qshaderedit.h"
 
 #include <QtGui/QApplication>
-#include <QtGui/QWindowsXPStyle>
 
 int main(int argc, char **argv)
 {
@@ -17,7 +16,7 @@ int main(int argc, char **argv)
 	
 	/*
 	QStyle * arthurStyle = new ArthurStyle();
-	shaderEdit.setStyle(arthurStyle);
+	shaderEdit->setStyle(arthurStyle);
 
 	QList<QWidget *> widgets = qFindChildren<QWidget *>(shaderEdit);
 	foreach(QWidget * w, widgets) {

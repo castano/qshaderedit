@@ -1,7 +1,6 @@
 
 Bugs:
-- skip compilation while parameter panel is being edited.
-- fix double compilation bug. @@ Send RFE to TT.
+- fix double compilation bug. Already sent RFE to trolltech.
 
 Misc:
 - display line and column numbers to status bar. @@ I need to send an RFE to TT.

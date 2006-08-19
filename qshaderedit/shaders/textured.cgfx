@@ -21,8 +21,8 @@ struct VertexOutput {
 VertexOutput vp(VertexInput input)
 {
 	VertexOutput output;
-	output.position = mul(mvp, input.position);
-	output.normal = mul(normalMatrix, input.normal);
+	output.position = mul(input.position, mvp);
+	output.normal = mul(input.normal, normalMatrix);
 	output.tex = input.tex;
 	return output;
 }

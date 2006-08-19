@@ -70,7 +70,7 @@ public:
 		glEndList();
 	}
 	
-	virtual void transform() const 
+	virtual void transform() const
 	{
 		// Object transform:
 		glRotated(270.0, 1.0, 0.0, 0.0);

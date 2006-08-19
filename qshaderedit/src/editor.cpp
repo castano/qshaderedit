@@ -1,11 +1,12 @@
 
 #include "editor.h"
 
+#include <QtCore/QDebug>
 #include <QtGui/QTabBar>
 #include <QtGui/QTextEdit>
 #include <QtGui/QTextCursor>
-//#include <QtGui/QTextLayout>
-//#include <QtGui/QTextBlock>
+#include <QtGui/QTextLayout>
+#include <QtGui/QTextBlock>
 
 Editor::Editor(QWidget * parent) : QTabWidget(parent) 
 {
@@ -36,11 +37,23 @@ int Editor::line() const
 {
 	// None of these work...
 //	return currentTextEdit()->cursorRect(currentTextEdit()->textCursor()).y();
-
-//	int position = currentTextEdit()->textCursor().position();
-//	QTextLayout * layout = currentTextEdit()->document()->findBlock(position).layout();
+	/*
+	int position = currentTextEdit()->textCursor().position();
+	
+	QTextBlock block = currentTextEdit()->document()->findBlock(position);
+//	qDebug() << block.contains(position);
+//	qDebug() << block.text();
+	
+	QTextLayout * layout = block.layout();
+	Q_ASSERT(layout != NULL);
+	//qDebug() << layout->text();
+	qDebug() << layout->lineCount();
+	
+//	qDebug() << layout->text();
 //	return layout->lineForTextPosition(position).lineNumber();
 	
+	return position;
+	*/
 	return 0;
 }
 
