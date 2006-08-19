@@ -307,14 +307,23 @@ namespace {
 					return Effect::EditorType_Scalar;
 				}
 				else if(parameterClass == CG_PARAMETERCLASS_VECTOR) {
-					const char * semantic = cgGetParameterSemantic(parameter);
-					if( semantic != NULL ) {
-						if( qstricmp("Diffuse", semantic) == 0 ||
-							qstricmp("Specular", semantic) == 0)
-						{
+					QString semantic = cgGetParameterSemantic(parameter);
+					semantic = semantic.toLower();
+					if( "diffuse" == semantic || "specular" == semantic) {
+						return Effect::EditorType_Color;
+					}
+					
+					CGannotation annotation = cgGetNamedParameterAnnotation(parameter, "UIWidget");
+					if(annotation == 0) annotation = cgGetNamedParameterAnnotation(parameter, "Widget");
+					if(annotation == 0) annotation = cgGetNamedParameterAnnotation(parameter, "SasUiWidget");
+					if(annotation != 0) 
+					{
+						QString value = cgGetStringAnnotationValue(annotation);
+						if( value.toLower() == "color" ) {
 							return Effect::EditorType_Color;
 						}
 					}
+					
 					return Effect::EditorType_Vector;
 				}
 				else if(parameterClass == CG_PARAMETERCLASS_MATRIX) {
