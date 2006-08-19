@@ -62,8 +62,8 @@ void main()
 {
     float real  = Position.x * Zoom + Xcenter;
     float imag  = Position.y * Zoom + Ycenter;
-    float Creal = sin(time * 0.001);
-    float Cimag = cos(0.75 * time * 0.001);
+    float Creal = sin(time);
+    float Cimag = cos(0.75 * time);
 
     float r2 = 0.0;
     float iter;

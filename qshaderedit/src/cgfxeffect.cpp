@@ -33,8 +33,8 @@ namespace {
 		"VertexOutput vp(VertexInput input)\n"
 		"{\n"
 		"	VertexOutput output;\n"
-		"	output.position = mul(mvp, input.position);\n"
-		"	output.normal = mul(normalMatrix, input.normal);\n"
+		"	output.position = mul(input.position, mvp);\n"
+		"	output.normal = mul(input.normal, normalMatrix);\n"
 		"	return output;\n"
 		"}\n\n"
 		"float4 fp(VertexOutput input) : COLOR\n"
@@ -67,9 +67,6 @@ namespace {
 			Type_GLMatrix,
 			Type_Time,
 			Type_ViewportSize,
-		//	Type_LightPosition,
-		//	Type_LightDirection,
-		//	Type_LightColor,
 		};
 
 		Type m_type;
@@ -612,7 +609,7 @@ public:
 						// @@ ???
 					}
 					else if( std.m_type == CgSemantic::Type_Time ) {
-						cgSetParameter1f(parameter, float(m_time.elapsed()));
+						cgSetParameter1f(parameter, 0.001f * m_time.elapsed());
 					}
 					else if( std.m_type == CgSemantic::Type_ViewportSize ) {
 						GLfloat v[4];
@@ -872,7 +869,7 @@ class CgFxEffectFactory : public EffectFactory
 			"ObjectPlaneR|ObjectPlaneQ|FogParameters|Fog|FrontColor|BackColor|FrontSecondaryColor|BackSecondaryColor|TexCoord|FogFragCoord|Color|"
 			"SecondaryColor)|"
 			"WorldViewProjection(Inverse)?(Transpose)?|ModelView(Projection)?(Inverse)?(Transpose)?|View(Inverse)?(Transpose)?|"
-			"World(Inverse)?(Transpose)?|Projection(Inverse)?(Transpose)?|Time|"
+			"World(Inverse)?(Transpose)?|Projection(Inverse)?(Transpose)?|Time|ViewportSize|"
 			"VertexProgram|FragmentProgram|DepthTestEnable|CullFaceEnable|register\\(c[1-2]+\\))\\b");
 		rules.append(rule);
 

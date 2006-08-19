@@ -678,7 +678,7 @@ private:
 
 		// Set standard parameters.
 		if( m_timeUniform != -1 ) {
-			glUniform1fARB(m_timeUniform, float(m_time.elapsed()));
+			glUniform1fARB(m_timeUniform, 0.001f * m_time.elapsed());
 		}
 	}
 

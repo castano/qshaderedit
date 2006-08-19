@@ -8,9 +8,8 @@ uniform vec2 freq;
 uniform vec2 scale;
 
 void main () {
-	float t = time * 0.001;
-	float wiggleX = sin(gl_Vertex.x * freq.x + t) * scale.x;
-	float wiggleY = cos(gl_Vertex.y * freq.y + t) * scale.y;
+	float wiggleX = sin(gl_Vertex.x * freq.x + time) * scale.x;
+	float wiggleY = cos(gl_Vertex.y * freq.y + time) * scale.y;
 
 	gl_Position = gl_ModelViewProjectionMatrix * vec4(gl_Vertex.x + wiggleY, gl_Vertex.y + wiggleX, gl_Vertex.z, gl_Vertex.w);
 	v_V = (gl_ModelViewMatrix[3] - gl_Vertex).xyz;
