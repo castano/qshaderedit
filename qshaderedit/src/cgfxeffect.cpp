@@ -844,7 +844,7 @@ class CgFxEffectFactory : public EffectFactory
 	virtual Effect * createEffect() const
 	{
 		Q_ASSERT(isSupported());
-		return new CgEffect(this);
+// 		return new CgEffect(this);
 	}
 
 	virtual QList<Highlighter::Rule> highlightingRules() const
@@ -926,5 +926,5 @@ class CgFxEffectFactory : public EffectFactory
 	}
 };
 
-REGISTER_EFFECT_FACTORY(CgFxEffectFactory);
+// REGISTER_EFFECT_FACTORY(CgFxEffectFactory);
 

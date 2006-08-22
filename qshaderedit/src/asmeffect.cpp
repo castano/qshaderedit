@@ -599,7 +599,7 @@ class ArbEffectFactory : public EffectFactory
 	virtual Effect * createEffect() const
 	{
 		Q_ASSERT(isSupported());
-		return new ArbEffect(this);
+// 		return new ArbEffect(this);
 	}
 
 	virtual QList<Highlighter::Rule> highlightingRules() const
@@ -643,5 +643,5 @@ class ArbEffectFactory : public EffectFactory
 	}
 };
 
-REGISTER_EFFECT_FACTORY(ArbEffectFactory);
+// REGISTER_EFFECT_FACTORY(ArbEffectFactory);
 

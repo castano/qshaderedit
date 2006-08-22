@@ -3,6 +3,7 @@
 #include "messagepanel.h"
 #include "outputparser.h"
 #include "texmanager.h"
+#include "parameter.h"
 
 #include <QtCore/QDebug>	// !!!
 #include <QtCore/QObject>
@@ -49,17 +50,44 @@ namespace {
 	static const char * s_fragmentShaderTag = "[FragmentShader]\n";
 	static const char * s_parametersTag = "[Parameters]\n";
 
-	// GLSL Parameter.
-	struct GLSLParameter
-	{
-		QString name;
-		QVariant value;
-		GLint location;
-		GLenum type;
 
-		// Only for samplers:
-		int unit;
-		GLTexture tex;
+	class GLSLParameter : public Parameter
+	{
+		private:
+			GLenum m_type;
+			GLint m_location;
+			int m_texUnit; // only valid if isTexture() returns true
+	
+		public:
+			GLSLParameter(const QString& name, GLenum type, GLint location):
+				m_type(type), m_location(location), m_texUnit(0)
+			{
+				setName(name);
+			}
+
+			GLenum glType() const { return m_type; }
+			GLint location() const { return m_location; }
+			
+			void setLocation(GLint location)
+			{
+				m_location = location;
+			}
+
+			bool isTexture() const
+			{
+				return m_type == GL_SAMPLER_1D_ARB || m_type == GL_SAMPLER_2D_ARB || m_type == GL_SAMPLER_3D_ARB ||
+					m_type == GL_SAMPLER_CUBE_ARB || m_type == GL_SAMPLER_2D_RECT_ARB;
+			}
+
+			int textureUnit() const
+			{
+				return m_texUnit;
+			}
+			 
+			void setTextureUnit(int unit)
+			{
+				m_texUnit = unit;
+			}
 	};
 
 }
@@ -80,8 +108,7 @@ private:
 	QTime m_time;
 	GLint m_timeUniform;
 
-	QVector<GLSLParameter> m_parameterArray;
-	QVector<GLSLParameter> m_oldParameterArray;
+	QVector<GLSLParameter*> m_parameterArray;
 
 	OutputParser* m_outputParser;
 
@@ -111,6 +138,7 @@ public:
 	{
 		deleteProgram();
 		delete m_outputParser;
+		qDeleteAll(m_parameterArray);
 	}
 
 
@@ -158,7 +186,7 @@ public:
 					if( line.startsWith('[') ) {
 						break;
 					}
-					// Parse parameter.
+					// Parse parameter->
 					parseParameter(line);
 				}
 				continue;
@@ -189,11 +217,11 @@ public:
 			file->write("\n");
 		}
 
-		if( this->getParameterNum() > 0 ) {
+		if( this->parameterCount() > 0 ) {
 			// [Parameters]
 			file->write(s_parametersTag, strlen(s_parametersTag));
 
-			foreach(GLSLParameter p, m_parameterArray) {
+			foreach(GLSLParameter* p, m_parameterArray) {
 				QString str = getParameterAssignment(p);
 				file->write(str.toLatin1());
 			}
@@ -329,163 +357,16 @@ public:
 
 
 	// Parameter info.
-	virtual int getParameterNum() const
+	int parameterCount() const
 	{
-		return m_parameterArray.count();
+		return m_parameterArray.count();		
 	}
 
-	virtual QString getParameterName(int idx) const
+	Parameter * parameter(int idx)
 	{
 		Q_ASSERT(m_program != 0);
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		return m_parameterArray[idx].name;
-	}
-
-	virtual QVariant getParameterValue(int idx) const
-	{
-		Q_ASSERT(m_program != 0);
-		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		return m_parameterArray[idx].value;
-	}
-
-	virtual void setParameterValue(int idx, const QVariant & value)
-	{
-		Q_ASSERT(m_program != 0);
-		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-
-		GLSLParameter & param = m_parameterArray[idx];
-		param.value = value;
-		
-		if( param.type == GL_SAMPLER_1D_ARB || param.type == GL_SAMPLER_2D_ARB || param.type == GL_SAMPLER_3D_ARB ||
-			param.type == GL_SAMPLER_CUBE_ARB || param.type == GL_SAMPLER_2D_RECT_ARB )
-		{
-			param.tex = GLTexture::open(value.toString());
-		}
-	}
-
-	virtual EditorType getParameterEditor(int idx) const
-	{
-		Q_ASSERT(m_program != 0);
-		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-
-		const GLSLParameter & param = m_parameterArray[idx];
-
-		switch( param.type ) {
-			case GL_FLOAT:
-			case GL_INT:
-			case GL_BOOL_ARB:
-				return EditorType_Scalar;
-			case GL_FLOAT_VEC2_ARB:
-			case GL_FLOAT_VEC3_ARB:
-			case GL_FLOAT_VEC4_ARB:
-			case GL_INT_VEC2_ARB:
-			case GL_INT_VEC3_ARB:
-			case GL_INT_VEC4_ARB:
-			case GL_BOOL_VEC2_ARB:
-			case GL_BOOL_VEC3_ARB:
-			case GL_BOOL_VEC4_ARB:
-				if( param.name.contains("color", Qt::CaseInsensitive) ) {
-					return EditorType_Color;
-				}
-				else {
-					return EditorType_Vector;
-				}
-			case GL_FLOAT_MAT2_ARB:
-			case GL_FLOAT_MAT3_ARB:
-			case GL_FLOAT_MAT4_ARB:
-				return EditorType_Matrix;
-			case GL_SAMPLER_1D_ARB:
-			case GL_SAMPLER_2D_ARB:
-			case GL_SAMPLER_3D_ARB:
-			case GL_SAMPLER_CUBE_ARB:
-			case GL_SAMPLER_2D_RECT_ARB:
-				return EditorType_File;
-			case GL_SAMPLER_1D_SHADOW_ARB:
-			case GL_SAMPLER_2D_SHADOW_ARB:
-			case GL_SAMPLER_2D_RECT_SHADOW_ARB:
-				return EditorType_None;
-		}
-		return EditorType_None;
-	}
-
-	virtual int getParameterRows(int idx) const
-	{
-		Q_ASSERT(m_program != 0);
-		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-
-		const GLSLParameter & param = m_parameterArray[idx];
-
-		switch( param.type ) {
-			case GL_FLOAT:
-			case GL_INT:
-			case GL_BOOL_ARB:
-				return 1;
-			case GL_FLOAT_VEC2_ARB:
-			case GL_INT_VEC2_ARB:
-			case GL_BOOL_VEC2_ARB:
-			case GL_FLOAT_MAT2_ARB:
-				return 2;
-			case GL_FLOAT_VEC3_ARB:
-			case GL_INT_VEC3_ARB:
-			case GL_BOOL_VEC3_ARB:
-			case GL_FLOAT_MAT3_ARB:
-				return 3;
-			case GL_FLOAT_VEC4_ARB:
-			case GL_INT_VEC4_ARB:
-			case GL_BOOL_VEC4_ARB:
-			case GL_FLOAT_MAT4_ARB:
-				return 4;
-			case GL_SAMPLER_1D_ARB:
-			case GL_SAMPLER_2D_ARB:
-			case GL_SAMPLER_3D_ARB:
-			case GL_SAMPLER_CUBE_ARB:
-			case GL_SAMPLER_2D_RECT_ARB:
-			case GL_SAMPLER_1D_SHADOW_ARB:
-			case GL_SAMPLER_2D_SHADOW_ARB:
-			case GL_SAMPLER_2D_RECT_SHADOW_ARB:
-				return 0;
-		}
-		return 0;
-	}
-
-	virtual int getParameterColumns(int idx) const
-	{
-		Q_ASSERT(m_program != 0);
-		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-
-		const GLSLParameter & param = m_parameterArray[idx];
-
-		switch( param.type ) {
-			case GL_FLOAT:
-			case GL_INT:
-			case GL_BOOL_ARB:
-			case GL_FLOAT_VEC2_ARB:
-			case GL_INT_VEC2_ARB:
-			case GL_BOOL_VEC2_ARB:
-			case GL_FLOAT_VEC3_ARB:
-			case GL_INT_VEC3_ARB:
-			case GL_BOOL_VEC3_ARB:
-			case GL_FLOAT_VEC4_ARB:
-			case GL_INT_VEC4_ARB:
-			case GL_BOOL_VEC4_ARB:
-				return 1;
-			case GL_FLOAT_MAT2_ARB:
-				return 2;
-			case GL_FLOAT_MAT3_ARB:
-				return 3;
-			case GL_FLOAT_MAT4_ARB:
-				return 4;
-			case GL_SAMPLER_1D_ARB:
-			case GL_SAMPLER_2D_ARB:
-			case GL_SAMPLER_3D_ARB:
-			case GL_SAMPLER_CUBE_ARB:
-			case GL_SAMPLER_2D_RECT_ARB:
-			case GL_SAMPLER_1D_SHADOW_ARB:
-			case GL_SAMPLER_2D_SHADOW_ARB:
-			case GL_SAMPLER_2D_RECT_SHADOW_ARB:
-				return 0;
-		}
-		return 0;
+		return m_parameterArray[idx];
 	}
 
 	virtual bool isValid() const
@@ -582,24 +463,18 @@ private:
 		//resetParameters();
 	}
 
-	void resetParameters()
+	void initParameters(MessagePanel * output)
 	{
 		m_timeUniform = -1;
 		
-		qSwap(m_oldParameterArray, m_parameterArray);
-		m_parameterArray.clear();
-	}
-
-	void initParameters(MessagePanel * output)
-	{
-		resetParameters();
-
 		if( m_program == 0 ) {
 			return;
 		}
 
 		GLint count = 0;
 		glGetObjectParameterivARB(m_program, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &count);
+
+		QVector<GLSLParameter*> newParameterArray;
 
 		for(int i = 0; i < count; i++) {
 			char str[1024];
@@ -621,26 +496,41 @@ private:
 				continue;
 			}
 
-			// Add parameter.
-			GLSLParameter param;
-			param.type = type;
 			int location = glGetUniformLocationARB(m_program, str);
-			if( size == 1 ) {
-				param.name = name;
-				param.location = location;
-				param.value = getParameterValue(param);
-				m_parameterArray.push_back(param);
+			
+			// try to get old value
+			bool found = false;
+			for (int n = 0; n < m_parameterArray.count(); n++) {
+				GLSLParameter * param = m_parameterArray[n];
+				if (param && param->name() == name && param->glType() == type) {
+					param->setLocation(location);
+					newParameterArray.append(param);
+					m_parameterArray[n] = NULL; // set param to NULL in old list to avoid it being deleted
+					found = true;
+					break;
+				}
 			}
-			else {
-				// parameter array.
-				for(int i = 0; i < size; i++) {
-					param.name = name + "[" + QString::number(i) + "]";
-					param.location = location + i;
-					param.value = getParameterValue(param);
-					m_parameterArray.push_back(param);
+
+			if (!found) {
+				// Add parameter->
+				if( size == 1 ) {
+					GLSLParameter * param = new GLSLParameter(name, type, location);
+					param->setValue(getParameterValue(param));
+					newParameterArray.push_back(param);
+				}
+				else {
+					// parameter array.
+					for(int i = 0; i < size; i++) {
+						GLSLParameter * param = new GLSLParameter(name + "[" + QString::number(i) + "]", type, location);
+						param->setValue(getParameterValue(param));
+						newParameterArray.push_back(param);
+					}
 				}
 			}
 		}
+
+		qDeleteAll(m_parameterArray);
+		m_parameterArray = newParameterArray;
 
 		// Get number of texture units.
 		GLint texUnitNum = 8;
@@ -651,19 +541,18 @@ private:
 		int unit = 0;
 
 		for(int i = 0; i < parameterNum; i++) {
-			GLSLParameter & parameter = m_parameterArray[i];
+			GLSLParameter * parameter = m_parameterArray[i];
 
-			if( parameter.type == GL_SAMPLER_1D_ARB || parameter.type == GL_SAMPLER_2D_ARB || parameter.type == GL_SAMPLER_3D_ARB ||
-				parameter.type == GL_SAMPLER_CUBE_ARB || parameter.type == GL_SAMPLER_2D_RECT_ARB)
+			if (parameter->isTexture())
 			{
 				if( unit < texUnitNum ) {
-					parameter.unit = unit++;
 
-					QString fileName = parameter.value.toString();
-					parameter.tex = GLTexture::open(fileName);
+					parameter->setTextureUnit(unit++);
+/*					QString fileName = parameter->value.toString();
+					parameter->tex = GLTexture::open(fileName);*/
 				}
 				else {
-					if(output) output->error(tr("Texture unit limit hit, ignoring parameter '%1'").arg(parameter.name));
+					if(output) output->error(tr("Texture unit limit hit, ignoring parameter '%1'").arg(parameter->name()));
 				}
 			}
 		}
@@ -672,7 +561,7 @@ private:
 	void setParameters()
 	{
 		// Set user parameters
-		foreach(GLSLParameter p, m_parameterArray) {
+		foreach(GLSLParameter * p, m_parameterArray) {
 			setParameter(p);
 		}
 
@@ -682,88 +571,98 @@ private:
 		}
 	}
 
-	void setParameter(const GLSLParameter & param)
+	void setParameter(const GLSLParameter * param)
 	{
-		switch( param.type ) {
+		switch( param->glType() ) {
 			case GL_FLOAT:
-				glUniform1fARB(param.location, float(param.value.toDouble()));
+				glUniform1fARB(param->location(), float(param->value().toDouble()));
 				break;
 			case GL_FLOAT_VEC2_ARB:
 			{
-				Q_ASSERT(param.value.canConvert(QVariant::List));
-				QVariantList list = param.value.toList();
+				Q_ASSERT(param->value().canConvert(QVariant::List));
+				QVariantList list = param->value().toList();
 				Q_ASSERT(list.count() == 2);
-				glUniform2fARB(param.location, list.at(0).toDouble(), list.at(1).toDouble());
+				glUniform2fARB(param->location(), list.at(0).toDouble(), list.at(1).toDouble());
 				break;
 			}
 			case GL_FLOAT_VEC3_ARB:
 			{
-				Q_ASSERT(param.value.canConvert(QVariant::List));
-				QVariantList list = param.value.toList();
-				Q_ASSERT(list.count() == 3);
-				glUniform3fARB(param.location, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble());
+				if (param->type() == QVariant::List) {
+					QVariantList list = param->value().toList();
+					Q_ASSERT(list.count() == 3);	
+					glUniform3fARB(param->location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble());
+				}
+				else if (param->type() == QVariant::Color) {
+					QColor color = param->value().value<QColor>();
+					glUniform3fARB(param->location(), color.redF(), color.greenF(), color.blueF());
+				}
 				break;
 			}
 			case GL_FLOAT_VEC4_ARB:
 			{
-				Q_ASSERT(param.value.canConvert(QVariant::List));
-				QVariantList list = param.value.toList();
-				Q_ASSERT(list.count() == 4);
-				glUniform4fARB(param.location, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
+				if (param->type() == QVariant::List) {
+					QVariantList list = param->value().toList();
+					Q_ASSERT(list.count() == 4);
+					glUniform4fARB(param->location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
+				}
+				else if (param->type() == QVariant::Color) {
+					QColor color = param->value().value<QColor>();
+					glUniform4fARB(param->location(), color.redF(), color.greenF(), color.blueF(), color.alphaF());
+				}
 				break;
 			}
 			case GL_INT:
-				glUniform1iARB(param.location, param.value.toInt());
+				glUniform1iARB(param->location(), param->value().toInt());
 				break;
 			case GL_INT_VEC2_ARB:
 			{
-				Q_ASSERT(param.value.canConvert(QVariant::List));
-				QVariantList list = param.value.toList();
+				Q_ASSERT(param->value().canConvert(QVariant::List));
+				QVariantList list = param->value().toList();
 				Q_ASSERT(list.count() == 2);
-				glUniform2iARB(param.location, list.at(0).toInt(), list.at(1).toInt());
+				glUniform2iARB(param->location(), list.at(0).toInt(), list.at(1).toInt());
 				break;
 			}
 			case GL_INT_VEC3_ARB:
 			{
-				Q_ASSERT(param.value.canConvert(QVariant::List));
-				QVariantList list = param.value.toList();
+				Q_ASSERT(param->value().canConvert(QVariant::List));
+				QVariantList list = param->value().toList();
 				Q_ASSERT(list.count() == 3);
-				glUniform3iARB(param.location, list.at(0).toInt(), list.at(1).toInt(), list.at(2).toInt());
+				glUniform3iARB(param->location(), list.at(0).toInt(), list.at(1).toInt(), list.at(2).toInt());
 				break;
 			}
 			case GL_INT_VEC4_ARB:
 			{
-				Q_ASSERT(param.value.canConvert(QVariant::List));
-				QVariantList list = param.value.toList();
+				Q_ASSERT(param->value().canConvert(QVariant::List));
+				QVariantList list = param->value().toList();
 				Q_ASSERT(list.count() == 4);
-				glUniform4iARB(param.location, list.at(0).toInt(), list.at(1).toInt(), list.at(2).toInt(), list.at(3).toInt());
+				glUniform4iARB(param->location(), list.at(0).toInt(), list.at(1).toInt(), list.at(2).toInt(), list.at(3).toInt());
 				break;
 			}
 			case GL_BOOL_ARB:
-				glUniform1iARB(param.location, param.value.toBool());
+				glUniform1iARB(param->location(), param->value().toBool());
 				break;
 			case GL_BOOL_VEC2_ARB:
 			{
-				Q_ASSERT(param.value.canConvert(QVariant::List));
-				QVariantList list = param.value.toList();
+				Q_ASSERT(param->value().canConvert(QVariant::List));
+				QVariantList list = param->value().toList();
 				Q_ASSERT(list.count() == 2);
-				glUniform2iARB(param.location, list.at(0).toBool(), list.at(1).toBool());
+				glUniform2iARB(param->location(), list.at(0).toBool(), list.at(1).toBool());
 				break;
 			}
 			case GL_BOOL_VEC3_ARB:
 			{
-				Q_ASSERT(param.value.canConvert(QVariant::List));
-				QVariantList list = param.value.toList();
+				Q_ASSERT(param->value().canConvert(QVariant::List));
+				QVariantList list = param->value().toList();
 				Q_ASSERT(list.count() == 3);
-				glUniform3iARB(param.location, list.at(0).toBool(), list.at(1).toBool(), list.at(2).toBool());
+				glUniform3iARB(param->location(), list.at(0).toBool(), list.at(1).toBool(), list.at(2).toBool());
 				break;
 			}
 			case GL_BOOL_VEC4_ARB:
 			{
-				Q_ASSERT(param.value.canConvert(QVariant::List));
-				QVariantList list = param.value.toList();
+				Q_ASSERT(param->value().canConvert(QVariant::List));
+				QVariantList list = param->value().toList();
 				Q_ASSERT(list.count() == 4);
-				glUniform4iARB(param.location, list.at(0).toBool(), list.at(1).toBool(), list.at(2).toBool(), list.at(3).toBool());
+				glUniform4iARB(param->location(), list.at(0).toBool(), list.at(1).toBool(), list.at(2).toBool(), list.at(3).toBool());
 				break;
 			}
 			case GL_FLOAT_MAT2_ARB:
@@ -779,11 +678,13 @@ private:
 			case GL_SAMPLER_2D_ARB:
 			case GL_SAMPLER_3D_ARB:
 			case GL_SAMPLER_CUBE_ARB:
-			case GL_SAMPLER_2D_RECT_ARB:
-				glUniform1iARB(param.location, param.unit);
-				glActiveTextureARB(GL_TEXTURE0_ARB + param.unit);
-				glBindTexture(param.tex.target(), param.tex.object());
+			case GL_SAMPLER_2D_RECT_ARB: {
+				GLTexture tex = param->value().value<GLTexture>();
+				glUniform1iARB(param->location(), param->textureUnit());
+				glActiveTextureARB(GL_TEXTURE0_ARB + param->textureUnit());
+				glBindTexture(tex.target(), tex.object());
 				break;
+			}
 			case GL_SAMPLER_1D_SHADOW_ARB:
 			case GL_SAMPLER_2D_SHADOW_ARB:
 			case GL_SAMPLER_2D_RECT_SHADOW_ARB:
@@ -791,29 +692,20 @@ private:
 		}
 	}
 
-	QVariant getParameterValue(const GLSLParameter & param)
+	QVariant getParameterValue(const GLSLParameter * param)
 	{
-		// Try to get the old value.
-		foreach(GLSLParameter p, m_oldParameterArray) {
-			if( p.name == param.name && p.type == param.type ) {
-				// @@ Try to convert types.
-				return p.value;
-			}
-		}
-
-		// Get new one.
-		switch( param.type ) {
+		switch( param->glType() ) {
 			case GL_FLOAT:
 			{
 				GLfloat fvalue[1];
-				glGetUniformfvARB(m_program, param.location, fvalue);
+				glGetUniformfvARB(m_program, param->location(), fvalue);
 				return fvalue[0];
 			}
 			case GL_FLOAT_VEC2_ARB:
 			{
 				GLfloat fvalue[2];
 				QList<QVariant> list;
-				glGetUniformfvARB(m_program, param.location, fvalue);
+				glGetUniformfvARB(m_program, param->location(), fvalue);
 				list << fvalue[0] << fvalue[1];
 				return list;
 			}
@@ -821,7 +713,7 @@ private:
 			{
 				GLfloat fvalue[3];
 				QList<QVariant> list;
-				glGetUniformfvARB(m_program, param.location, fvalue);
+				glGetUniformfvARB(m_program, param->location(), fvalue);
 				list << fvalue[0] << fvalue[1] << fvalue[2];
 				return list;
 			}
@@ -829,21 +721,21 @@ private:
 			{
 				GLfloat fvalue[4];
 				QList<QVariant> list;
-				glGetUniformfvARB(m_program, param.location, fvalue);
+				glGetUniformfvARB(m_program, param->location(), fvalue);
 				list << fvalue[0] << fvalue[1] << fvalue[2] << fvalue[3];
 				return list;
 			}
 			case GL_INT:
 			{
 				GLint ivalue[1];
-				glGetUniformivARB(m_program, param.location, ivalue);
+				glGetUniformivARB(m_program, param->location(), ivalue);
 				return (int)ivalue[0];
 			}
 			case GL_INT_VEC2_ARB:
 			{
 				GLint ivalue[2];
 				QList<QVariant> list;
-				glGetUniformivARB(m_program, param.location, ivalue);
+				glGetUniformivARB(m_program, param->location(), ivalue);
 				list << (int)ivalue[0] << (int)ivalue[1];
 				return list;
 			}
@@ -851,7 +743,7 @@ private:
 			{
 				GLint ivalue[3];
 				QList<QVariant> list;
-				glGetUniformivARB(m_program, param.location, ivalue);
+				glGetUniformivARB(m_program, param->location(), ivalue);
 				list << (int)ivalue[0] << (int)ivalue[1] << (int)ivalue[2];
 				return list;
 			}
@@ -859,21 +751,21 @@ private:
 			{
 				GLint ivalue[4];
 				QList<QVariant> list;
-				glGetUniformivARB(m_program, param.location, ivalue);
+				glGetUniformivARB(m_program, param->location(), ivalue);
 				list << (int)ivalue[0] << (int)ivalue[1] << (int)ivalue[2] << (int)ivalue[3];
 				return list;
 			}
 			case GL_BOOL_ARB:
 			{
 				GLint ivalue[1];
-				glGetUniformivARB(m_program, param.location, ivalue);
+				glGetUniformivARB(m_program, param->location(), ivalue);
 				return ivalue[0] != 0;
 			}
 			case GL_BOOL_VEC2_ARB:
 			{
 				GLint ivalue[2];
 				QList<QVariant> list;
-				glGetUniformivARB(m_program, param.location, ivalue);
+				glGetUniformivARB(m_program, param->location(), ivalue);
 				list << (ivalue[0] != 0) << (ivalue[1] != 0);
 				return list;
 			}
@@ -881,7 +773,7 @@ private:
 			{
 				GLint ivalue[3];
 				QList<QVariant> list;
-				glGetUniformivARB(m_program, param.location, ivalue);
+				glGetUniformivARB(m_program, param->location(), ivalue);
 				list << (ivalue[0] != 0) << (ivalue[1] != 0) << (ivalue[2] != 0);
 				return list;
 			}
@@ -889,7 +781,7 @@ private:
 			{
 				GLint ivalue[4];
 				QList<QVariant> list;
-				glGetUniformivARB(m_program, param.location, ivalue);
+				glGetUniformivARB(m_program, param->location(), ivalue);
 				list << (ivalue[0] != 0) << (ivalue[1] != 0) << (ivalue[2] != 0) << (ivalue[3] != 0);
 				return list;
 			}
@@ -897,7 +789,7 @@ private:
 			{
 				GLfloat fvalue[2*2];
 				QList<QVariant> list;
-				glGetUniformfvARB(m_program, param.location, fvalue);
+				glGetUniformfvARB(m_program, param->location(), fvalue);
 				for(int i = 0; i < 2*2; i++) {
 					list.append(fvalue[i]);
 				}
@@ -907,7 +799,7 @@ private:
 			{
 				GLfloat fvalue[3*3];
 				QList<QVariant> list;
-				glGetUniformfvARB(m_program, param.location, fvalue);
+				glGetUniformfvARB(m_program, param->location(), fvalue);
 				for(int i = 0; i < 3*3; i++) {
 					list.append(fvalue[i]);
 				}
@@ -917,7 +809,7 @@ private:
 			{
 				GLfloat fvalue[4*4];
 				QList<QVariant> list;
-				glGetUniformfvARB(m_program, param.location, fvalue);
+				glGetUniformfvARB(m_program, param->location(), fvalue);
 				for(int i = 0; i < 4*4; i++) {
 					list.append(fvalue[i]);
 				}
@@ -928,7 +820,7 @@ private:
 			case GL_SAMPLER_3D_ARB:
 			case GL_SAMPLER_CUBE_ARB:
 			case GL_SAMPLER_2D_RECT_ARB:
-				return QString();
+				return qVariantFromValue(GLTexture());
 			case GL_SAMPLER_1D_SHADOW_ARB:
 			case GL_SAMPLER_2D_SHADOW_ARB:
 			case GL_SAMPLER_2D_RECT_SHADOW_ARB:
@@ -992,15 +884,15 @@ private:
 		return "";
 	}
 
-	static QString getParameterAssignment(const GLSLParameter & param)
+	static QString getParameterAssignment(const GLSLParameter * param)
 	{
-		QString typeName = getTypeName(param.type);
+		QString typeName = getTypeName(param->glType());
 
-		switch( param.type ) {
+		switch( param->glType() ) {
 			case GL_FLOAT:
 			case GL_INT:
 			case GL_BOOL_ARB:
-				return typeName + " " + param.name + " = " + param.value.toString() + ";\n";
+				return typeName + " " + param->name() + " = " + param->value().toString() + ";\n";
 			case GL_FLOAT_VEC2_ARB:
 			case GL_FLOAT_VEC3_ARB:
 			case GL_FLOAT_VEC4_ARB:
@@ -1014,9 +906,9 @@ private:
 			case GL_FLOAT_MAT3_ARB:
 			case GL_FLOAT_MAT4_ARB:
 			{
-				QStringList list = param.value.toStringList();
+				QStringList list = param->value().toStringList();
 				QString value = list.join(", ");
-				return typeName + " " + param.name + " = " + typeName + "(" + value + ");\n";
+				return typeName + " " + param->name() + " = " + typeName + "(" + value + ");\n";
 			}
 			case GL_SAMPLER_1D_ARB:
 			case GL_SAMPLER_2D_ARB:
@@ -1026,7 +918,8 @@ private:
 			case GL_SAMPLER_1D_SHADOW_ARB:
 			case GL_SAMPLER_2D_SHADOW_ARB:
 			case GL_SAMPLER_2D_RECT_SHADOW_ARB:
-				return typeName + " " + param.name + " = load(\"" + param.value.toString() + "\");\n";
+				GLTexture tex = param->value().value<GLTexture>();
+				return typeName + " " + param->name() + " = load(\"" + tex.name() + "\");\n";
 		}
 
 		return "";
@@ -1120,30 +1013,25 @@ private:
 		const int count = tokens.count();
 		Q_ASSERT(count == 4);
 
-		GLSLParameter param;
-		param.type = getType(tokens[1]);
-		param.name = tokens[2];
-		param.location = -1;
+		GLSLParameter * param = new GLSLParameter(tokens[2], getType(tokens[1]), -1);
 
 		QString value = tokens[3].trimmed();
 
-		if( param.type == GL_FLOAT ) {
-			param.value = value;
-			param.value.convert(QVariant::Double);
+		if( param->glType() == GL_FLOAT ) {
+			param->setValue(value.toDouble());
 		}
-		else if( param.type == GL_INT ) {
-			param.value = value;
-			param.value.convert(QVariant::Int);
+		else if( param->glType() == GL_INT ) {
+			param->setValue(value.toInt());
 		}
-		else if( param.type == GL_BOOL ) {
-			param.value = (value == "true");
+		else if( param->glType() == GL_BOOL ) {
+			param->setValue(value == "true");
 		}
 		else if( value.startsWith(tokens[1]) ) {
 			int begin = value.indexOf("(");
 			int end = value.indexOf(")");
 			QStringList args = value.mid(begin+1, end-begin-1).split(",");
 
-			int baseType = getBaseType(param.type);
+			int baseType = getBaseType(param->glType());
 
 			// Convert the components.
 			QVariantList valueList;
@@ -1161,10 +1049,9 @@ private:
 					valueList.append(arg.trimmed());
 				}
 			}
-			param.value = valueList;
+			param->setValue(valueList);
 		}
-		else if( param.type == GL_SAMPLER_1D_ARB || param.type == GL_SAMPLER_2D_ARB || param.type == GL_SAMPLER_3D_ARB ||
-			param.type == GL_SAMPLER_CUBE_ARB || param.type == GL_SAMPLER_2D_RECT_ARB)
+		else if( param->isTexture())
 		{
 			QRegExp loadRegExp("^\\s*load\\(\"(.*)\"\\)\\s*$");
 
@@ -1173,7 +1060,9 @@ private:
 				return;
 			}
 
-			param.value = loadRegExp.cap(1);
+			QVariant tex;
+			tex.setValue(GLTexture::open(loadRegExp.cap(1)));
+			param->setValue(tex);
 		}
 		else {
 			qDebug() << "unknown parameter type";
@@ -1215,7 +1104,7 @@ class GLSLEffectFactory : public EffectFactory
 	virtual Effect * createEffect() const
 	{
 		Q_ASSERT(isSupported());
-		return new GLSLEffect(this);
+ 		return new GLSLEffect(this);
 	}
 
 	QList<Highlighter::Rule> highlightingRules() const

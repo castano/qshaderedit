@@ -18,5 +18,7 @@
 		<file>images/win/editcut.png</file>
 		<file>images/win/editcopy.png</file>
 		<file>images/win/editpaste.png</file>
+		<file>images/toolbutton.png</file>
+		<file>images/colorpicker.png</file>
     </qresource>
 </RCC>

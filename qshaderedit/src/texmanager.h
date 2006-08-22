@@ -5,6 +5,8 @@
 
 #include <QtCore/QString>
 #include <QtCore/QSharedDataPointer>
+#include <QtCore/QMetaType>
+#include <QtGui/QPixmap>
 
 
 // Implicitly shared texture class.
@@ -17,15 +19,19 @@ public:
 	~GLTexture();
 	
 	static GLTexture open(const QString & name);
-	
+
+	const QString& name() const;
 	GLuint object() const;
 	GLuint target() const;
+	QPixmap icon() const;
 		
 private:
 	class Private;
 	GLTexture(Private * p);
 	QSharedDataPointer<Private> m_data;
 };
+
+Q_DECLARE_METATYPE(GLTexture);
 
 
 // Image plugin interface.

@@ -92,7 +92,7 @@ namespace {
 			return true;
 		}
 	
-		virtual bool load(QString name, GLuint obj, GLuint * target) const
+		virtual QImage load(QString name, GLuint obj, GLuint * target) const
 		{
 			Q_ASSERT(obj != 0);
 			Q_ASSERT(target != NULL);
@@ -102,10 +102,10 @@ namespace {
 				image.load(":/images/default.png");
 			}
 			
-			image = convertToBGRA(image);
+			QImage glImage = convertToBGRA(image);
 			
-			int w = image.width();
-			int h = image.height();
+			int w = glImage.width();
+			int h = glImage.height();
 			
 			// Resize texture if NP2 not supported.
 			if( !GLEW_ARB_texture_non_power_of_two ) {
@@ -119,8 +119,8 @@ namespace {
 			if( w > maxTextureSize ) w = maxTextureSize; 
 			if( h > maxTextureSize ) h = maxTextureSize; 
 			
-			if(image.width() != w || image.height() != h) {
-				image = image.scaled(w, h);
+			if(glImage.width() != w || glImage.height() != h) {
+				glImage = glImage.scaled(w, h);
 			}
 			
 			*target = GL_TEXTURE_2D;
@@ -128,10 +128,10 @@ namespace {
 			
 			if(GLEW_SGIS_generate_mipmap || GLEW_VERSION_1_4) {
 				glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, image.bits());
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glImage.width(), glImage.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, glImage.bits());
 			}
 			else {
-				gluBuild2DMipmaps(GL_TEXTURE_2D, 4, image.width(), image.height(), GL_BGRA, GL_UNSIGNED_BYTE, image.bits());				
+				gluBuild2DMipmaps(GL_TEXTURE_2D, 4, glImage.width(), glImage.height(), GL_BGRA, GL_UNSIGNED_BYTE, glImage.bits());
 			}
 			
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -139,7 +139,7 @@ namespace {
 			
 			ReportGLErrors();
 			
-			return true;
+			return image;
 		}
 	};
 
@@ -155,8 +155,14 @@ namespace {
 class GLTexture::Private : public QSharedData
 {
 public:
-	Private() : m_object(0)
+	Private()
 	{
+		glGenTextures(1, &m_object);
+		
+		// load default texture
+		m_name = "default.png";
+		QImage image = s_imageLoader.load(":images/default.png", m_object, &m_target);
+		m_icon = QPixmap::fromImage(image.scaled(24, 24, Qt::KeepAspectRatio));
 	}
 	Private(const QString & name) : m_name(name)
 	{
@@ -164,7 +170,8 @@ public:
 		
 		// @@ Traverse image plugins.
 		if( s_imageLoader.canLoad(m_name) ) {
-			s_imageLoader.load(m_name, m_object, &m_target);
+			QImage image = s_imageLoader.load(m_name, m_object, &m_target);
+			m_icon = QPixmap::fromImage(image.scaled(24, 24, Qt::KeepAspectRatio));
 		}	
 	}
 	~Private()
@@ -183,6 +190,7 @@ public:
 	const QString & name() const { return m_name; }
 	GLuint object() const { return m_object; }
 	GLuint target() const { return m_target; }
+	QPixmap icon() const { return m_icon; }
 
 	static QMap<QString, GLTexture::Private *> s_textureMap;
 
@@ -190,6 +198,8 @@ private:
 	QString m_name;
 	GLuint m_object;
 	GLuint m_target;
+
+	QPixmap m_icon;
 };
 
 //static
@@ -232,6 +242,11 @@ GLTexture GLTexture::open(const QString & name)
 	return GLTexture(p);
 }
 
+const QString& GLTexture::name() const
+{
+	return m_data->name();
+}
+
 /// Get texture object.
 GLuint GLTexture::object() const
 {
@@ -244,3 +259,7 @@ GLuint GLTexture::target() const
 	return m_data->target();
 }
 
+QPixmap GLTexture::icon() const
+{
+	return m_data->icon();
+}

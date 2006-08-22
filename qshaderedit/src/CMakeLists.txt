@@ -14,6 +14,12 @@ SET(SRCS
 	messagepanel.cpp
 	parameterpanel.h
 	parameterpanel.cpp
+	parameter.h
+	parameter.cpp
+	parametermodel.h
+	parametermodel.cpp
+	parameterdelegate.h
+	parameterdelegate.cpp
 	qglview.h
 	qglview.cpp
 	qshaderedit.h
@@ -38,12 +44,14 @@ SET(MOC_SRCS
 	highlighter.h
 	messagepanel.h
 	parameterpanel.h
+	parameterdelegate.h
 	qglview.h
 	qshaderedit.h
 	newdialog.h)
 
-SET(UIC_SRCS
-	newdialog.ui)
+SET(UIC_SRCS 
+	newdialog.ui 
+	parameterpropertiesdialog.ui)
 
 SET(RCC_SRCS
 	qshaderedit.qrc)
