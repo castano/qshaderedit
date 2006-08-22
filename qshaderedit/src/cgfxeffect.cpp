@@ -206,6 +206,11 @@ namespace {
 						return false;
 					}
 				}
+				
+				if(cgGetParameterVariability(parameter) != CG_UNIFORM) {
+					// Hide const, literal and varying parameters.
+					return false;
+				}
 
 				return true;
 			}
@@ -858,6 +863,7 @@ class CgFxEffectFactory : public EffectFactory
 		rule.type = Highlighter::DataType;
 		rule.pattern = QRegExp(
 			"\\b(void|float|float[1-4]|float[1-4]x[1-4]|int|int[1-4]|int[1-4]x[1-4]|bool|bool[1-4]|bool[1-4]x[1-4]|"
+			"half|half[1-4]|half[1-4]x[1-4]|fixed|fixed[1-4]|fixed[1-4]x[1-4]|"
 			"sampler[1-3]D|samplerCUBE|samplerRECT|texture|string|uniform|varying|static|const|in|out|inout)\\b");
 		rules.append(rule);
 
