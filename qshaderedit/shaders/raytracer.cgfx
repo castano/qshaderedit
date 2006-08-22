@@ -47,10 +47,11 @@ struct Ray {
 };
 
 struct Sphere {
-  half3 centre;
-  half rad2;	// radius^2
-  fixed4 color;
-  fixed Kd, Ks, Kr;
+	half3 centre;
+	half rad2;	// radius^2
+	fixed4 color;
+	fixed Kd, Ks, Kr;
+	bool tex;
 };
 
 // Object database stored in constants
@@ -61,20 +62,20 @@ static Sphere objects[NOBJECTS] = {
 		float3(0.0, 0.0, 0.0),
 		SQR(1.0),
 		float4(0.0, 0.5, 1.0, 1.0),
-		1.0, 1.0, 0.5,
+		1.0, 1.0, 0.5, false,
 	},
 	{
 		float3(1.5, -0.5, 0.0),
 		SQR(0.5),
 		float4(0.0, 1.0, 0.0, 1.0),
-		1.0, 1.0, 0.5,
+		1.0, 1.0, 0.5, false,
 	},	
 	{
 		float3(0.0, -101.0, 0.0),
 		SQR(100.0),
 //		0.0, 0.0, 1.0, 1.0
 		float4(1.0, 1.0, 1.0, 1.0),
-		1.0, 1.0, 0.5,
+		1.0, 1.0, 0.5, true
 	}
 };
 const float eps = 0.001;	// error epsilon
@@ -166,9 +167,9 @@ fixed4 Shade(float3 i, float3 n, float3 v, Sphere hitobj)
 
 	// lighting
 	fixed4 diff = hitobj.color * hitobj.Kd;
-//	if (hitobj==2) {
-//		diff *= tex2D(checkSampler, i.xz);	// floor texture
-//	}
+	if (hitobj.tex) {
+		diff *= tex2D(checkSampler, i.xz);	// floor texture
+	}
 	fixed4 spec = lightColor * hitobj.Ks;
 	fixed shadowFactor = shadowed ? 0.25 : 1.0;
 	
