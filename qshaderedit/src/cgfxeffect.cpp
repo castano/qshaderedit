@@ -774,12 +774,6 @@ private:
 
 };
 
-// @@ weak import everything...
-//#if defined(Q_OS_DARWIN)
-//extern "C" {
-//	extern const char *cgGetString(CGenum sname) __attribute__((weak_import));
-//}
-//#endif
 
 
 class CgFxEffectFactory : public EffectFactory
@@ -787,10 +781,14 @@ class CgFxEffectFactory : public EffectFactory
 	virtual bool isSupported() const
 	{
 
-#if !defined(Q_OS_DARWIN)
 		typedef const char * (* GetString)(CGenum sname);
+		
+#if defined(Q_OS_DARWIN)
+		QLibrary cgLibrary("/System/Library/Frameworks/Cg.framework/Cg");
+#else
 		QLibrary cgLibrary("Cg");
-
+#endif
+		
 		if( !cgLibrary.load() )
 		{
 			qDebug("Cg library not found.");
@@ -798,7 +796,6 @@ class CgFxEffectFactory : public EffectFactory
 		}
 
 		GetString cgGetString = (GetString) cgLibrary.resolve("cgGetString");
-#endif
 
 		if(cgGetString != NULL)
 		{
