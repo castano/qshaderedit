@@ -409,10 +409,6 @@ public:
 		glEnable (GL_DEPTH_TEST);
 		glDepthFunc(GL_LEQUAL);
 		
-		// Setup ligh parameters
-		float light_vector[4] = {1.0f/sqrt(3.0f), 1.0f/sqrt(3.0f), 1.0f/sqrt(3.0f), 0.0f};
-		glLightfv( GL_LIGHT0, GL_POSITION, light_vector );
-		
 		// Enable programs.
 		glEnable( GL_VERTEX_PROGRAM_ARB );
 		glBindProgramARB( GL_VERTEX_PROGRAM_ARB, m_vp );
