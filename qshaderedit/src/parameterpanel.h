@@ -38,7 +38,7 @@ private:
 private:
 
 	ParameterModel * m_model;
-	ParameterDelegate * m_delegate;	// @@ Not used.
+	ParameterDelegate * m_delegate;
 	QTreeView * m_view;
 
 	static QString s_lastTexture; 

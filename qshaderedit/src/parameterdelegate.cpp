@@ -14,6 +14,7 @@
 #include <QtGui/QKeyEvent>
 #include <QtGui/QLabel>
 #include <QtGui/QColorDialog>
+#include <QtGui/QComboBox>
 
 #include "ui_parameterpropertiesdialog.h"
 
@@ -36,10 +37,15 @@ QWidget * ParameterDelegate::createEditor(QWidget * parent, const QStyleOptionVi
 	Parameter* param = model->parameter(index);
 	
 	if (model->isComponent(index)) {
-		if (param->componentType() == QVariant::Double)
+		if (param->componentType() == QVariant::Double) {
 			return createScalarEditor(parent, param->componentMinValue(), param->componentMaxValue());
-		else
+		}
+		else if (param->componentType() == QVariant::Bool) {
+			return createBooleanEditor(parent);
+		}
+		else {
 			return QItemDelegate::createEditor(parent, option, index);
+		}
 	}
 	else {
 		ParameterEditor* editor = new ParameterEditor(param, parent);
@@ -60,8 +66,13 @@ void ParameterDelegate::setEditorData(QWidget * editor, const QModelIndex & inde
 			DoubleNumInput * input = static_cast<DoubleNumInput*>(editor);
 			input->setValue(param->componentValue(index.row()).toDouble());
 		}
-		else
+		else if (param->componentType() == QVariant::Bool) {
+			BooleanInput * input = static_cast<BooleanInput*>(editor);
+			input->setValue(param->componentValue(index.row()).toDouble());
+		}
+		else {
 			QItemDelegate::setEditorData(editor, index);
+		}
 	}
 	else {
 		ParameterEditor* paramEditor = static_cast<ParameterEditor*>(editor);
@@ -80,8 +91,13 @@ void ParameterDelegate::setModelData(QWidget * editor, QAbstractItemModel * abst
 			DoubleNumInput * input = static_cast<DoubleNumInput*>(editor);
 			model->setData(index, input->value());
 		}
-		else
+		else if (param->componentType() == QVariant::Bool) {
+			BooleanInput * input = static_cast<BooleanInput*>(editor);
+			model->setData(index, input->value());
+		}
+		else {
 			QItemDelegate::setModelData(editor, model, index);
+		}
 	}
 	else {
 		ParameterEditor* paramEditor = static_cast<ParameterEditor*>(editor);
@@ -151,7 +167,7 @@ void ParameterDelegate::editorValueChanged()
 QWidget* ParameterDelegate::createScalarEditor(QWidget* parent, const QVariant& minValue, const QVariant& maxValue) const
 {
 	DoubleNumInput * editor = new DoubleNumInput(parent);
-		
+	
 	if (minValue.isValid() && maxValue.isValid()) {
 		double min = minValue.toDouble();
 		double max = maxValue.toDouble();
@@ -161,6 +177,14 @@ QWidget* ParameterDelegate::createScalarEditor(QWidget* parent, const QVariant& 
 	}	
 	editor->installEventFilter(const_cast<ParameterDelegate*>(this));
 	connect(editor, SIGNAL(valueChanged(double)), this, SLOT(editorValueChanged()));
+	return editor;
+}
+
+QWidget* ParameterDelegate::createBooleanEditor(QWidget* parent) const
+{
+	BooleanInput * editor = new BooleanInput(parent);
+	editor->installEventFilter(const_cast<ParameterDelegate*>(this));
+	connect(editor, SIGNAL(valueChanged(bool)), this, SLOT(editorValueChanged()));
 	return editor;
 }
 
@@ -204,6 +228,11 @@ ParameterEditor::ParameterEditor(Parameter* param, QWidget* parent):
 		}
 		m_editor = input;	
 	}
+	else if (m_param->type() == QVariant::Bool) {
+		BooleanInput * boolEditor = new BooleanInput(this);
+		connect(boolEditor, SIGNAL(valueChanged(bool)), this, SIGNAL(valueChanged()));
+		m_editor = boolEditor;
+	}
 	else if (m_param->type() == QVariant::Color) {
 		ColorEditor * colorEditor = new ColorEditor(this);
 		connect(colorEditor, SIGNAL(valueChanged()), this, SIGNAL(valueChanged()));
@@ -239,6 +268,10 @@ void ParameterEditor::updateValue()
 		DoubleNumInput * editor = static_cast<DoubleNumInput*>(m_editor);
 		editor->setValue(m_param->value().toDouble());
 	}
+	else if (m_param->type() == QVariant::Bool) {
+		BooleanInput * editor = static_cast<BooleanInput*>(m_editor);
+		editor->setValue(m_param->value().toBool());
+	}
 	else if (m_param->type() == QVariant::Color) {
 		ColorEditor * editor = static_cast<ColorEditor*>(m_editor);
 		editor->setColor(m_param->value().value<QColor>()); 
@@ -259,6 +292,10 @@ QVariant ParameterEditor::value() const
 		DoubleNumInput* editor = static_cast<DoubleNumInput*>(m_editor);
 		return editor->value();
 	}
+	else if (m_param->type() == QVariant::Bool) {
+		BooleanInput * editor = static_cast<BooleanInput*>(m_editor);
+		return editor->value();
+	}
 	else if (m_param->type() == QVariant::Color) {
 		ColorEditor * editor = static_cast<ColorEditor*>(m_editor);
 		return editor->color();		
@@ -267,8 +304,9 @@ QVariant ParameterEditor::value() const
 		FileEditor * editor = static_cast<FileEditor*>(m_editor);
 		return editor->text();
 	}
-	else
+	else {
 		return QVariant();
+	}
 }
 
 void ParameterEditor::openParameterSettings()
@@ -326,14 +364,14 @@ FileEditor::FileEditor(QWidget * parent /*= 0*/) : QWidget(parent)
 	m_lineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::MinimumExpanding));
 	m_lineEdit->setFrame(false);
 	m_layout->addWidget(m_lineEdit);
-
+	
 	QToolButton * button = new QToolButton(this);
 	button->setToolButtonStyle(Qt::ToolButtonTextOnly);
 	button->setText("...");
 	button->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::MinimumExpanding));
 	m_layout->addWidget(button);
 	connect(button, SIGNAL(clicked()), this, SLOT(openFileDialog()));
-
+	
 	setFocusProxy(m_lineEdit);
 }
 
@@ -363,7 +401,7 @@ void FileEditor::setText(const QString & str)
 // Color Editor
 //
 
-ColorEditor::ColorEditor(QColor color /*= Qt::black*/, QWidget* parent /*= 0*/):
+ColorEditor::ColorEditor(QColor color, QWidget* parent /*= 0*/):
 		QWidget(parent), m_color(color)
 {
 	init();
@@ -384,14 +422,14 @@ void ColorEditor::init()
 	button->setToolButtonStyle(Qt::ToolButtonTextOnly);
 	button->setIcon(QIcon(":images/colorpicker.png"));
 	connect(button, SIGNAL(clicked()), this, SLOT(openColorPicker()));
-
+	
 	QHBoxLayout * layout = new QHBoxLayout(this);
 	layout->setMargin(0);
 	layout->setSpacing(0);
-	layout->addWidget(m_colorLabel);
 	layout->addWidget(button);
-	 
-	setFocusProxy(button);
+	layout->addWidget(m_colorLabel);
+	
+//	setFocusProxy(button);
 }
 
 QColor ColorEditor::color() const
@@ -530,3 +568,41 @@ void DoubleNumInput::spinBoxValueChanged(double value)
 		m_slider->setValue(ivalue);
 	emit valueChanged(value);
 }
+
+
+BooleanInput::BooleanInput(QWidget * parent /*= 0*/) : QWidget(parent), m_comboBox(NULL)
+{
+	setAutoFillBackground(true);
+	
+	m_comboBox = new QComboBox(this);
+	m_comboBox->addItem("false", false);
+	m_comboBox->addItem("true", true);
+	connect(m_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(comboBoxValueChanged(int)));
+	
+	QHBoxLayout * layout = new QHBoxLayout(this);
+	layout->setMargin(1);
+	layout->addWidget(m_comboBox);
+	
+}
+
+bool BooleanInput::value() const
+{
+	return m_comboBox->currentIndex() != 0;
+}
+
+void BooleanInput::setValue(bool value)
+{
+	m_comboBox->setCurrentIndex(value);
+}
+
+void BooleanInput::keyPressEvent(QKeyEvent* event)
+{
+	if (m_comboBox)
+		m_comboBox->event(event);
+}
+
+void BooleanInput::comboBoxValueChanged(int value)
+{
+	emit valueChanged(value != 0);
+}
+	

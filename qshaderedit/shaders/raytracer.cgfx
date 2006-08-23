@@ -255,7 +255,7 @@ technique arbfp1
     pass p0
 	{
 		VertexProgram = compile arbvp1 RayTraceVS();
-		FragmentProgram = compile fp40 RayTracePS();
+		FragmentProgram = compile arbfp1 RayTracePS();
     }
 }
 
@@ -264,7 +264,7 @@ technique fp30
     pass p0
 	{
 		VertexProgram = compile arbvp1 RayTraceVS();
-		FragmentProgram = compile fp40 RayTracePS();
+		FragmentProgram = compile fp30 RayTracePS();
     }
 }
 

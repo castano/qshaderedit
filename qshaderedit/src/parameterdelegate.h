@@ -26,7 +26,7 @@ public:
 	void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
 
 	bool isEditorActive() const;
-		
+	
 	static const QString & lastPath();
 	static void setLastPath(const QString & lastPath);
 
@@ -35,6 +35,7 @@ private slots:
 
 private:
 	QWidget* createScalarEditor(QWidget* parent, const QVariant& min, const QVariant& max) const;
+	QWidget* createBooleanEditor(QWidget* parent) const;
 };
 
 
@@ -43,12 +44,12 @@ class QTableView;
 class Effect;
 class QDoubleSpinBox;
 class QLabel;
+class QComboBox;
 
 
 class ParameterEditor: public QWidget
 {
 	Q_OBJECT
-	
 public:
 	ParameterEditor(Parameter* param, QWidget* parent = 0);
 	
@@ -96,9 +97,8 @@ private:
 class ColorEditor: public QWidget
 {
 	Q_OBJECT
-			
 public:
-	ColorEditor(QColor color = Qt::black, QWidget* parent = 0);
+	ColorEditor(QColor color, QWidget* parent = 0);
 	ColorEditor(QWidget* parent = 0);
 
 	QColor color() const;
@@ -151,6 +151,31 @@ private slots:
 private:
 	QDoubleSpinBox * m_spinBox;
 	QSlider * m_slider;
+};
+
+
+class BooleanInput : public QWidget
+{
+	Q_OBJECT
+public:
+	BooleanInput(QWidget * parent = 0);
+
+	bool value() const;
+
+public slots:
+	void setValue(bool value);
+
+signals:
+	void valueChanged(bool value);
+
+protected:
+	void keyPressEvent(QKeyEvent* event);
+
+private slots:
+	void comboBoxValueChanged(int value);
+	
+private:
+	QComboBox * m_comboBox;
 };
 
 #endif

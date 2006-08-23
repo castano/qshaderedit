@@ -53,41 +53,41 @@ namespace {
 
 	class GLSLParameter : public Parameter
 	{
-		private:
-			GLenum m_type;
-			GLint m_location;
-			int m_texUnit; // only valid if isTexture() returns true
-	
-		public:
-			GLSLParameter(const QString& name, GLenum type, GLint location):
-				m_type(type), m_location(location), m_texUnit(0)
-			{
-				setName(name);
-			}
+	private:
+		GLenum m_type;
+		GLint m_location;
+		int m_texUnit; // only valid if isTexture() returns true
 
-			GLenum glType() const { return m_type; }
-			GLint location() const { return m_location; }
+	public:
+		GLSLParameter(const QString& name, GLenum type, GLint location):
+			m_type(type), m_location(location), m_texUnit(0)
+		{
+			setName(name);
+		}
+
+		GLenum glType() const { return m_type; }
+		GLint location() const { return m_location; }
+		
+		void setLocation(GLint location)
+		{
+			m_location = location;
+		}
+
+		bool isTexture() const
+		{
+			return m_type == GL_SAMPLER_1D_ARB || m_type == GL_SAMPLER_2D_ARB || m_type == GL_SAMPLER_3D_ARB ||
+				m_type == GL_SAMPLER_CUBE_ARB || m_type == GL_SAMPLER_2D_RECT_ARB;
+		}
+
+		int textureUnit() const
+		{
+			return m_texUnit;
+		}
 			
-			void setLocation(GLint location)
-			{
-				m_location = location;
-			}
-
-			bool isTexture() const
-			{
-				return m_type == GL_SAMPLER_1D_ARB || m_type == GL_SAMPLER_2D_ARB || m_type == GL_SAMPLER_3D_ARB ||
-					m_type == GL_SAMPLER_CUBE_ARB || m_type == GL_SAMPLER_2D_RECT_ARB;
-			}
-
-			int textureUnit() const
-			{
-				return m_texUnit;
-			}
-			 
-			void setTextureUnit(int unit)
-			{
-				m_texUnit = unit;
-			}
+		void setTextureUnit(int unit)
+		{
+			m_texUnit = unit;
+		}
 	};
 
 }
