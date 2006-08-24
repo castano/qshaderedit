@@ -459,8 +459,6 @@ private:
 			glDeleteObjectARB(m_fragmentShader);
 			m_fragmentShader = 0;
 		}
-
-		//resetParameters();
 	}
 
 	void initParameters(MessagePanel * output)
@@ -512,7 +510,7 @@ private:
 			}
 
 			if (!found) {
-				// Add parameter->
+				// Add parameter
 				if( size == 1 ) {
 					GLSLParameter * param = new GLSLParameter(name, type, location);
 					param->setValue(getParameterValue(param));

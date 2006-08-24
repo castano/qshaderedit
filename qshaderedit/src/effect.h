@@ -50,13 +50,6 @@ public:
 	// Parameter info.
 	virtual int parameterCount() const = 0;
 	virtual Parameter * parameter(int idx) = 0;
-// 	virtual int getParameterNum() const = 0;
-// 	virtual QString getParameterName(int idx) const = 0;
-// 	virtual QVariant getParameterValue(int idx) const = 0;
-// 	virtual void setParameterValue(int idx, const QVariant & value) = 0;
-// 	virtual EditorType getParameterEditor(int idx) const = 0;
-// 	virtual int getParameterRows(int idx) const = 0;
-// 	virtual int getParameterColumns(int idx) const = 0;
 
 	// Effect info.
 	virtual bool isValid() const = 0;

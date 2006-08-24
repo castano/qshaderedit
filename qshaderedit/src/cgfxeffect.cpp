@@ -3,6 +3,7 @@
 #include "messagepanel.h"
 #include "outputparser.h"
 #include "texmanager.h"
+#include "parameter.h"
 
 #include <QtCore/QFile>
 #include <QtCore/QByteArray>
@@ -91,18 +92,12 @@ namespace {
 	static QHash<QString, CgSemantic> s_semanticMap;
 
 
-	class CgParameter
+	class CgParameter : public Parameter
 	{
 		private:
 			CGparameter m_handle;
-			QString m_name;
-			QVariant m_value;
 			bool m_visible;
 			bool m_standard;
-			Effect::EditorType m_editor;
-			
-			// Only for samplers.
-			GLTexture m_tex;
 
 		public:
 			CgParameter() {}
@@ -110,52 +105,23 @@ namespace {
 			CgParameter(CGparameter h) : m_handle(h)
 			{
 				Q_ASSERT(h != NULL);
-				m_name = cgGetParameterName(m_handle);
-				m_value = getParameterValue(m_handle);
+				setName(cgGetParameterName(m_handle));
+				setValue(getParameterValue(m_handle));
 				m_visible = isParameterVisible(m_handle);
 				m_standard = isParameterStandard(m_handle);
-				m_editor = getParameterEditor(m_handle);
+				//m_editor = getParameterEditor(m_handle);
 				parseAnnotations();
 				
 				// load texture.
 				if( cgGetParameterClass(m_handle) == CG_PARAMETERCLASS_SAMPLER )
 				{
-					m_tex = GLTexture::open(m_value.toString());
+					setValue(qVariantFromValue(GLTexture::open(value().toString())));
 				}
 			}
 
 			CGparameter handle() const
 			{
 				return m_handle;
-			}
-			
-			const GLTexture & tex() const
-			{
-				return m_tex;
-			}  
-
-			const QString & name() const
-			{
-				return m_name;
-			}
-
-			const QVariant & value() const
-			{
-				return m_value;
-			}
-			void setValue(const QVariant & value)
-			{
-				m_value = value;
-				
-				if( cgGetParameterClass(m_handle) == CG_PARAMETERCLASS_SAMPLER )
-				{
-					m_tex = GLTexture::open(m_value.toString());
-				}
-			}
-
-			Effect::EditorType editor() const
-			{
-				return m_editor;
 			}
 
 			int rows() const
@@ -185,7 +151,7 @@ namespace {
 				// Override UI name.
 				CGannotation annotation = cgGetNamedParameterAnnotation(m_handle, "UIHelp");
 				if(annotation != NULL) {
-					m_name = cgGetStringAnnotationValue(annotation);
+					setName(cgGetStringAnnotationValue(annotation));
 				}
 			}
 
@@ -255,10 +221,10 @@ namespace {
 
 					// Get resource string.
 					if(annotation == 0) {
-						return QString();
+						return qVariantFromValue(GLTexture());
 					}
 					else {
-						return cgGetStringAnnotationValue(annotation);
+						return qVariantFromValue(GLTexture::open(cgGetStringAnnotationValue(annotation)));
 					}
 				}
 				else if(parameterClass == CG_PARAMETERCLASS_SCALAR) {
@@ -302,44 +268,44 @@ namespace {
 				return QVariant();
 			}
 
-			static Effect::EditorType getParameterEditor(CGparameter parameter)
-			{
-				CGparameterclass parameterClass = cgGetParameterClass(parameter);
-				Q_ASSERT(parameterClass != CG_PARAMETERCLASS_STRUCT);
-				Q_ASSERT(parameterClass != CG_PARAMETERCLASS_ARRAY);
-
-				if(parameterClass == CG_PARAMETERCLASS_SCALAR) {
-					return Effect::EditorType_Scalar;
-				}
-				else if(parameterClass == CG_PARAMETERCLASS_VECTOR) {
-					QString semantic = cgGetParameterSemantic(parameter);
-					semantic = semantic.toLower();
-					if( "diffuse" == semantic || "specular" == semantic) {
-						return Effect::EditorType_Color;
-					}
-					
-					CGannotation annotation = cgGetNamedParameterAnnotation(parameter, "UIWidget");
-					if(annotation == 0) annotation = cgGetNamedParameterAnnotation(parameter, "Widget");
-					if(annotation == 0) annotation = cgGetNamedParameterAnnotation(parameter, "SasUiWidget");
-					if(annotation != 0) 
-					{
-						QString value = cgGetStringAnnotationValue(annotation);
-						if( value.toLower() == "color" ) {
-							return Effect::EditorType_Color;
-						}
-					}
-					
-					return Effect::EditorType_Vector;
-				}
-				else if(parameterClass == CG_PARAMETERCLASS_MATRIX) {
-					return Effect::EditorType_Matrix;
-				}
-				else if(parameterClass == CG_PARAMETERCLASS_SAMPLER) {
-					return Effect::EditorType_File;
-				}
-
-				return Effect::EditorType_None;
-			}
+// 			static Effect::EditorType getParameterEditor(CGparameter parameter)
+// 			{
+// 				CGparameterclass parameterClass = cgGetParameterClass(parameter);
+// 				Q_ASSERT(parameterClass != CG_PARAMETERCLASS_STRUCT);
+// 				Q_ASSERT(parameterClass != CG_PARAMETERCLASS_ARRAY);
+// 
+// 				if(parameterClass == CG_PARAMETERCLASS_SCALAR) {
+// 					return Effect::EditorType_Scalar;
+// 				}
+// 				else if(parameterClass == CG_PARAMETERCLASS_VECTOR) {
+// 					QString semantic = cgGetParameterSemantic(parameter);
+// 					semantic = semantic.toLower();
+// 					if( "diffuse" == semantic || "specular" == semantic) {
+// 						return Effect::EditorType_Color;
+// 					}
+// 					
+// 					CGannotation annotation = cgGetNamedParameterAnnotation(parameter, "UIWidget");
+// 					if(annotation == 0) annotation = cgGetNamedParameterAnnotation(parameter, "Widget");
+// 					if(annotation == 0) annotation = cgGetNamedParameterAnnotation(parameter, "SasUiWidget");
+// 					if(annotation != 0) 
+// 					{
+// 						QString value = cgGetStringAnnotationValue(annotation);
+// 						if( value.toLower() == "color" ) {
+// 							return Effect::EditorType_Color;
+// 						}
+// 					}
+// 					
+// 					return Effect::EditorType_Vector;
+// 				}
+// 				else if(parameterClass == CG_PARAMETERCLASS_MATRIX) {
+// 					return Effect::EditorType_Matrix;
+// 				}
+// 				else if(parameterClass == CG_PARAMETERCLASS_SAMPLER) {
+// 					return Effect::EditorType_File;
+// 				}
+// 
+// 				return Effect::EditorType_None;
+// 			}
 
 	};
 
@@ -362,8 +328,7 @@ private:
 	QTime m_time;
 
 	QVector<CgParameter> m_parameterArray;
-	QVector<CgParameter> m_oldParameterArray;
-	
+
 	QList<CGtechnique> m_techniqueList;
 	QList<CGpass> m_passList;
 
@@ -524,37 +489,15 @@ public:
 	}
 
 	// Parameter info.
-	virtual int getParameterNum() const
+	int parameterCount() const
 	{
 		return m_parameterArray.count();
 	}
-	virtual QString getParameterName(int idx) const
+	
+	Parameter * parameter(int idx)
 	{
-		Q_ASSERT(idx < getParameterNum());
-		return m_parameterArray.at(idx).name();
-	}
-	virtual QVariant getParameterValue(int idx) const
-	{
-		Q_ASSERT(idx < getParameterNum());
-		return m_parameterArray.at(idx).value();
-	}
-	virtual void setParameterValue(int idx, const QVariant & value)
-	{
-		Q_ASSERT(idx < getParameterNum());
-		m_parameterArray[idx].setValue(value);
-	}
-	virtual EditorType getParameterEditor(int idx) const
-	{
-		Q_ASSERT(idx < getParameterNum());
-		return m_parameterArray[idx].editor();
-	}
-	virtual int getParameterRows(int idx) const
-	{
-		return m_parameterArray.at(idx).rows();
-	}
-	virtual int getParameterColumns(int idx) const
-	{
-		return m_parameterArray.at(idx).columns();
+		Q_ASSERT(idx >= 0 && idx < parameterCount());
+		return &m_parameterArray[idx]; 	
 	}
 
 	// Effect info.
@@ -657,32 +600,44 @@ public:
 				}
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_VECTOR ) {
-				Q_ASSERT(value.canConvert(QVariant::List));
-				QVariantList list = value.toList();
-
-				int size = cgGetParameterColumns(parameter);	// Cg assumes row vectors!
-				Q_ASSERT(list.count() == size);
-
-				switch(size) {
-					case 1:
-						cgSetParameter1d(parameter, list.at(0).toDouble());
-						break;
-					case 2:
-						cgSetParameter2d(parameter, list.at(0).toDouble(), list.at(1).toDouble());
-						break;
-					case 3:
-						cgSetParameter3d(parameter, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble());
-						break;
-					case 4:
-						cgSetParameter4d(parameter, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
-						break;
+				if (value.type() == QVariant::Color) {
+					QColor color = value.value<QColor>();
+					int size = cgGetParameterColumns(parameter);
+					Q_ASSERT(size == 3 || size == 4);
+					if (size == 3) {
+						cgSetParameter3d(parameter, color.redF(), color.greenF(), color.blueF());
+					}
+					else if (size == 4) {
+						cgSetParameter4d(parameter, color.redF(), color.greenF(), color.blueF(), color.alphaF());
+					}
+				}
+				else if (value.type() == QVariant::List) {
+					QVariantList list = value.toList();
+	
+					int size = cgGetParameterColumns(parameter);	// Cg assumes row vectors!
+					Q_ASSERT(list.count() == size);
+	
+					switch(size) {
+						case 1:
+							cgSetParameter1d(parameter, list.at(0).toDouble());
+							break;
+						case 2:
+							cgSetParameter2d(parameter, list.at(0).toDouble(), list.at(1).toDouble());
+							break;
+						case 3:
+							cgSetParameter3d(parameter, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble());
+							break;
+						case 4:
+							cgSetParameter4d(parameter, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
+							break;
+					}
 				}
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_MATRIX ) {
 				// @@ TBD
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_SAMPLER ) {
-				cgGLSetTextureParameter(parameter, p.tex().object());
+				cgGLSetTextureParameter(parameter, p.value().value<GLTexture>().object());
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_OBJECT ) {
 				// Ignore textures and strings.
@@ -707,17 +662,10 @@ public:
 
 private:
 
-	void resetParameters()
-	{
-		m_animated = false;
-		
-		qSwap(m_oldParameterArray, m_parameterArray);
-		m_parameterArray.clear();
-	}
-	
 	void initParameters()
 	{
-		resetParameters();
+		m_animated = false;
+		QVector<CgParameter> newParameterArray;
 		
 		// Read parameters.
 		CGparameter parameter = cgGetFirstLeafEffectParameter(m_effect);
@@ -728,7 +676,7 @@ private:
 				CgParameter cgParameter(parameter);
 				
 				// Try to get the old value.
-				foreach(const CgParameter & p, m_oldParameterArray) {
+				foreach(const CgParameter & p, m_parameterArray) {
 					if( p.name() == cgParameter.name() ) {
 						cgParameter.setValue(p.value());
 					}
@@ -736,7 +684,7 @@ private:
 				
 				// Add non hidden and non standard parameters.
 				if(!cgParameter.isHidden() && !cgParameter.isStandard()) {
-					m_parameterArray.append(cgParameter);
+					newParameterArray.append(cgParameter);
 				}
 				
 				// Process semantics of standard parameters.
@@ -754,6 +702,8 @@ private:
 			}
 			parameter = cgGetNextLeafParameter(parameter);
 		}
+
+		m_parameterArray = newParameterArray;
 	}
 	
 	void freeEffect()
@@ -844,7 +794,7 @@ class CgFxEffectFactory : public EffectFactory
 	virtual Effect * createEffect() const
 	{
 		Q_ASSERT(isSupported());
-// 		return new CgEffect(this);
+ 		return new CgEffect(this);
 	}
 
 	virtual QList<Highlighter::Rule> highlightingRules() const
@@ -926,5 +876,5 @@ class CgFxEffectFactory : public EffectFactory
 	}
 };
 
-// REGISTER_EFFECT_FACTORY(CgFxEffectFactory);
+REGISTER_EFFECT_FACTORY(CgFxEffectFactory);
 

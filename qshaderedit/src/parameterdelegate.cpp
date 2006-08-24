@@ -476,7 +476,7 @@ DoubleNumInput::DoubleNumInput(QWidget * parent) : QWidget(parent), m_slider(NUL
 	setAutoFillBackground(true);
 
 	m_spinBox = new QDoubleSpinBox(this);
-	m_spinBox->setRange(-1000.0, 1000.0);
+	m_spinBox->setRange(-10000.0, 10000.0);
 	m_spinBox->setDecimals(2);
 	m_spinBox->setSingleStep(0.1);
 // 	m_spinBox->setFocusProxy(this);
@@ -539,7 +539,7 @@ void DoubleNumInput::clearRange()
 		m_slider = NULL;
 	}
 	
-	m_spinBox->setRange(-1000.0, 1000.0);
+	m_spinBox->setRange(-10000.0, 10000.0);
 }
 
 void DoubleNumInput::setValue(double value)

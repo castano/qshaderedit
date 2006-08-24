@@ -162,7 +162,7 @@ public:
 		// load default texture
 		m_name = "default.png";
 		QImage image = s_imageLoader.load(":images/default.png", m_object, &m_target);
-		m_icon = QPixmap::fromImage(image.scaled(24, 24, Qt::KeepAspectRatio));
+		m_icon = QPixmap::fromImage(image.scaled(16, 16, Qt::KeepAspectRatio));
 	}
 	Private(const QString & name) : m_name(name)
 	{
@@ -171,7 +171,7 @@ public:
 		// @@ Traverse image plugins.
 		if( s_imageLoader.canLoad(m_name) ) {
 			QImage image = s_imageLoader.load(m_name, m_object, &m_target);
-			m_icon = QPixmap::fromImage(image.scaled(24, 24, Qt::KeepAspectRatio));
+			m_icon = QPixmap::fromImage(image.scaled(16, 16, Qt::KeepAspectRatio));
 		}	
 	}
 	~Private()
