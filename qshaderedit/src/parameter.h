@@ -1,3 +1,5 @@
+#ifndef PARAMETER_H
+#define PARAMETER_H
 
 #include <QtCore/QVariant>
 
@@ -49,3 +51,6 @@ private:
 	QVariant m_value;
 	QVariant m_minValue, m_maxValue;
 };
+
+#endif // PARAMETER_H
+
