@@ -111,8 +111,8 @@ bool QGLView::init(MessagePanel * output)
 		output->info(QString("GLSL version: ").append(glsl_version));
 	}
 	
-	bool mesa = false;
-	if( mesa ) {
+	// Set special settings for mesa.
+	if( qstrcmp(vendor, "Brian Paul") == 0 ) {
 		glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST );
 	}
 
