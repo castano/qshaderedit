@@ -19,8 +19,8 @@ namespace {
 
 	// Default vertex shader.
 	static const char * s_effectText =
-		"float3 color : DIFFUSE < string UIHelp = \"Base Color\"; > = {1.0f, 0.0f, 0.0f};\n"
-		"float amb < string UIHelp = \"Ambient\"; > = 0.1f;\n\n"
+		"float3 color : DIFFUSE < string SasUiLabel = \"Base Color\"; > = {1.0f, 0.0f, 0.0f};\n"
+		"float amb < string SasUiLabel = \"Ambient\"; float SasUiMin = 0; float SasUiMax = 1; > = 0.1f;\n\n"
 		"float4x4 mvp : ModelViewProjection;\n"
 		"float3x3 normalMatrix : ModelViewInverseTranspose;\n\n"
 		"struct VertexInput {\n"
@@ -94,218 +94,302 @@ namespace {
 
 	class CgParameter : public Parameter
 	{
-		private:
-			CGparameter m_handle;
-			bool m_visible;
-			bool m_standard;
+	private:
+		CGparameter m_handle;
+		bool m_visible;
+		bool m_standard;
 
-		public:
-			CgParameter() {}
+	public:
+		CgParameter() {}
+		
+		CgParameter(CGparameter h) : m_handle(h), m_visible(true), m_standard(false)
+		{
+			Q_ASSERT(h != NULL);
+			setName(cgGetParameterName(m_handle));
+			setValue(getParameterValue(m_handle));
+
+			//m_editor = getParameterEditor(m_handle);
 			
-			CgParameter(CGparameter h) : m_handle(h)
+			readAnnotations();
+			readSemantic();
+			setVisibility();
+			
+			// load texture.
+			if( cgGetParameterClass(m_handle) == CG_PARAMETERCLASS_SAMPLER )
 			{
-				Q_ASSERT(h != NULL);
-				setName(cgGetParameterName(m_handle));
-				setValue(getParameterValue(m_handle));
-				m_visible = isParameterVisible(m_handle);
-				m_standard = isParameterStandard(m_handle);
-				//m_editor = getParameterEditor(m_handle);
-				parseAnnotations();
+				setValue(qVariantFromValue(GLTexture::open(value().toString())));
+			}
+		}
+
+		CGparameter handle() const
+		{
+			return m_handle;
+		}
+
+		int rows() const
+		{
+			return cgGetParameterRows(m_handle);
+		}
+
+		int columns() const
+		{
+			return cgGetParameterRows(m_handle);
+		}
+
+		bool isHidden() const
+		{
+			return !m_visible;
+		}
+
+		bool isStandard() const
+		{
+			return m_standard;
+		}
+
+	private:
+
+		void readAnnotations()
+		{
+			CGannotation annotation = cgGetFirstParameterAnnotation(m_handle);
+			
+			QVariant min, max;
+			
+			while(annotation != NULL) {
 				
-				// load texture.
-				if( cgGetParameterClass(m_handle) == CG_PARAMETERCLASS_SAMPLER )
-				{
-					setValue(qVariantFromValue(GLTexture::open(value().toString())));
-				}
-			}
-
-			CGparameter handle() const
-			{
-				return m_handle;
-			}
-
-			int rows() const
-			{
-				return cgGetParameterRows(m_handle);
-			}
-
-			int columns() const
-			{
-				return cgGetParameterRows(m_handle);
-			}
-
-			bool isHidden() const
-			{
-				return !m_visible;
-			}
-
-			bool isStandard() const
-			{
-				return m_standard;
-			}
-
-		private:
-
-			void parseAnnotations()
-			{
+				const char * name = cgGetAnnotationName(annotation);
+				
 				// Override UI name.
-				CGannotation annotation = cgGetNamedParameterAnnotation(m_handle, "UIHelp");
-				if(annotation != NULL) {
+				if( qstricmp(name, "UIHelp") == 0 || qstricmp(name, "UIName") == 0 ||
+					qstricmp(name, "SasUiLabel") == 0) 
+				{
 					setName(cgGetStringAnnotationValue(annotation));
 				}
-			}
-
-			static bool isParameterVisible(CGparameter parameter)
-			{
-				CGparameterclass parameterClass = cgGetParameterClass(parameter);
-
-				Q_ASSERT(parameterClass != CG_PARAMETERCLASS_STRUCT);
-				Q_ASSERT(parameterClass != CG_PARAMETERCLASS_ARRAY);
-
-				if(parameterClass == CG_PARAMETERCLASS_UNKNOWN) return false;	// hide unknowns.
-				if(parameterClass == CG_PARAMETERCLASS_OBJECT) return false;	// string and texture are not tweakable.
-
-				// hide parameters without widget.
-				CGannotation annotation = cgGetNamedParameterAnnotation(parameter, "UIWidget");
-				if(annotation != NULL) {
+				
+				// Get description.
+				if( qstricmp(name, "UIDescription") == 0 || qstricmp(name, "SasUiDescription") == 0) {
+					setDescription(cgGetStringAnnotationValue(annotation));
+				}
+				
+				// UI widget.
+				else if( qstricmp(name, "UIWidget") == 0 || qstricmp(name, "SasUiControl") == 0) {
 					if(qstricmp("None", cgGetStringAnnotationValue(annotation)) == 0) {
-						return false;
+						// @@ This should be non editable instead of invisible.
+						m_visible = false;
 					}
 				}
 				
-				if(cgGetParameterVariability(parameter) != CG_UNIFORM) {
-					// Hide const, literal and varying parameters.
-					return false;
+				// Min
+				else if( qstricmp(name, "UIMin") == 0 || qstricmp(name, "SasUiMin") == 0)
+				{
+					min = getAnnotationValue(annotation);
 				}
-
-				return true;
-			}
-
-			static bool isParameterStandard(CGparameter parameter)
-			{
-				const char * semantic = cgGetParameterSemantic(parameter);
-				if(semantic == NULL) return false;
-
-				return s_semanticMap.contains(QString(semantic).toLower());
-			}
-
-			static QVariant getParameterValue(CGparameter parameter)
-			{
-				CGtype parameterBaseType = cgGetParameterBaseType(parameter);
-				CGparameterclass parameterClass = cgGetParameterClass(parameter);
-
-				Q_ASSERT(parameterClass != CG_PARAMETERCLASS_STRUCT);
-				Q_ASSERT(parameterClass != CG_PARAMETERCLASS_ARRAY);
-
-				if(parameterClass == CG_PARAMETERCLASS_OBJECT) {
-					if(parameterBaseType == CG_STRING) {
-						return cgGetStringParameterValue(parameter);
-					}
-					else if(parameterBaseType == CG_TEXTURE) {
-						// Ignore textures.
-					}
+				
+				// Max
+				else if( qstricmp(name, "UIMax") == 0 || qstricmp(name, "SasUiMax") == 0)
+				{
+					max = getAnnotationValue(annotation);
 				}
-				else if(parameterClass == CG_PARAMETERCLASS_SAMPLER) {
-					// Get ResourceName annotation.
-					CGannotation annotation = cgGetNamedParameterAnnotation(parameter, "ResourceName");
-					if(annotation == 0) {
-						// @@ Hack! state assignment name must be lowercase!
-						CGstateassignment sa = cgGetNamedSamplerStateAssignment(parameter, "texture");
-						if(sa != 0) {
-							CGparameter p = cgGetTextureStateAssignmentValue(sa);
-							if(p != 0) {
-								annotation = cgGetNamedParameterAnnotation(p, "ResourceName");
-							}
-						}
-					}
-
-					// Get resource string.
-					if(annotation == 0) {
-						return qVariantFromValue(GLTexture());
-					}
-					else {
-						return qVariantFromValue(GLTexture::open(cgGetStringAnnotationValue(annotation)));
-					}
-				}
-				else if(parameterClass == CG_PARAMETERCLASS_SCALAR) {
+				
+				else if( qstricmp(name, "SasUiVisible") == 0 ) {
 					int num;
-					const double * values = cgGetParameterValues(parameter, CG_DEFAULT, &num);
-					Q_ASSERT(num == 1);
-
-					if(parameterBaseType == CG_FLOAT || parameterBaseType == CG_HALF || parameterBaseType == CG_FIXED) {
-						return values[0];
-					}
-					else if(parameterBaseType == CG_INT) {
-						return int(values[0]);
-					}
-					else if(parameterBaseType == CG_BOOL) {
-						return bool(values[0]);
-					}
-				}
-				else if(parameterClass == CG_PARAMETERCLASS_VECTOR || parameterClass == CG_PARAMETERCLASS_MATRIX) {
-					int num;
-					const double * values = cgGetParameterValues(parameter, CG_DEFAULT, &num);
+					const CGbool * values = cgGetBoolAnnotationValues(annotation, &num);
 					Q_ASSERT(num > 0);
-
-					QVariantList list;
-					if(parameterBaseType == CG_FLOAT || parameterBaseType == CG_HALF || parameterBaseType == CG_FIXED) {
-						for(int i = 0; i < num; i++) {
-							list.append(float(values[i]));
-						}
-					}
-					else if(parameterBaseType == CG_INT) {
-						for(int i = 0; i < num; i++) {
-							list.append(int(values[i]));
-						}
-					}
-					else if(parameterBaseType == CG_BOOL) {
-						for(int i = 0; i < num; i++) {
-							list.append(bool(values[i]));
-						}
-					}
-					return list;
+					m_visible = (values[0] != 0); 
 				}
-				return QVariant();
+				
+				// ResourceName
+				else if( qstricmp(name, "ResourceName") ) {
+					// This is already handled in getParameterValue.
+				}
+				
+				annotation = cgGetNextAnnotation(annotation);
 			}
+			
+			if( min.isValid() && max.isValid() ) {
+				this->setRange(min, max);
+			}
+		}
+		
+		void readSemantic()
+		{
+			const char * semantic = cgGetParameterSemantic(m_handle);
+			if(semantic == NULL) return;
+			
+			QString key = QString(semantic).toLower();
+			
+			if( s_semanticMap.contains(key) ) {
+				m_standard = true;
+			}
+			else if( qstricmp("diffuse", semantic) == 0 || qstricmp("specular", semantic) == 0 ) {
+				// @@ this is a color.
+ 			}
+		}
+		
+		void setVisibility()
+		{
+			CGparameterclass parameterClass = cgGetParameterClass(m_handle);
+			
+			Q_ASSERT(parameterClass != CG_PARAMETERCLASS_STRUCT);
+			Q_ASSERT(parameterClass != CG_PARAMETERCLASS_ARRAY);
 
-// 			static Effect::EditorType getParameterEditor(CGparameter parameter)
-// 			{
-// 				CGparameterclass parameterClass = cgGetParameterClass(parameter);
-// 				Q_ASSERT(parameterClass != CG_PARAMETERCLASS_STRUCT);
-// 				Q_ASSERT(parameterClass != CG_PARAMETERCLASS_ARRAY);
+			if( parameterClass == CG_PARAMETERCLASS_UNKNOWN ||
+				parameterClass == CG_PARAMETERCLASS_OBJECT )
+			{
+				m_visible = false;
+			}
+			else {
+				CGenum variability = cgGetParameterVariability(m_handle);
+			
+				if( variability != CG_UNIFORM ) {
+					// Hide const, literal and varying parameters.
+					m_visible = false;
+				}
+			}
+		}
+
+		static QVariant getParameterValue(CGparameter parameter)
+		{
+			CGtype parameterBaseType = cgGetParameterBaseType(parameter);
+			CGparameterclass parameterClass = cgGetParameterClass(parameter);
+
+			Q_ASSERT(parameterClass != CG_PARAMETERCLASS_STRUCT);
+			Q_ASSERT(parameterClass != CG_PARAMETERCLASS_ARRAY);
+
+			if(parameterClass == CG_PARAMETERCLASS_OBJECT) {
+				if(parameterBaseType == CG_STRING) {
+					return cgGetStringParameterValue(parameter);
+				}
+				else if(parameterBaseType == CG_TEXTURE) {
+					// Ignore textures.
+				}
+			}
+			else if(parameterClass == CG_PARAMETERCLASS_SAMPLER) {
+				// Get ResourceName annotation.
+				CGannotation annotation = cgGetNamedParameterAnnotation(parameter, "ResourceName");
+				if(annotation == 0) {
+					// @@ Hack! state assignment name must be lowercase!
+					CGstateassignment sa = cgGetNamedSamplerStateAssignment(parameter, "texture");
+					if(sa != 0) {
+						CGparameter p = cgGetTextureStateAssignmentValue(sa);
+						if(p != 0) {
+							annotation = cgGetNamedParameterAnnotation(p, "ResourceName");
+						}
+					}
+				}
+
+				// Get resource string.
+				if(annotation == 0) {
+					return qVariantFromValue(GLTexture());
+				}
+				else {
+					return qVariantFromValue(GLTexture::open(cgGetStringAnnotationValue(annotation)));
+				}
+			}
+			else if(parameterClass == CG_PARAMETERCLASS_SCALAR) {
+				int num;
+				const double * values = cgGetParameterValues(parameter, CG_DEFAULT, &num);
+				Q_ASSERT(num == 1);
+
+				if(parameterBaseType == CG_FLOAT || parameterBaseType == CG_HALF || parameterBaseType == CG_FIXED) {
+					return values[0];
+				}
+				else if(parameterBaseType == CG_INT) {
+					return int(values[0]);
+				}
+				else if(parameterBaseType == CG_BOOL) {
+					return bool(values[0]);
+				}
+			}
+			else if(parameterClass == CG_PARAMETERCLASS_VECTOR || parameterClass == CG_PARAMETERCLASS_MATRIX) {
+				int num;
+				const double * values = cgGetParameterValues(parameter, CG_DEFAULT, &num);
+				Q_ASSERT(num > 0);
+
+				QVariantList list;
+				if(parameterBaseType == CG_FLOAT || parameterBaseType == CG_HALF || parameterBaseType == CG_FIXED) {
+					for(int i = 0; i < num; i++) {
+						list.append(float(values[i]));
+					}
+				}
+				else if(parameterBaseType == CG_INT) {
+					for(int i = 0; i < num; i++) {
+						list.append(int(values[i]));
+					}
+				}
+				else if(parameterBaseType == CG_BOOL) {
+					for(int i = 0; i < num; i++) {
+						list.append(bool(values[i]));
+					}
+				}
+				return list;
+			}
+			return QVariant();
+		}
+
+		static QVariant getAnnotationValue(CGannotation annotation)
+		{
+			CGtype annotationType = cgGetAnnotationType(annotation);
+			
+			int num;
+			
+			// For now we only support scalars.
+			if(annotationType == CG_FLOAT || annotationType == CG_HALF || annotationType == CG_FIXED) {
+				const float * values = cgGetFloatAnnotationValues(annotation, &num);
+				Q_ASSERT(num == 1);
+				return values[0];
+			}
+			else if(annotationType == CG_INT) {
+				const int * values = cgGetIntAnnotationValues(annotation, &num);
+				Q_ASSERT(num == 1);
+				return values[0];
+			}
+			else if(annotationType == CG_BOOL) {
+				const CGbool * values = cgGetBoolAnnotationValues(annotation, &num);
+				Q_ASSERT(num == 1);
+				return values[0];
+			}
+			
+			return QVariant();
+		}
+		
+// 		static Effect::EditorType getParameterEditor(CGparameter parameter)
+// 		{
+// 			CGparameterclass parameterClass = cgGetParameterClass(parameter);
+// 			Q_ASSERT(parameterClass != CG_PARAMETERCLASS_STRUCT);
+// 			Q_ASSERT(parameterClass != CG_PARAMETERCLASS_ARRAY);
 // 
-// 				if(parameterClass == CG_PARAMETERCLASS_SCALAR) {
-// 					return Effect::EditorType_Scalar;
+// 			if(parameterClass == CG_PARAMETERCLASS_SCALAR) {
+// 				return Effect::EditorType_Scalar;
+// 			}
+// 			else if(parameterClass == CG_PARAMETERCLASS_VECTOR) {
+// 				QString semantic = cgGetParameterSemantic(parameter);
+// 				semantic = semantic.toLower();
+// 				if( "diffuse" == semantic || "specular" == semantic) {
+// 					return Effect::EditorType_Color;
 // 				}
-// 				else if(parameterClass == CG_PARAMETERCLASS_VECTOR) {
-// 					QString semantic = cgGetParameterSemantic(parameter);
-// 					semantic = semantic.toLower();
-// 					if( "diffuse" == semantic || "specular" == semantic) {
+// 				
+// 				CGannotation annotation = cgGetNamedParameterAnnotation(parameter, "UIWidget");
+// 				if(annotation == 0) annotation = cgGetNamedParameterAnnotation(parameter, "Widget");
+// 				if(annotation == 0) annotation = cgGetNamedParameterAnnotation(parameter, "SasUiWidget");
+// 				if(annotation != 0) 
+// 				{
+// 					QString value = cgGetStringAnnotationValue(annotation);
+// 					if( value.toLower() == "color" ) {
 // 						return Effect::EditorType_Color;
 // 					}
-// 					
-// 					CGannotation annotation = cgGetNamedParameterAnnotation(parameter, "UIWidget");
-// 					if(annotation == 0) annotation = cgGetNamedParameterAnnotation(parameter, "Widget");
-// 					if(annotation == 0) annotation = cgGetNamedParameterAnnotation(parameter, "SasUiWidget");
-// 					if(annotation != 0) 
-// 					{
-// 						QString value = cgGetStringAnnotationValue(annotation);
-// 						if( value.toLower() == "color" ) {
-// 							return Effect::EditorType_Color;
-// 						}
-// 					}
-// 					
-// 					return Effect::EditorType_Vector;
 // 				}
-// 				else if(parameterClass == CG_PARAMETERCLASS_MATRIX) {
-// 					return Effect::EditorType_Matrix;
-// 				}
-// 				else if(parameterClass == CG_PARAMETERCLASS_SAMPLER) {
-// 					return Effect::EditorType_File;
-// 				}
-// 
-// 				return Effect::EditorType_None;
+// 				
+// 				return Effect::EditorType_Vector;
 // 			}
+// 			else if(parameterClass == CG_PARAMETERCLASS_MATRIX) {
+// 				return Effect::EditorType_Matrix;
+// 			}
+// 			else if(parameterClass == CG_PARAMETERCLASS_SAMPLER) {
+// 				return Effect::EditorType_File;
+// 			}
+// 
+// 			return Effect::EditorType_None;
+// 		}
 
 	};
 
@@ -327,7 +411,7 @@ private:
 	bool m_animated;
 	QTime m_time;
 
-	QVector<CgParameter> m_parameterArray;
+	QVector<CgParameter *> m_parameterArray;
 
 	QList<CGtechnique> m_techniqueList;
 	QList<CGpass> m_passList;
@@ -393,6 +477,7 @@ public:
 	{
 		cgDestroyContext(m_context);
 		delete m_outputParser;
+		qDeleteAll(m_parameterArray);
 	}
 
 
@@ -497,7 +582,7 @@ public:
 	Parameter * parameter(int idx)
 	{
 		Q_ASSERT(idx >= 0 && idx < parameterCount());
-		return &m_parameterArray[idx]; 	
+		return m_parameterArray[idx]; 	
 	}
 
 	// Effect info.
@@ -579,9 +664,9 @@ public:
 		}
 
 		// Set user parameters.
-		foreach(const CgParameter & p, m_parameterArray) {
-			parameter = p.handle();
-			QVariant value = p.value();
+		foreach(const CgParameter * p, m_parameterArray) {
+			parameter = p->handle();
+			QVariant value = p->value();
 
 			// Set cg parameter.
 			CGparameterclass parameterClass = cgGetParameterClass(parameter);
@@ -637,7 +722,7 @@ public:
 				// @@ TBD
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_SAMPLER ) {
-				cgGLSetTextureParameter(parameter, p.value().value<GLTexture>().object());
+				cgGLSetTextureParameter(parameter, value.value<GLTexture>().object());
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_OBJECT ) {
 				// Ignore textures and strings.
@@ -665,7 +750,7 @@ private:
 	void initParameters()
 	{
 		m_animated = false;
-		QVector<CgParameter> newParameterArray;
+		QVector<CgParameter *> newParameterArray;
 		
 		// Read parameters.
 		CGparameter parameter = cgGetFirstLeafEffectParameter(m_effect);
@@ -673,22 +758,22 @@ private:
 		{
 			if(cgIsParameterUsed(parameter, m_effect))
 			{
-				CgParameter cgParameter(parameter);
+				CgParameter * cgParameter = new CgParameter(parameter);
 				
 				// Try to get the old value.
-				foreach(const CgParameter & p, m_parameterArray) {
-					if( p.name() == cgParameter.name() ) {
-						cgParameter.setValue(p.value());
+				foreach(const CgParameter * p, m_parameterArray) {
+					if( p->name() == cgParameter->name() ) {
+						cgParameter->setValue(p->value());
 					}
 				}					
 				
 				// Add non hidden and non standard parameters.
-				if(!cgParameter.isHidden() && !cgParameter.isStandard()) {
+				if(!cgParameter->isHidden() && !cgParameter->isStandard()) {
 					newParameterArray.append(cgParameter);
 				}
 				
 				// Process semantics of standard parameters.
-				if( cgParameter.isStandard() ) {
+				if( cgParameter->isStandard() ) {
 					QString semantic = cgGetParameterSemantic(parameter);
 					semantic = semantic.toLower();
 					
@@ -703,6 +788,7 @@ private:
 			parameter = cgGetNextLeafParameter(parameter);
 		}
 
+		qDeleteAll(m_parameterArray);
 		m_parameterArray = newParameterArray;
 	}
 	

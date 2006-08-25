@@ -111,6 +111,11 @@ bool QGLView::init(MessagePanel * output)
 		output->info(QString("GLSL version: ").append(glsl_version));
 	}
 	
+	bool mesa = false;
+	if( mesa ) {
+		glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST );
+	}
+
 	return true;
 }
 
@@ -161,14 +166,16 @@ void QGLView::paintGL()
 			m_effect->beginPass(i);
 			
 			m_scene->draw(m_effect);
-						
+			
 			m_effect->endPass();
 		}
 		
 		m_effect->end();		
 	}
 	
- 	swapBuffers();	
+ 	swapBuffers();
+	
+	qDebug("paint!");
 }
 
 

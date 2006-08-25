@@ -53,6 +53,7 @@ void ParameterPanel::initWidget()
 	m_view->header()->setClickable(false);
 	m_view->setAlternatingRowColors(true);
 	m_view->setEditTriggers(QAbstractItemView::AllEditTriggers);
+	m_view->setTextElideMode(Qt::ElideMiddle);
 
 	//	m_view->setIndentation(0);	// @@ This would be nice if it didn't affect the roots.
 

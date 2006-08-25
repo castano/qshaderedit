@@ -9,8 +9,8 @@ class Parameter
 public:
 	virtual ~Parameter() { }
 	
-	QString name() const { return m_name; }
-	QString description() const { return m_description; }
+	const QString & name() const { return m_name; }
+	const QString & description() const { return m_description; }
 	
 	void setDescription(const QString& desc) { m_description = desc; }
 	

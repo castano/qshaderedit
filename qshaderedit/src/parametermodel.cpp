@@ -125,16 +125,20 @@ bool ParameterModel::setData(const QModelIndex &index, const QVariant &value, in
 	Parameter* param = parameter(index);
 	if( isComponent(index) ) {
 		// Parameter component.
-		param->setComponentValue(index.row(), value);
-		emit dataChanged(index, index);
-		QModelIndex pindex = createIndex(index.internalId(), 1, -1);
-		emit dataChanged(pindex, pindex);
+		if( param->componentValue(index.row()) != value ) {
+			param->setComponentValue(index.row(), value);
+			emit dataChanged(index, index);
+			QModelIndex parentIndex = createIndex(index.internalId(), 1, -1);
+			emit dataChanged(parentIndex, parentIndex);
+		}
 		return true;
 	}
 	else {
 		// Root parameter.
-		param->setValue(value);
-		emit dataChanged(index, index);
+		if( param->value() != value ) {
+			param->setValue(value);
+			emit dataChanged(index, index);
+		}
 		return true;
 	}
 	return false;

@@ -20,8 +20,16 @@
 
 namespace {
 	static QString s_lastPath = ".";
+	static QIcon s_toolButtonIcon;
+	static QIcon s_colorPickerIcon;
 }
 
+
+ParameterDelegate::ParameterDelegate(QObject *parent /*= 0*/) : QItemDelegate(parent)
+{
+	s_toolButtonIcon = QIcon(":images/toolbutton.png");
+	s_colorPickerIcon = QIcon(":images/colorpicker.png");
+}
 
 QSize ParameterDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index ) const
 {
@@ -121,18 +129,18 @@ bool ParameterDelegate::eventFilter(QObject* object, QEvent* event)
 		QKeyEvent *keyEvent = (QKeyEvent*)event;
 		switch (keyEvent->key()) {
 			case Qt::Key_Up:
-				emit commitData(editor);
+				//emit commitData(editor);
 				emit closeEditor(editor, QAbstractItemDelegate::EditPreviousItem);
 				return true;
 
 			case Qt::Key_Down:
-				emit commitData(editor);
+				//emit commitData(editor);
 				emit closeEditor(editor, QAbstractItemDelegate::EditNextItem);
 				return true;
 
 			case Qt::Key_Enter:
 			case Qt::Key_Return:
-				emit commitData(editor);
+				//emit commitData(editor);
 				emit closeEditor(editor, QAbstractItemDelegate::EditNextItem);
 				return true;
 		}
@@ -160,8 +168,9 @@ void ParameterDelegate::paint(QPainter * painter, const QStyleOptionViewItem & o
 
 void ParameterDelegate::editorValueChanged()
 {
-	if (sender() && sender()->isWidgetType())
+	if (sender() && sender()->isWidgetType()) {
 		emit commitData(static_cast<QWidget *>(sender()));
+	}
 }
 
 QWidget* ParameterDelegate::createScalarEditor(QWidget* parent, const QVariant& minValue, const QVariant& maxValue) const
@@ -248,10 +257,10 @@ ParameterEditor::ParameterEditor(Parameter* param, QWidget* parent):
 		m_editor = label;
 	}
 	
-	setFocusProxy(m_editor);
-		
+	//setFocusProxy(m_editor);
+	
 	QToolButton* settingsButton = new QToolButton(this);
-	settingsButton->setIcon(QIcon(":images/toolbutton.png"));
+	settingsButton->setIcon(s_toolButtonIcon);
 	connect(settingsButton, SIGNAL(clicked()), this, SLOT(openParameterSettings()));
 	
 	QHBoxLayout * layout = new QHBoxLayout(this);
@@ -356,33 +365,33 @@ FileEditor::FileEditor(QWidget * parent /*= 0*/) : QWidget(parent)
 {
 	setAutoFillBackground(true);
 
-	QHBoxLayout * m_layout = new QHBoxLayout(this);
-	m_layout->setMargin(0);
-	m_layout->setSpacing(0);
-
 	m_lineEdit = new QLineEdit(this);
 	m_lineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::MinimumExpanding));
 	m_lineEdit->setFrame(false);
-	m_layout->addWidget(m_lineEdit);
 	
 	QToolButton * button = new QToolButton(this);
 	button->setToolButtonStyle(Qt::ToolButtonTextOnly);
 	button->setText("...");
 	button->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::MinimumExpanding));
-	m_layout->addWidget(button);
 	connect(button, SIGNAL(clicked()), this, SLOT(openFileDialog()));
 	
-	setFocusProxy(m_lineEdit);
+	QHBoxLayout * m_layout = new QHBoxLayout(this);
+	m_layout->setMargin(0);
+	m_layout->setSpacing(0);
+	m_layout->addWidget(button);
+	m_layout->addWidget(m_lineEdit);
+	
+//	setFocusProxy(m_lineEdit);
 }
 
 void FileEditor::openFileDialog()
 {
 	QString fileName = QFileDialog::getOpenFileName(this, "Choose file", s_lastPath, "Images (*.png *.jpg)");
-	if( !fileName.isEmpty() ) {
+	if( !fileName.isEmpty() && fileName != m_lineEdit->text() ) {
 		m_lineEdit->setText(fileName);
 		s_lastPath = fileName;
+		emit valueChanged();
 	}
-	emit valueChanged();
 	emit done(this);
 }
 
@@ -420,7 +429,7 @@ void ColorEditor::init()
 
 	QToolButton * button = new QToolButton(this);
 	button->setToolButtonStyle(Qt::ToolButtonTextOnly);
-	button->setIcon(QIcon(":images/colorpicker.png"));
+	button->setIcon(s_colorPickerIcon);
 	connect(button, SIGNAL(clicked()), this, SLOT(openColorPicker()));
 	
 	QHBoxLayout * layout = new QHBoxLayout(this);
@@ -458,11 +467,11 @@ void ColorEditor::updateLabel()
 void ColorEditor::openColorPicker()
 {
 	QColor color = QColorDialog::getColor(m_color);
-	if (color.isValid()) {
+	if (color.isValid() && m_color != color) {
 		m_color = color;
 		updateLabel();
+		emit valueChanged();
 	}
-	emit valueChanged();
 	emit done(this);
 }
 
@@ -564,8 +573,9 @@ void DoubleNumInput::sliderValueChanged(int value)
 void DoubleNumInput::spinBoxValueChanged(double value)
 {
 	int ivalue = qRound(value / m_spinBox->singleStep());
-	if (m_slider)
+	if (m_slider) {
 		m_slider->setValue(ivalue);
+	}
 	emit valueChanged(value);
 }
 

@@ -45,7 +45,7 @@ namespace {
 		"DP4 cp.x, mvi[0], cameraPos;\n"
 		"DP4 cp.y, mvi[1], cameraPos;\n"
 		"DP4 cp.z, mvi[2], cameraPos;\n"
-		"SUB	viewVec, cp, iVertex;\n\n"
+		"SUB viewVec, cp, iVertex;\n\n"
 		
 		"END";
 	

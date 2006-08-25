@@ -1,6 +1,6 @@
-float3 color : DIFFUSE < string UIHelp = "Base Color"; > = {1.0f, 0.0f, 0.0f};
-float amb < string UIHelp = "Ambient"; > = 0.1f;
-float exponent < string UIHelp = "Exponent"; > = 16.0f;
+float3 color : DIFFUSE < string SasUiLabel = "Base Color"; > = {1.0f, 0.0f, 0.0f};
+float amb < string SasUiLabel = "Ambient"; > = 0.1f;
+float exponent < string SasUiLabel = "Exponent"; > = 16.0f;
 
 float4x4 mvp : ModelViewProjection;
 float4x4 mv : ModelView;

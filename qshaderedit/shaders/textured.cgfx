@@ -1,5 +1,5 @@
-float3 color : DIFFUSE < string UIHelp = "Base Color"; > = {1.0f, 0.0f, 0.0f};
-float amb < string UIHelp = "Ambient"; > = 0.1f;
+float3 color : DIFFUSE < string SasUiLabel = "Base Color"; > = {1.0f, 0.0f, 0.0f};
+float amb < string SasUiLabel = "Ambient"; > = 0.1f;
 
 float4x4 mvp : ModelViewProjection;
 float3x3 normalMatrix : ModelViewInverseTranspose;

@@ -27,12 +27,13 @@
 #include <QtGui/QComboBox>
 #include <QtGui/QLabel>
 
+namespace {
 #ifdef Q_WS_MAC
-const QString rsrcPath = ":/images/mac";
+	static const QString s_resourcePath = ":/images/mac";
 #else
-const QString rsrcPath = ":/images/win";
+	static const QString s_resourcePath = ":/images/win";
 #endif
-
+}
 
 /// Ctor.
 QShaderEdit::QShaderEdit(const QString& filename) :
@@ -103,17 +104,17 @@ QSize QShaderEdit::sizeHint() const
 
 void QShaderEdit::createActions()
 {
-	m_newAction = new QAction(QIcon(rsrcPath + "/filenew.png"), tr("&New"), this);
+	m_newAction = new QAction(QIcon(s_resourcePath + "/filenew.png"), tr("&New"), this);
 	m_newAction->setShortcut(tr("Ctrl+N"));
 	m_newAction->setStatusTip(tr("Create a new effect"));
 	connect(m_newAction, SIGNAL(triggered()), this, SLOT(newFile()));
 
-	m_openAction = new QAction(QIcon(rsrcPath + "/fileopen.png"), tr("&Open"), this);
+	m_openAction = new QAction(QIcon(s_resourcePath + "/fileopen.png"), tr("&Open"), this);
 	m_openAction->setShortcut(tr("Ctrl+O"));
 	m_openAction->setStatusTip(tr("Open an existing effect"));
 	connect(m_openAction, SIGNAL(triggered()), this, SLOT(open()));
 
-	m_saveAction = new QAction(QIcon(rsrcPath + "/filesave.png"), tr("&Save"), this);
+	m_saveAction = new QAction(QIcon(s_resourcePath + "/filesave.png"), tr("&Save"), this);
 	m_saveAction->setEnabled(false);
 	m_saveAction->setShortcut(tr("Ctrl+S"));
 	m_saveAction->setStatusTip(tr("Save the effect"));
@@ -173,14 +174,14 @@ void QShaderEdit::createMenus()
 
 	QMenu * editMenu = menuBar()->addMenu(tr("&Edit"));
 
-	action = new QAction(QIcon(rsrcPath + "/editundo.png"), tr("&Undo"), this);
+	action = new QAction(QIcon(s_resourcePath + "/editundo.png"), tr("&Undo"), this);
 	action->setShortcut(tr("Ctrl+Z"));
 	action->setEnabled(false);
 	connect(action, SIGNAL(triggered()), m_editor, SLOT(undo()));
 	connect(m_editor, SIGNAL(undoAvailable(bool)), action, SLOT(setEnabled(bool)));
 	editMenu->addAction(action);
 
-	action = new QAction(QIcon(rsrcPath + "/editredo.png"), tr("&Redo"), this);
+	action = new QAction(QIcon(s_resourcePath + "/editredo.png"), tr("&Redo"), this);
 	action->setShortcut(tr("Ctrl+Shift+Z"));
 	action->setEnabled(false);
 	connect(action, SIGNAL(triggered()), m_editor, SLOT(redo()));
@@ -189,21 +190,21 @@ void QShaderEdit::createMenus()
 
 	editMenu->addSeparator();
 
-	action = new QAction(QIcon(rsrcPath + "/editcut.png"), tr("C&ut"), this);
+	action = new QAction(QIcon(s_resourcePath + "/editcut.png"), tr("C&ut"), this);
 	action->setShortcut(tr("Ctrl+X"));
 	action->setEnabled(false);
 	connect(action, SIGNAL(triggered()), m_editor, SLOT(cut()));
 	connect(m_editor, SIGNAL(copyAvailable(bool)), action, SLOT(setEnabled(bool)));
 	editMenu->addAction(action);
 
-	action = new QAction(QIcon(rsrcPath + "/editcopy.png"), tr("&Copy"), this);
+	action = new QAction(QIcon(s_resourcePath + "/editcopy.png"), tr("&Copy"), this);
 	action->setShortcut(tr("Ctrl+C"));
 	action->setEnabled(false);
 	connect(action, SIGNAL(triggered()), m_editor, SLOT(copy()));
 	connect(m_editor, SIGNAL(copyAvailable(bool)), action, SLOT(setEnabled(bool)));
 	editMenu->addAction(action);
 
-	action = new QAction(QIcon(rsrcPath + "/editpaste.png"), tr("&Paste"), this);
+	action = new QAction(QIcon(s_resourcePath + "/editpaste.png"), tr("&Paste"), this);
 	action->setShortcut(tr("Ctrl+V"));
 	action->setEnabled(false);
 	connect(action, SIGNAL(triggered()), m_editor, SLOT(paste()));

@@ -11,8 +11,7 @@ class ParameterDelegate: public QItemDelegate
 {
 	Q_OBJECT
 public:
-	ParameterDelegate(QObject *parent = 0) :
-		QItemDelegate(parent) {}
+	ParameterDelegate(QObject *parent = 0);
 	
 	QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index ) const;
 	
