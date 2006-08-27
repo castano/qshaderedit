@@ -38,14 +38,14 @@ QString Parameter::displayValue() const
 	if (m_value.userType() == QVariant::Color) {
 		QColor color = m_value.value<QColor>();
 		return QString("[%1, %2, %3, %4]").
-				arg(color.redF(), 0, 'g', 2).
-				arg(color.greenF(), 0, 'g', 2).
-				arg(color.blueF(), 0, 'g', 2).
-				arg(color.alphaF(), 0, 'g', 2);
+				arg(color.redF(), 0, 'g', 3).
+				arg(color.greenF(), 0, 'g', 3).
+				arg(color.blueF(), 0, 'g', 3).
+				arg(color.alphaF(), 0, 'g', 3);
 	}
 	
 	if (m_value.type() == QVariant::Double) {
-		return QString::number(m_value.toDouble(), 'g', 2);
+		return QString::number(m_value.toDouble(), 'g', 4);
 	}
 
 	if (m_value.userType() == qMetaTypeId<GLTexture>()) {
