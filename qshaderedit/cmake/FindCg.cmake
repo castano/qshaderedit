@@ -65,7 +65,7 @@ ELSE (APPLE)
       NAMES Cg
       PATHS
       $ENV{CG_LIB_PATH}
-      $ENV{PROGRAMFILES}/NVIDIA\ Corporation/Cg/lib"
+      $ENV{PROGRAMFILES}/NVIDIA\ Corporation/Cg/lib
       $ENV{PROGRAMFILES}/Cg
       ${PROJECT_SOURCE_DIR}/../Cg
       ${CG_COMPILER_SUPER_DIR}/lib
