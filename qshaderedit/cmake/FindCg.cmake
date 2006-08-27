@@ -39,8 +39,9 @@ IF (APPLE)
 ELSE (APPLE)
   IF (WIN32)
     FIND_PROGRAM( CG_COMPILER cgc
-      "C:/Program Files/NVIDIA Corporation/Cg/bin"
-      "C:/Program Files/Cg"
+      $ENV{CG_BIN_PATH}
+      $ENV{PROGRAMFILES}/NVIDIA\ Corporation/Cg/bin
+      $ENV{PROGRAMFILES}/Cg
       ${PROJECT_SOURCE_DIR}/../Cg
       DOC "The Cg Compiler"
       )
@@ -52,8 +53,9 @@ ELSE (APPLE)
       SET (CG_COMPILER_SUPER_DIR ..)
     ENDIF (CG_COMPILER)
     FIND_PATH( CG_INCLUDE_PATH Cg/cg.h
-      "C:/Program Files/NVIDIA Corporation/Cg/include"
-      "C:/Program Files/Cg"
+      $ENV{CG_INC_PATH}
+      $ENV{PROGRAMFILES}/NVIDIA\ Corporation/Cg/include
+      $ENV{PROGRAMFILES}/Cg
       ${PROJECT_SOURCE_DIR}/../Cg
       ${CG_COMPILER_SUPER_DIR}/include
       ${CG_COMPILER_DIR}
@@ -62,8 +64,9 @@ ELSE (APPLE)
     FIND_LIBRARY( CG_LIBRARY
       NAMES Cg
       PATHS
-      "C:/Program Files/NVIDIA Corporation/Cg/lib"
-      "C:/Program Files/Cg"
+      $ENV{CG_LIB_PATH}
+      $ENV{PROGRAMFILES}/NVIDIA\ Corporation/Cg/lib"
+      $ENV{PROGRAMFILES}/Cg
       ${PROJECT_SOURCE_DIR}/../Cg
       ${CG_COMPILER_SUPER_DIR}/lib
       ${CG_COMPILER_DIR}
@@ -76,8 +79,8 @@ ELSE (APPLE)
     FIND_LIBRARY( CG_GL_LIBRARY
       NAMES CgGL
       PATHS
-      "C:/Program Files/NVIDIA Corporation/Cg/lib"
-      "C:/Program Files/Cg"
+      $ENV{PROGRAMFILES}/NVIDIA\ Corporation/Cg/lib
+      $ENV{PROGRAMFILES}/Cg
       ${PROJECT_SOURCE_DIR}/../Cg
       ${CG_COMPILER_SUPER_DIR}/lib
       ${CG_COMPILER_DIR}

@@ -9,13 +9,13 @@
 
 IF (WIN32)
 	FIND_PATH( GLEW_INCLUDE_PATH GL/glew.h
-		"C:/Program Files/GLEW/include"
+		$ENV{PROGRAMFILES}/GLEW/include
 		${PROJECT_SOURCE_DIR}/src/glew/include
 		DOC "The directory where GL/glew.h resides")
 	FIND_LIBRARY( GLEW_LIBRARY
 		NAMES glew GLEW glew32 glew32s
 		PATHS
-		"C:/Program Files/GLEW/lib"
+		$ENV{PROGRAMFILES}/GLEW/lib
 		${PROJECT_SOURCE_DIR}/src/glew/bin
 		${PROJECT_SOURCE_DIR}/src/glew/lib
 		DOC "The GLEW library")
