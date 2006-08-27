@@ -15,11 +15,11 @@ float3 lightPosition
 	string Space = "World";
 > = { 10.0, 10.0, -10.0 };
 
-float4 lightColor : Diffuse
+fixed3 lightColor : Diffuse
 <
     string UIName = "Light Color";
     string Object = "PointLight";
-> = { 1.0, 1.0, 1.0, 1.0 };
+> = { 1.0, 1.0, 1.0 };
 
 float shininess
 <
@@ -29,11 +29,11 @@ float shininess
 	float UIMax = 100.0f;
 > = 40.0;
 
-fixed4 backgroundColor : Diffuse
+fixed3 backgroundColor : Diffuse
 <
 	string UIName="Background Color";
 	string UIWidget = "color";
-> = { 0.0, 0.0, 0.0, 1.0 };
+> = { 0.0, 0.0, 0.0 };
 
 sampler2D checkSampler = sampler_state
 {
@@ -49,7 +49,7 @@ struct Ray {
 struct Sphere {
 	half3 centre;
 	half rad2;	// radius^2
-	fixed4 color;
+	fixed3 color;
 	fixed Kd, Ks, Kr;
 	bool tex;
 };
@@ -61,20 +61,20 @@ static Sphere objects[NOBJECTS] = {
 	{
 		float3(0.0, 0.0, 0.0),
 		SQR(1.0),
-		float4(0.0, 0.5, 1.0, 1.0),
+		float3(0.0, 0.5, 1.0),
 		1.0, 1.0, 0.5, false,
 	},
 	{
 		float3(1.5, -0.5, 0.0),
 		SQR(0.5),
-		float4(0.0, 1.0, 0.0, 1.0),
+		float3(0.0, 1.0, 0.0),
 		1.0, 1.0, 0.5, false,
 	},	
 	{
 		float3(0.0, -101.0, 0.0),
 		SQR(100.0),
 //		0.0, 0.0, 1.0, 1.0
-		float4(1.0, 1.0, 1.0, 1.0),
+		float3(1.0, 1.0, 1.0),
 		1.0, 1.0, 0.5, true
 	}
 };
@@ -146,7 +146,7 @@ bool AnyHit(Ray ray)
 }
 
 // Phong lighting model
-fixed4 Phong(float3 n, float3 l, float3 v, float shininess, fixed4 diffuseColor, fixed4 specularColor)
+fixed3 Phong(float3 n, float3 l, float3 v, float shininess, fixed3 diffuseColor, fixed3 specularColor)
 {
 	fixed ndotl = dot(n, l);
 	fixed diff = saturate(ndotl);
@@ -155,7 +155,7 @@ fixed4 Phong(float3 n, float3 l, float3 v, float shininess, fixed4 diffuseColor,
 	return diff * diffuseColor + spec * specularColor;
 }
 
-fixed4 Shade(float3 i, float3 n, float3 v, Sphere hitobj)
+fixed3 Shade(float3 i, float3 n, float3 v, Sphere hitobj)
 {
 	float3 l = normalize(lightPosition - i);
 
@@ -166,11 +166,11 @@ fixed4 Shade(float3 i, float3 n, float3 v, Sphere hitobj)
 	bool shadowed = AnyHit(shadowray);
 
 	// lighting
-	fixed4 diff = hitobj.color * hitobj.Kd;
+	fixed3 diff = hitobj.color * hitobj.Kd;
 	if (hitobj.tex) {
 		diff *= tex2D(checkSampler, i.xz);	// floor texture
 	}
-	fixed4 spec = lightColor * hitobj.Ks;
+	fixed3 spec = lightColor * hitobj.Ks;
 	fixed shadowFactor = shadowed ? 0.25 : 1.0;
 	
 	return Phong(n, l, v, shininess, diff, spec) * shadowFactor;
@@ -226,7 +226,7 @@ float4 RayTracePS(VertexOutput IN) : COLOR
 	Sphere hitobj;
 	bool hit;
 	float3 i = NearestHit(eyeray, hitobj, hit);
-	fixed4 c = backgroundColor;
+	fixed3 c = backgroundColor;
 	if (hit) {
 		// shade surface
 		float3 n = SphereNormal(hitobj, i);
@@ -247,7 +247,7 @@ float4 RayTracePS(VertexOutput IN) : COLOR
 		}
 	}
 
-	return c;
+	return fixed4(c, 1.0);
 }
 
 technique arbfp1
