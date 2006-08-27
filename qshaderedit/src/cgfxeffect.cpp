@@ -722,7 +722,8 @@ public:
 				// @@ TBD
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_SAMPLER ) {
-				cgGLSetTextureParameter(parameter, value.value<GLTexture>().object());
+				//cgGLSetTextureParameter(parameter, value.value<GLTexture>().object());
+				cgGLSetupSampler(parameter, value.value<GLTexture>().object());
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_OBJECT ) {
 				// Ignore textures and strings.
