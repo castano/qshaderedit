@@ -386,7 +386,7 @@ FileEditor::FileEditor(QWidget * parent /*= 0*/) : QWidget(parent)
 
 void FileEditor::openFileDialog()
 {
-	QString fileName = QFileDialog::getOpenFileName(this, "Choose file", s_lastPath, "Images (*.png *.jpg)");
+	QString fileName = QFileDialog::getOpenFileName(this, "Choose file", s_lastPath, "Images (*.png *.jpg *.ppm)");
 	if( !fileName.isEmpty() && fileName != m_lineEdit->text() ) {
 		m_lineEdit->setText(fileName);
 		s_lastPath = fileName;
