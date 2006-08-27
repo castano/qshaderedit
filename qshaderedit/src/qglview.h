@@ -13,12 +13,16 @@ class QMouseEvent;
 class Effect;
 class MessagePanel;
 class Scene;
+class QMenu;
+class QAction;
 
 class QGLView : public QGLWidget
 {
 	Q_OBJECT
 public:
 	QGLView(const QGLFormat & format, QWidget *parent );
+	virtual ~QGLView();
+	
 	virtual QSize sizeHint() const;
 	virtual QSize minimumSizeHint() const;
 
@@ -27,6 +31,7 @@ public:
 	void resetEffect();
 	
 	void setScene(Scene * scene);
+	void populateMenu(QMenu * menu);
 
 signals:
 
@@ -45,12 +50,16 @@ protected:
     void dropEvent(QDropEvent *event);
 
 	// Mouse events
-	void mousePressEvent(QMouseEvent *event);
-	void mouseMoveEvent(QMouseEvent *event);
-	void mouseReleaseEvent(QMouseEvent *event);	
-	void wheelEvent(QWheelEvent *e);
+	virtual void mousePressEvent(QMouseEvent *event);
+	virtual void mouseMoveEvent(QMouseEvent *event);
+	virtual void mouseReleaseEvent(QMouseEvent *event);	
+	virtual void wheelEvent(QWheelEvent *e);
 
 	void resetTransform();
+	
+protected slots:
+	
+	void settingsChanged();
 	
 private:
 	
@@ -64,6 +73,10 @@ private:
 	Effect * m_effect;
 	
 	Scene * m_scene;
+	
+	QAction * m_wireframeAction;
+	QAction * m_orthoAction;
+	
 };
 
 #endif // QGLVIEW_H

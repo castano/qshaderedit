@@ -228,7 +228,7 @@ void QShaderEdit::createMenus()
 	QMenu * sceneMenu = menuBar()->addMenu(tr("&Scene"));
 	QMenu * sceneSelectionMenu = sceneMenu->addMenu(tr("&Select"));
 
-	// @@ Use scene plugins to create menus.
+	// Use scene plugins to create menus.
 	const int count = SceneFactory::factoryList().count();
 	for(int i = 0; i < count; i++) {
 		const SceneFactory * factory = SceneFactory::factoryList().at(i);
@@ -239,6 +239,10 @@ void QShaderEdit::createMenus()
 		connect(action, SIGNAL(triggered()), this, SLOT(selectScene()));
 		sceneSelectionMenu->addAction(action);
 	}
+	
+	m_renderMenu = sceneMenu->addMenu(tr("Render Options"));
+	m_sceneView->populateMenu(m_renderMenu);
+	
 	
 	QMenu * helpMenu = menuBar()->addMenu(tr("&Help"));
 
@@ -546,6 +550,9 @@ void QShaderEdit::selectScene()
 		const SceneFactory * factory = SceneFactory::findFactory(action->data().toString());
 		Q_ASSERT(factory != NULL);
 		m_sceneView->setScene(factory->createScene());
+		
+		m_renderMenu->clear();
+		m_sceneView->populateMenu(m_renderMenu);
 	}
 }
 

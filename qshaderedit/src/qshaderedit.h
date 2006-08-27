@@ -107,6 +107,9 @@ private:
 	// Status widgets.
 	QLabel * m_positionLabel;
 
+	// Menus.
+	QMenu * m_renderMenu;
+	
 	// Actions.
 	QAction * m_newAction;
 	QAction * m_openAction;

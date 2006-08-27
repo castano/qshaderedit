@@ -10,14 +10,33 @@
 #include <QtCore/QUrl>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QWheelEvent>
-
+#include <QtGui/QMenu>
+#include <QtGui/QAction>
 
 
 QGLView::QGLView(const QGLFormat & format, QWidget *parent) : QGLWidget(format, parent),
 	m_effect(NULL), m_scene(NULL)
 {
     setAcceptDrops(true);
+	
+	m_wireframeAction = new QAction(tr("Wireframe"), this);
+	m_wireframeAction->setCheckable(true);
+	m_wireframeAction->setChecked(false);
+	connect(m_wireframeAction, SIGNAL(toggled(bool)), this, SLOT(settingsChanged()));
+	
+	m_orthoAction = new QAction(tr("Ortho"), this);
+	m_orthoAction->setCheckable(true);
+	m_orthoAction->setChecked(false);
+	connect(m_orthoAction, SIGNAL(toggled(bool)), this, SLOT(settingsChanged()));
 }
+
+
+QGLView::~QGLView()
+{
+	delete m_wireframeAction;
+	delete m_orthoAction;
+}
+
 
 void QGLView::dragEnterEvent(QDragEnterEvent *event)
 {
@@ -66,6 +85,20 @@ void QGLView::setScene(Scene * scene)
 	resetTransform();
 	updateGL();
 }
+
+void QGLView::populateMenu(QMenu * menu)
+{
+	Q_ASSERT(menu != NULL);
+	
+	// Add common actions.
+	menu->addAction(m_wireframeAction);
+	menu->addAction(m_orthoAction);
+		
+	if( m_scene != NULL ) {
+		// @@ Add scene actions.
+	}
+}
+
 
 bool QGLView::init(MessagePanel * output)
 {
@@ -160,6 +193,13 @@ void QGLView::paintGL()
 		float light_vector[4] = {1.2f/sqrt(3.08f), 1.0f/sqrt(3.08f), 0.8f/sqrt(3.08f), 0.0f};
 		glLightfv( GL_LIGHT0, GL_POSITION, light_vector );
 		
+		if( m_wireframeAction->isChecked() ) {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		}
+		else {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+		
  		m_effect->begin();
 		
 		for(int i = 0; i < m_effect->getPassNum(); i++) {
@@ -170,12 +210,12 @@ void QGLView::paintGL()
 			m_effect->endPass();
 		}
 		
-		m_effect->end();		
+		m_effect->end();
 	}
 	
  	swapBuffers();
 	
-	qDebug("paint!");
+	//qDebug("paint!");
 }
 
 
@@ -183,7 +223,16 @@ void QGLView::updateMatrices()
 {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(30, float(width())/float(height()), 0.5, 50);
+	
+	float aspect = float(width())/float(height());
+	
+	if( !m_orthoAction->isChecked() ) {
+		gluPerspective(30, aspect, 0.5, 50);
+	}
+	else {
+		glOrtho(-aspect,aspect, -1,1, -30,30);
+		glScalef(m_z/5, m_z/5, m_z/5);
+	}
 	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -249,4 +298,10 @@ void QGLView::resetTransform()
 	m_y = 0.0f;
 	m_z = 5.0f;
 	updateMatrices();	
+}
+
+void QGLView::settingsChanged()
+{
+	updateMatrices();
+	emit updateGL();
 }
