@@ -15,6 +15,7 @@ Textures:
 - add noise plugin to generate noise texture.
 
 Effects:
+- compile in a separate thread.
 - add support for matrix parameters.
 - add support for texture parameters in ARB programs.
 - add glfx support.
