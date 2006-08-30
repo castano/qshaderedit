@@ -49,7 +49,8 @@ public:
 	
 	// Parameter info.
 	virtual int parameterCount() const = 0;
-	virtual Parameter * parameter(int idx) = 0;
+	virtual const Parameter * parameterAt(int idx) const = 0;
+	virtual Parameter * parameterAt(int idx) = 0;
 
 	// Effect info.
 	virtual bool isValid() const = 0;

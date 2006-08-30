@@ -137,7 +137,7 @@ private:
 
 	QTime m_time;
 	
-	QVector<ArbParameter> m_parameterArray;
+	QVector<ArbParameter *> m_parameterArray;
 
 	GLuint m_vp;
 	GLuint m_fp;
@@ -165,6 +165,7 @@ public:
 	{
 		deletePrograms();
 		delete m_outputParser;
+		qDeleteAll(m_parameterArray);
 	}
 	
 	
@@ -337,16 +338,48 @@ public:
 	
 	
 	// Parameter info.
-	int parameterCount() const
+	virtual int parameterCount() const
 	{
 		return m_parameterArray.count();
 	}
 
-	Parameter * parameter(int idx)
+	virtual const Parameter * parameterAt(int idx) const
 	{
 		Q_ASSERT(idx >= 0 && idx < parameterCount());
-		return &m_parameterArray[idx];
+		return m_parameterArray.at(idx);
 	}
+	virtual Parameter * parameterAt(int idx)
+	{
+		return m_parameterArray.at(idx);
+	}
+
+	/*
+	virtual EditorType getParameterEditor(int idx) const
+	{
+		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
+		
+		const ArbParameter & param = m_parameterArray[idx];
+		
+		if( param.name().contains("color", Qt::CaseInsensitive) ) {
+			return EditorType_Color;
+		}
+		else {
+			return EditorType_Vector;
+		}
+	}
+	
+	virtual int getParameterRows(int idx) const 
+	{
+		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
+		return 4;
+	}
+	
+	virtual int getParameterColumns(int idx) const
+	{
+		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
+		return 1;
+	}
+	*/
 	
 	virtual bool isValid() const
 	{
@@ -440,6 +473,8 @@ private:
 	void resetParameters()
 	{
 // 		qSwap(m_oldParameterArray, m_parameterArray);
+		
+		qDeleteAll(m_parameterArray);
 		m_parameterArray.clear();
 	}
 	
@@ -477,8 +512,8 @@ private:
 	
 	void addVectorParameter(const QString & name, const QString & value, Stage stage)
 	{
-		ArbParameter param(name);
-		param.setStage(stage);
+		ArbParameter * param = new ArbParameter(name);
+		param->setStage(stage);
 
 		QRegExp localRegExp("program\\.local\\[(\\d+)\\]");
 		QRegExp envRegExp("program\\.env\\[(\\d+)\\]");
@@ -487,18 +522,18 @@ private:
 		
 		bool match = false;
 		if( localRegExp.exactMatch(value) ) {
-			param.setNameSpace(Namespace_Local);
-			param.setLocation(localRegExp.cap(1).toInt());
+			param->setNameSpace(Namespace_Local);
+			param->setLocation(localRegExp.cap(1).toInt());
 			match = true;
 		}
 		else if( envRegExp.exactMatch(value) ) {
-			param.setNameSpace(Namespace_Environment);
-			param.setLocation(envRegExp.cap(1).toInt());
+			param->setNameSpace(Namespace_Environment);
+			param->setLocation(envRegExp.cap(1).toInt());
 			match = true;
 		}
 		
 		if( match ) {
-			param.setValue(QVariantList() << 0.0f << 0.0f << 0.0f << 0.0f);
+			param->setValue(QVariantList() << 0.0f << 0.0f << 0.0f << 0.0f);
 			m_parameterArray.append(param);
 		}
 	}
@@ -517,35 +552,35 @@ private:
 	
 	void setParameters()
 	{
-		foreach(const ArbParameter & p, m_parameterArray) {
-			GLenum stage = p.stage() == Stage_Vertex ? GL_VERTEX_PROGRAM_ARB : GL_FRAGMENT_PROGRAM_ARB;
+		foreach(const ArbParameter * p, m_parameterArray) {
+			GLenum stage = p->stage() == Stage_Vertex ? GL_VERTEX_PROGRAM_ARB : GL_FRAGMENT_PROGRAM_ARB;
 			
-			if (p.type() == QVariant::Color) {
-				QColor color = p.value().value<QColor>();
+			if (p->type() == QVariant::Color) {
+				QColor color = p->value().value<QColor>();
 
-				if (p.nameSpace() == Namespace_Local)
-					glProgramLocalParameter4dARB(GL_VERTEX_PROGRAM_ARB, p.location(), color.redF(), color.greenF(), color.blueF(), color.alphaF());
-				else if (p.nameSpace() == Namespace_Environment)
-					glProgramEnvParameter4dARB(GL_VERTEX_PROGRAM_ARB, p.location(), color.redF(), color.greenF(), color.blueF(), color.alphaF());
+				if (p->nameSpace() == Namespace_Local)
+					glProgramLocalParameter4dARB(GL_VERTEX_PROGRAM_ARB, p->location(), color.redF(), color.greenF(), color.blueF(), color.alphaF());
+				else if (p->nameSpace() == Namespace_Environment)
+					glProgramEnvParameter4dARB(GL_VERTEX_PROGRAM_ARB, p->location(), color.redF(), color.greenF(), color.blueF(), color.alphaF());
 			}
-			else if (p.type() == QVariant::List) {
-				QVariantList list = p.value().toList();
+			else if (p->type() == QVariant::List) {
+				QVariantList list = p->value().toList();
 				Q_ASSERT(list.count() == 4);
 				
-				if( p.stage() == Stage_Vertex ) {
-					if( p.nameSpace() == Namespace_Local ) {
-						glProgramLocalParameter4dARB(GL_VERTEX_PROGRAM_ARB, p.location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
+				if( p->stage() == Stage_Vertex ) {
+					if( p->nameSpace() == Namespace_Local ) {
+						glProgramLocalParameter4dARB(GL_VERTEX_PROGRAM_ARB, p->location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
 					}
-					else if( p.nameSpace() == Namespace_Environment ) {
-						glProgramEnvParameter4dARB(GL_VERTEX_PROGRAM_ARB, p.location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
+					else if( p->nameSpace() == Namespace_Environment ) {
+						glProgramEnvParameter4dARB(GL_VERTEX_PROGRAM_ARB, p->location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
 					}
 				}
-				else if( p.stage() == Stage_Fragment ) {
-					if( p.nameSpace() == Namespace_Local ) {
-						glProgramLocalParameter4dARB(GL_FRAGMENT_PROGRAM_ARB, p.location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
+				else if( p->stage() == Stage_Fragment ) {
+					if( p->nameSpace() == Namespace_Local ) {
+						glProgramLocalParameter4dARB(GL_FRAGMENT_PROGRAM_ARB, p->location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
 					}
-					else if( p.nameSpace() == Namespace_Environment ) {
-						glProgramEnvParameter4dARB(GL_FRAGMENT_PROGRAM_ARB, p.location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
+					else if( p->nameSpace() == Namespace_Environment ) {
+						glProgramEnvParameter4dARB(GL_FRAGMENT_PROGRAM_ARB, p->location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
 					}
 				}
 			}
@@ -614,7 +649,6 @@ class ArbEffectFactory : public EffectFactory
 		rules.append(rule);
 
 		return rules;
-
 	}
 
 	virtual QString multiLineCommentStart() const

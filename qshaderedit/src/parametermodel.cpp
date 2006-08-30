@@ -161,11 +161,11 @@ Parameter* ParameterModel::parameter(const QModelIndex& index) const
 {
 	if (isParameter(index)) {
 		Q_ASSERT(index.row() < m_effect->parameterCount());	
-		return m_effect->parameter(index.row());
+		return m_effect->parameterAt(index.row());
 	}
 	else {
 		Q_ASSERT(index.internalId() < m_effect->parameterCount()); 
-		return m_effect->parameter(index.internalId());
+		return m_effect->parameterAt(index.internalId());
 	}
 }
 

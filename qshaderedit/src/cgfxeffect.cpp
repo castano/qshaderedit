@@ -579,10 +579,16 @@ public:
 		return m_parameterArray.count();
 	}
 	
-	Parameter * parameter(int idx)
+	const Parameter * parameterAt(int idx) const
 	{
 		Q_ASSERT(idx >= 0 && idx < parameterCount());
-		return m_parameterArray[idx]; 	
+		return m_parameterArray.at(idx); 	
+	}
+
+	Parameter * parameterAt(int idx)
+	{
+		Q_ASSERT(idx >= 0 && idx < parameterCount());
+		return m_parameterArray.at(idx); 	
 	}
 
 	// Effect info.

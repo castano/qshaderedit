@@ -362,11 +362,18 @@ public:
 		return m_parameterArray.count();		
 	}
 
-	Parameter * parameter(int idx)
+	const Parameter * parameterAt(int idx) const
 	{
-		Q_ASSERT(m_program != 0);
+		Q_ASSERT(isValid());
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		return m_parameterArray[idx];
+		return m_parameterArray.at(idx);
+	}
+
+	Parameter * parameterAt(int idx)
+	{
+		Q_ASSERT(isValid());
+		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
+		return m_parameterArray.at(idx);
 	}
 
 	virtual bool isValid() const
