@@ -5,6 +5,7 @@
 #include "texmanager.h"
 #include "parameter.h"
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>	// !!!
 #include <QtCore/QObject>
 #include <QtCore/QFile>
@@ -291,6 +292,8 @@ public:
 		glShaderSourceARB(m_vertexShader, 1, vertexStrings, NULL);
 		glCompileShaderARB(m_vertexShader);
 
+		QCoreApplication::processEvents();
+		
 		// Get error log.
 		QByteArray infoLog;
 		GLint charsWritten, infoLogLength;
@@ -306,6 +309,8 @@ public:
 		glShaderSourceARB(m_fragmentShader, 1, fragmentStrings, NULL);
 		glCompileShaderARB(m_fragmentShader);
 
+		QCoreApplication::processEvents();
+		
 		// Get error log.
 		if(output != NULL) {
 			infoLog.clear();

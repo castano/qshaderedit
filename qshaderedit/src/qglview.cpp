@@ -185,6 +185,11 @@ void QGLView::paintGL()
 		return;
 	}
 	
+	if( m_effect != NULL && !m_effect->isValid() ) {
+		// Do not update the screen while effect is compiling. 
+		return;
+	}
+	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	
 	if( m_effect != NULL && m_effect->isValid() && m_scene != NULL ) {

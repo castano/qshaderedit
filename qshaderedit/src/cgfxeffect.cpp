@@ -5,12 +5,14 @@
 #include "texmanager.h"
 #include "parameter.h"
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QFile>
 #include <QtCore/QByteArray>
 #include <QtCore/QTime>
 #include <QtCore/QVariant>
 #include <QtCore/QHash>
 #include <QtCore/QLibrary>
+#include <QtCore/QThread>
 
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
@@ -397,7 +399,7 @@ namespace {
 
 
 
-class CgEffect : public Effect
+class CgFxEffect : public Effect
 {
 private:
 
@@ -421,7 +423,7 @@ private:
 
 public:
 
-	CgEffect(const EffectFactory * factory) : Effect(factory),
+	CgFxEffect(const EffectFactory * factory) : Effect(factory),
 		m_context(NULL),
 		m_effect(NULL),
 		m_technique(NULL),
@@ -473,7 +475,7 @@ public:
 		m_time.start();
 	}
 
-	virtual ~CgEffect()
+	virtual ~CgFxEffect()
 	{
 		cgDestroyContext(m_context);
 		delete m_outputParser;
@@ -521,6 +523,55 @@ public:
 		m_effectText = str;
 	}
 
+	// Builder thread.
+	class BuilderThread : public QThread
+	{
+		CgFxEffect * m_effect;
+		MessagePanel * m_output;
+		
+	public:
+		BuilderThread(CgFxEffect * effect, MessagePanel * output) : m_effect(effect) 
+		{
+			
+		}
+		
+		void run()
+		{
+			m_effect->threadedBuild();
+		}
+	};
+	friend class BuilderThread;
+	
+	void threadedBuild()
+	{
+		m_effect = cgCreateEffect(m_context, m_effectText.data(), NULL);
+		
+		// Output compilation errors.
+		//if (output != NULL) output->log(cgGetLastListing(m_context), 0, m_outputParser);
+
+		if (m_effect == NULL)
+		{
+			return;
+		}
+		
+		// Read and validate techniques.
+		CGtechnique technique = cgGetFirstTechnique(m_effect);
+		while(technique != NULL)
+		{
+			if (cgValidateTechnique(technique))
+			{
+				const char * name = cgGetTechniqueName(technique);
+				//if (output != NULL) output->info(tr("Validated technique '%1'").arg(name));
+				m_techniqueList.append(technique);
+			}
+
+			// Output validation errors.
+			//if (output != NULL) output->log(cgGetLastListing(m_context), 0, m_outputParser);
+
+			technique = cgGetNextTechnique(technique);
+		}
+	}
+	
 	// Compilation.
 	virtual bool build(MessagePanel * output)
 	{
@@ -530,7 +581,13 @@ public:
 
 		if(output != NULL) output->info(tr("Compiling cg effect..."));
 
-		m_effect = cgCreateEffect(m_context, m_effectText.data(), NULL);
+		//m_effect = cgCreateEffect(m_context, m_effectText.data(), NULL);
+		BuilderThread thread(this, output);
+		thread.start();
+		
+		while(thread.isRunning()) {
+			QCoreApplication::processEvents();
+		}
 
 		// Output compilation errors.
 		if (output != NULL) output->log(cgGetLastListing(m_context), 0, m_outputParser);
@@ -539,7 +596,8 @@ public:
 		{
 			return false;
 		}
-
+		
+		/*
 		// Read and validate techniques.
 		CGtechnique technique = cgGetFirstTechnique(m_effect);
 		while(technique != NULL)
@@ -556,7 +614,7 @@ public:
 
 			technique = cgGetNextTechnique(technique);
 		}
-
+		*/
 		if (m_techniqueList.count() == 0)
 		{
 			return false;
@@ -887,7 +945,7 @@ class CgFxEffectFactory : public EffectFactory
 	virtual Effect * createEffect() const
 	{
 		Q_ASSERT(isSupported());
- 		return new CgEffect(this);
+		return new CgFxEffect(this);
 	}
 
 	virtual QList<Highlighter::Rule> highlightingRules() const

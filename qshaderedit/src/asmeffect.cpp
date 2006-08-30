@@ -6,7 +6,7 @@
 
 #include <math.h>
 
-#include <QtCore/QDebug>
+#include <QtCore/QCoreApplication>
 #include <QtCore/QObject>
 #include <QtCore/QFile>
 #include <QtCore/QByteArray>
@@ -320,6 +320,8 @@ public:
 			parseProgram(m_vertexProgramText, Stage_Vertex);
 		}
 		glDisable( GL_VERTEX_PROGRAM_ARB );
+		
+		QCoreApplication::processEvents();
 		
 		if(output != NULL) output->info("Compiling fragment program...");
 		glGenProgramsARB( 1, &m_fp );

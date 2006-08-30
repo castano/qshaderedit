@@ -6,8 +6,8 @@ Misc:
 - display line and column numbers to status bar. @@ I need to send an RFE to TT.
 
 Parameter panel:
-- Fix problem with boolean value, apparently a bug in Qt, already reported, bug id 125584.
 - Matrix editor.
+- Fix integer editor.
 
 Textures:
 - add support for multiple image plugins.
@@ -29,7 +29,7 @@ Performance panel:
 
 Scene:
 - add more shapes.
-- compute normals, tangents, binormals.
+- add simple mesh class to compute normals, tangents, binormals.
 
 KDE integration:
 - port to KDE4.
