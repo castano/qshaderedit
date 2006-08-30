@@ -573,7 +573,7 @@ private:
 		m_dlistCount = surfaces.size();
 		m_dlistBase = glGenLists(m_dlistCount);
 		
-		for (int n = 0; n < m_dlistCount; n++) {
+		for (GLuint n = 0; n < m_dlistCount; n++) {
 			glNewList(m_dlistBase + n, GL_COMPILE);			
 			Surface* surf = surfaces[n];			
 			surf->material->bind();
@@ -651,6 +651,7 @@ const SceneFactory * SceneFactory::findFactory(const QString & name)
 			return factory;
 		}
 	}
+	return NULL;
 }
 
 //static
