@@ -3,6 +3,8 @@
 #define DELEGATE_H
 
 #include <QtGui/QItemDelegate>
+#include "ui_texturepropertiesdialog.h"
+#include "texmanager.h"
 
 class Parameter;
 
@@ -175,6 +177,24 @@ private slots:
 	
 private:
 	QComboBox * m_comboBox;
+};
+
+
+class TexturePropertiesDialog : public QDialog, public Ui::TexturePropertiesDialog
+{
+	Q_OBJECT
+public:
+	TexturePropertiesDialog(QWidget * parent = 0);
+
+	void setWrapMode(GLint s, GLint t);
+	void setMinFilter(GLint filter);
+	void setMagFilter(GLint filter);
+
+	GLint wrapS() const;
+	GLint wrapT() const;
+	GLint minFilter() const;
+	GLint magFilter() const;  
+	
 };
 
 #endif

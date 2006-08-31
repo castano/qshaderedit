@@ -51,7 +51,8 @@ SET(MOC_SRCS
 
 SET(UIC_SRCS 
 	newdialog.ui 
-	parameterpropertiesdialog.ui)
+	parameterpropertiesdialog.ui
+	texturepropertiesdialog.ui)
 
 SET(RCC_SRCS
 	qshaderedit.qrc)

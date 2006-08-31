@@ -24,6 +24,18 @@ public:
 	GLuint object() const;
 	GLuint target() const;
 	QPixmap icon() const;
+	QPixmap image() const;
+
+	
+	GLint wrapS() const;
+	GLint wrapT() const;
+	// HACK: the set texture mode functions must be const to prevent QSharedData to copy itself 
+	void setWrapMode(GLint s, GLint t) const;
+
+	GLint minifyingFilter() const;
+	GLint magnificationFilter() const;
+	void setFilteringMode(GLint min, GLint mag) const;
+	
 		
 private:
 	class Private;

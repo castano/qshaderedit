@@ -162,6 +162,7 @@ public:
 		// load default texture
 		m_name = "default.png";
 		QImage image = s_imageLoader.load(":images/default.png", m_object, &m_target);
+		m_image = QPixmap::fromImage(image);
 		m_icon = QPixmap::fromImage(image.scaled(16, 16, Qt::KeepAspectRatio, Qt::FastTransformation));
 	}
 	Private(const QString & name) : m_name(name)
@@ -171,6 +172,7 @@ public:
 		// @@ Traverse image plugins.
 		if( s_imageLoader.canLoad(m_name) ) {
 			QImage image = s_imageLoader.load(m_name, m_object, &m_target);
+			m_image = QPixmap::fromImage(image);
 			m_icon = QPixmap::fromImage(image.scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 		}	
 	}
@@ -191,6 +193,7 @@ public:
 	GLuint object() const { return m_object; }
 	GLuint target() const { return m_target; }
 	QPixmap icon() const { return m_icon; }
+	QPixmap image() const { return m_image; }
 
 	static QMap<QString, GLTexture::Private *> s_textureMap;
 
@@ -200,6 +203,7 @@ private:
 	GLuint m_target;
 
 	QPixmap m_icon;
+	QPixmap m_image;
 };
 
 //static
@@ -262,4 +266,55 @@ GLuint GLTexture::target() const
 QPixmap GLTexture::icon() const
 {
 	return m_data->icon();
+}
+
+QPixmap GLTexture::image() const
+{
+	return m_data->image();
+}
+
+GLint GLTexture::wrapS() const
+{
+	glBindTexture(m_data->target(), m_data->object());
+	GLint wrap;
+	glGetTexParameteriv(m_data->target(), GL_TEXTURE_WRAP_S, &wrap);
+	return wrap;
+}
+
+GLint GLTexture::wrapT() const
+{
+	glBindTexture(m_data->target(), m_data->object());
+	GLint wrap;
+	glGetTexParameteriv(m_data->target(), GL_TEXTURE_WRAP_T, &wrap);
+	return wrap;
+}
+
+void GLTexture::setWrapMode(GLint s, GLint t) const
+{
+	glBindTexture(m_data->target(), m_data->object());
+ 	glTexParameteri(m_data->target(), GL_TEXTURE_WRAP_S, s);
+ 	glTexParameteri(m_data->target(), GL_TEXTURE_WRAP_T, t);
+}
+
+GLint GLTexture::minifyingFilter() const
+{
+	glBindTexture(m_data->target(), m_data->object());	
+	GLint mode;
+	glGetTexParameteriv(m_data->target(), GL_TEXTURE_MIN_FILTER, &mode);
+	return mode;
+}
+
+GLint GLTexture::magnificationFilter() const
+{
+	glBindTexture(m_data->target(), m_data->object());
+	GLint mode;
+	glGetTexParameteriv(m_data->target(), GL_TEXTURE_MAG_FILTER, &mode);
+	return mode;
+}
+
+void GLTexture::setFilteringMode(GLint min, GLint mag) const
+{
+	glBindTexture(m_data->target(), m_data->object());
+ 	glTexParameteri(m_data->target(), GL_TEXTURE_MIN_FILTER, min);
+ 	glTexParameteri(m_data->target(), GL_TEXTURE_MAG_FILTER, mag);
 }

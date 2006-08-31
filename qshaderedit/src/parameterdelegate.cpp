@@ -2,7 +2,6 @@
 #include "parameterdelegate.h"
 #include "parameter.h"
 #include "parametermodel.h"
-#include "texmanager.h"
 
 #include <QtGui/QHeaderView>
 #include <QtGui/QDoubleSpinBox>
@@ -17,6 +16,7 @@
 #include <QtGui/QComboBox>
 
 #include "ui_parameterpropertiesdialog.h"
+
 
 namespace {
 	static QString s_lastPath = ".";
@@ -320,27 +320,47 @@ QVariant ParameterEditor::value() const
 
 void ParameterEditor::openParameterSettings()
 {
-	QDialog * dialog = new QDialog(this);	
-	Ui::ParamPropertiesDialog ui;
-	ui.setupUi(dialog);
+	if (m_param->type() == QVariant::Double) {
+		QDialog * dialog = new QDialog(this);
+		Ui::ParamPropertiesDialog ui;
+		ui.setupUi(dialog);
+		
+		ui.nameEdit->setText(m_param->name());
+		ui.descriptionEdit->setText(m_param->description());
+		if (m_param->hasRange()) {
+			ui.limitRangeCheckBox->setChecked(true);
+			ui.minSpinBox->setValue(m_param->minValue().toDouble());
+			ui.maxSpinBox->setValue(m_param->maxValue().toDouble());		
+		}
+		
+		if (dialog->exec() == QDialog::Accepted) {
+			m_param->setDescription(ui.descriptionEdit->text());
+			if (ui.limitRangeCheckBox->isChecked())
+				m_param->setRange(ui.minSpinBox->value(), ui.maxSpinBox->value());
+			else
+				m_param->clearRange();
+		}
 	
-	ui.nameEdit->setText(m_param->name());
-	ui.descriptionEdit->setText(m_param->description());
-	if (m_param->hasRange()) {
-		ui.limitRangeCheckBox->setChecked(true);
-		ui.minSpinBox->setValue(m_param->minValue().toDouble());
-		ui.maxSpinBox->setValue(m_param->maxValue().toDouble());		
+		delete dialog;
 	}
-	
-	if (dialog->exec() == QDialog::Accepted) {
-		m_param->setDescription(ui.descriptionEdit->text());
-		if (ui.limitRangeCheckBox->isChecked())
-			m_param->setRange(ui.minSpinBox->value(), ui.maxSpinBox->value());
-		else
-			m_param->clearRange();
+	else if (m_param->type() == qMetaTypeId<GLTexture>()) {
+		TexturePropertiesDialog dialog(this);
+
+		GLTexture tex = m_param->value().value<GLTexture>();
+		dialog.setWrapMode(tex.wrapS(), tex.wrapT());
+		dialog.setMinFilter(tex.minifyingFilter());
+		dialog.setMagFilter(tex.magnificationFilter());
+		dialog.descriptionEdit->setText(m_param->description());
+		dialog.previewLabel->setPixmap(tex.image());
+
+		if (dialog.exec()) {
+			tex.setWrapMode(dialog.wrapS(), dialog.wrapT());
+			tex.setFilteringMode(dialog.minFilter(), dialog.magFilter());
+
+			m_param->setValue(qVariantFromValue(tex));
+			m_param->setDescription(dialog.descriptionEdit->text());
+		}
 	}
-	
-	delete dialog;
 	
 	updateMetaData();
 }
@@ -615,4 +635,121 @@ void BooleanInput::comboBoxValueChanged(int value)
 {
 	emit valueChanged(value != 0);
 }
-	
+
+
+TexturePropertiesDialog::TexturePropertiesDialog(QWidget * parent) : QDialog(parent)
+{
+	setupUi(this);
+}
+
+int wrapModeIndex(GLint mode)
+{
+	switch (mode) {
+		default:
+		case GL_REPEAT:
+			return 0;
+		case GL_CLAMP:
+			return 1;
+		case GL_CLAMP_TO_BORDER:
+			return 2;
+		case GL_CLAMP_TO_EDGE:
+			return 3;
+	}
+}
+
+GLint wrapModeFromIndex(int index)
+{
+	switch (index) {
+		default:
+		case 0:
+			return GL_REPEAT;
+		case 1:
+			return GL_CLAMP;
+		case 2:
+			return GL_CLAMP_TO_BORDER;
+		case 3:
+			return GL_CLAMP_TO_EDGE;
+	}
+}
+
+void TexturePropertiesDialog::setWrapMode(GLint s, GLint t)
+{
+	wrapModeSComboBox->setCurrentIndex(wrapModeIndex(s));
+	wrapModeTComboBox->setCurrentIndex(wrapModeIndex(t));
+}
+
+void TexturePropertiesDialog::setMinFilter(GLint filter)
+{
+	switch (filter) {
+		case GL_NEAREST:
+			minFilterComboBox->setCurrentIndex(0);
+			break;
+		case GL_LINEAR:
+			minFilterComboBox->setCurrentIndex(1);
+			break;
+		case GL_NEAREST_MIPMAP_NEAREST:
+			minFilterComboBox->setCurrentIndex(2);
+			break;
+		case GL_LINEAR_MIPMAP_NEAREST:
+			minFilterComboBox->setCurrentIndex(3);
+			break;
+		case GL_NEAREST_MIPMAP_LINEAR:
+			minFilterComboBox->setCurrentIndex(4);
+			break;
+		case GL_LINEAR_MIPMAP_LINEAR:
+			minFilterComboBox->setCurrentIndex(5);
+			break;
+	}
+}
+
+void TexturePropertiesDialog::setMagFilter(GLint filter)
+{
+	switch (filter) {
+		case GL_NEAREST:
+			magFilterComboBox->setCurrentIndex(0);
+			break;
+		case GL_LINEAR:
+			magFilterComboBox->setCurrentIndex(1);
+			break;
+	}
+}
+
+GLint TexturePropertiesDialog::wrapS() const
+{
+	return wrapModeFromIndex(wrapModeSComboBox->currentIndex());
+}
+
+GLint TexturePropertiesDialog::wrapT() const
+{
+	return wrapModeFromIndex(wrapModeTComboBox->currentIndex());
+}
+
+GLint TexturePropertiesDialog::minFilter() const
+{
+	switch (minFilterComboBox->currentIndex()) {
+		default:
+		case 0:
+			return GL_NEAREST;
+		case 1:
+			return GL_LINEAR;
+		case 2:
+			return GL_NEAREST_MIPMAP_NEAREST;
+		case 3:
+			return GL_LINEAR_MIPMAP_NEAREST;
+		case 4:
+			return GL_NEAREST_MIPMAP_LINEAR;
+		case 5:
+			return GL_LINEAR_MIPMAP_LINEAR;
+	}
+}
+
+GLint TexturePropertiesDialog::magFilter() const
+{
+	switch (magFilterComboBox->currentIndex()) {
+		default:
+		case 0:
+			return GL_NEAREST;
+		case 1:
+			return GL_LINEAR;
+	}
+}
