@@ -76,19 +76,19 @@ namespace {
 		CGGLenum m_matrix;
 		CGGLenum m_op;
 
-		public:
+	public:
 
-			CgSemantic() : m_type(Type_Null)
-			{
-			}
+		CgSemantic() : m_type(Type_Null)
+		{
+		}
 
-			CgSemantic(Type type) : m_type(type)
-			{
-			}
+		CgSemantic(Type type) : m_type(type)
+		{
+		}
 
-			CgSemantic(CGGLenum matrix, CGGLenum op) : m_type(Type_GLMatrix), m_matrix(matrix), m_op(op)
-			{
-			}
+		CgSemantic(CGGLenum matrix, CGGLenum op) : m_type(Type_GLMatrix), m_matrix(matrix), m_op(op)
+		{
+		}
 	};
 
 	static QHash<QString, CgSemantic> s_semanticMap;
@@ -109,8 +109,6 @@ namespace {
 			Q_ASSERT(h != NULL);
 			setName(cgGetParameterName(m_handle));
 			setValue(getParameterValue(m_handle));
-
-			//m_editor = getParameterEditor(m_handle);
 			
 			readAnnotations();
 			readSemantic();
@@ -127,15 +125,35 @@ namespace {
 		{
 			return m_handle;
 		}
-
-		int rows() const
+		
+		virtual int rows() const
 		{
-			return cgGetParameterRows(m_handle);
+			int num = cgGetParameterColumns(m_handle);
+			
+			CGparameterclass parameterClass = cgGetParameterClass(m_handle);
+			if( parameterClass == CG_PARAMETERCLASS_VECTOR ) {
+				return num;
+			}
+			else if( parameterClass == CG_PARAMETERCLASS_MATRIX ) {
+				return num;
+			}
+			
+			return 0;
 		}
 
-		int columns() const
+		virtual int columns() const
 		{
-			return cgGetParameterRows(m_handle);
+			int num = cgGetParameterRows(m_handle);
+			
+			CGparameterclass parameterClass = cgGetParameterClass(m_handle);
+			if( parameterClass == CG_PARAMETERCLASS_VECTOR ) {
+				return 1;
+			}
+			else if( parameterClass == CG_PARAMETERCLASS_MATRIX ) {
+				return num;
+			}
+			
+			return 0;
 		}
 
 		bool isHidden() const
@@ -174,21 +192,20 @@ namespace {
 				
 				// UI widget.
 				else if( qstricmp(name, "UIWidget") == 0 || qstricmp(name, "SasUiControl") == 0) {
-					if(qstricmp("None", cgGetStringAnnotationValue(annotation)) == 0) {
-						// @@ This should be non editable instead of invisible.
+					const char * annotationValue = cgGetStringAnnotationValue(annotation);
+					if(qstricmp("None", annotationValue) == 0) {
 						m_visible = false;
+					}
+					else if(qstricmp("ColorPicker", annotationValue) == 0 || qstricmp("Color", annotationValue) == 0) {
+						setWidget( Widget_Color);
 					}
 				}
 				
-				// Min
-				else if( qstricmp(name, "UIMin") == 0 || qstricmp(name, "SasUiMin") == 0)
-				{
+				// Range
+				else if( qstricmp(name, "UIMin") == 0 || qstricmp(name, "SasUiMin") == 0) {
 					min = getAnnotationValue(annotation);
 				}
-				
-				// Max
-				else if( qstricmp(name, "UIMax") == 0 || qstricmp(name, "SasUiMax") == 0)
-				{
+				else if( qstricmp(name, "UIMax") == 0 || qstricmp(name, "SasUiMax") == 0) {
 					max = getAnnotationValue(annotation);
 				}
 				
@@ -223,7 +240,9 @@ namespace {
 				m_standard = true;
 			}
 			else if( qstricmp("diffuse", semantic) == 0 || qstricmp("specular", semantic) == 0 ) {
-				// @@ this is a color.
+				if( cgGetParameterClass(m_handle) == CG_PARAMETERCLASS_VECTOR ) {
+					setWidget(Widget_Color);
+				}
  			}
 		}
 		
@@ -353,46 +372,6 @@ namespace {
 			
 			return QVariant();
 		}
-		
-// 		static Effect::EditorType getParameterEditor(CGparameter parameter)
-// 		{
-// 			CGparameterclass parameterClass = cgGetParameterClass(parameter);
-// 			Q_ASSERT(parameterClass != CG_PARAMETERCLASS_STRUCT);
-// 			Q_ASSERT(parameterClass != CG_PARAMETERCLASS_ARRAY);
-// 
-// 			if(parameterClass == CG_PARAMETERCLASS_SCALAR) {
-// 				return Effect::EditorType_Scalar;
-// 			}
-// 			else if(parameterClass == CG_PARAMETERCLASS_VECTOR) {
-// 				QString semantic = cgGetParameterSemantic(parameter);
-// 				semantic = semantic.toLower();
-// 				if( "diffuse" == semantic || "specular" == semantic) {
-// 					return Effect::EditorType_Color;
-// 				}
-// 				
-// 				CGannotation annotation = cgGetNamedParameterAnnotation(parameter, "UIWidget");
-// 				if(annotation == 0) annotation = cgGetNamedParameterAnnotation(parameter, "Widget");
-// 				if(annotation == 0) annotation = cgGetNamedParameterAnnotation(parameter, "SasUiWidget");
-// 				if(annotation != 0) 
-// 				{
-// 					QString value = cgGetStringAnnotationValue(annotation);
-// 					if( value.toLower() == "color" ) {
-// 						return Effect::EditorType_Color;
-// 					}
-// 				}
-// 				
-// 				return Effect::EditorType_Vector;
-// 			}
-// 			else if(parameterClass == CG_PARAMETERCLASS_MATRIX) {
-// 				return Effect::EditorType_Matrix;
-// 			}
-// 			else if(parameterClass == CG_PARAMETERCLASS_SAMPLER) {
-// 				return Effect::EditorType_File;
-// 			}
-// 
-// 			return Effect::EditorType_None;
-// 		}
-
 	};
 
 } // namespace
@@ -583,6 +562,7 @@ public:
 
 		//m_effect = cgCreateEffect(m_context, m_effectText.data(), NULL);
 		BuilderThread thread(this, output);
+		//connect(builderThread, SIGNAL(finished()) this, SIGNAL(built(bool)));
 		thread.start();
 		
 		while(thread.isRunning()) {
@@ -749,23 +729,12 @@ public:
 				}
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_VECTOR ) {
-				if (value.type() == QVariant::Color) {
-					QColor color = value.value<QColor>();
-					int size = cgGetParameterColumns(parameter);
-					Q_ASSERT(size == 3 || size == 4);
-					if (size == 3) {
-						cgSetParameter3d(parameter, color.redF(), color.greenF(), color.blueF());
-					}
-					else if (size == 4) {
-						cgSetParameter4d(parameter, color.redF(), color.greenF(), color.blueF(), color.alphaF());
-					}
-				}
-				else if (value.type() == QVariant::List) {
+				if (value.type() == QVariant::List) {
 					QVariantList list = value.toList();
-	
+					
 					int size = cgGetParameterColumns(parameter);	// Cg assumes row vectors!
 					Q_ASSERT(list.count() == size);
-	
+					
 					switch(size) {
 						case 1:
 							cgSetParameter1d(parameter, list.at(0).toDouble());

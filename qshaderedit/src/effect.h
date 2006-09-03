@@ -71,6 +71,9 @@ public:
 	virtual void endPass() = 0;
 	virtual void end() = 0;
 	
+signals:
+	void built(bool succeed);
+	
 private:
 	EffectFactory const * const m_factory;
 

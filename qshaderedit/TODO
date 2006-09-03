@@ -7,18 +7,20 @@ Misc:
 
 Parameter panel:
 - Matrix editor.
-- Fix integer editor.
+- Avoid compilation while parameter editors are open to prevent crash.
 
 Textures:
+- lazy load textures to avoid double loading, and unnecesary load of default texture.
 - add support for multiple image plugins.
 - add dds image plugin.
 - add noise plugin to generate noise texture.
+- get supported texture extensions from QImageReader::supported...
 
 Effects:
-- compile in a separate thread.
-- add support for matrix parameters.
+- Better threading for smooth compilation.
+- add support for matrix parameters in cgfx.
 - add support for texture parameters in ARB programs.
-- add glfx support.
+- add glfx support?
 - add support for custom xml effect file format.
 - integrated help.
 

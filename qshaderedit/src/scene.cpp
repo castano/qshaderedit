@@ -8,6 +8,8 @@
 #include <QtCore/QString>
 #include <QtCore/QFile>
 #include <QtGui/QFileDialog>
+#include <QtGui/QAction>
+#include <QtGui/QMenu>
 
 #include <math.h>
 
@@ -51,11 +53,13 @@ public:
 	
 	virtual void setupMenu(QMenu * menu) const
 	{
+		Q_ASSERT(menu != NULL);
 		Q_UNUSED(menu);
 	}
 
 protected:
 	GLuint m_dlist;
+	
 };
 
 
@@ -265,7 +269,7 @@ public:
 	{
 		GLuint lastList = m_dlistBase + m_dlistCount;  
 		for (GLuint n = m_dlistBase; n < lastList; n++) {
-			effect->beginMaterialGroup();
+			if(effect) effect->beginMaterialGroup();
 			glCallList(n);
 		}
 	}

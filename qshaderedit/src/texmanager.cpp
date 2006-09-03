@@ -4,7 +4,9 @@
 #include <QtCore/QSharedData>
 #include <QtCore/QDebug>
 #include <QtGui/QImage>
+#include <QtGui/QImageReader>
 #include <QtOpenGL/QGLContext>
+
 
 namespace {
 	
@@ -86,12 +88,16 @@ namespace {
 	{
 	public:
 	
-		virtual bool canLoad(QString name) const
+		virtual QList<QByteArray> supportedFormats() const
 		{
-			Q_UNUSED(name);
+			return QImageReader::supportedImageFormats();
+		}
+		
+		virtual bool canLoad(const QString & fileName) const
+		{
 			return true;
 		}
-	
+		
 		virtual QImage load(QString name, GLuint obj, GLuint * target) const
 		{
 			Q_ASSERT(obj != 0);

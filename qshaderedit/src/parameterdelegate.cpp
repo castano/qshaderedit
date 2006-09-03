@@ -14,6 +14,7 @@
 #include <QtGui/QLabel>
 #include <QtGui/QColorDialog>
 #include <QtGui/QComboBox>
+#include <QtGui/QSpinBox>
 
 #include "ui_parameterpropertiesdialog.h"
 
@@ -76,7 +77,7 @@ void ParameterDelegate::setEditorData(QWidget * editor, const QModelIndex & inde
 		}
 		else if (param->componentType() == QVariant::Bool) {
 			BooleanInput * input = static_cast<BooleanInput*>(editor);
-			input->setValue(param->componentValue(index.row()).toDouble());
+			input->setValue(param->componentValue(index.row()).toBool());
 		}
 		else {
 			QItemDelegate::setEditorData(editor, index);
@@ -140,7 +141,7 @@ bool ParameterDelegate::eventFilter(QObject* object, QEvent* event)
 
 			case Qt::Key_Enter:
 			case Qt::Key_Return:
-				//emit commitData(editor);
+				emit commitData(editor);
 				emit closeEditor(editor, QAbstractItemDelegate::EditNextItem);
 				return true;
 		}
@@ -242,7 +243,12 @@ ParameterEditor::ParameterEditor(Parameter* param, QWidget* parent):
 		connect(boolEditor, SIGNAL(valueChanged(bool)), this, SIGNAL(valueChanged()));
 		m_editor = boolEditor;
 	}
-	else if (m_param->type() == QVariant::Color) {
+	else if (m_param->type() == QVariant::Int) {
+		IntegerInput * intEditor = new IntegerInput(this);
+		connect(intEditor, SIGNAL(valueChanged(int)), this, SIGNAL(valueChanged()));
+		m_editor = intEditor;
+	}
+	else if (m_param->type() == QVariant::List && m_param->widget() == Parameter::Widget_Color) {
 		ColorEditor * colorEditor = new ColorEditor(this);
 		connect(colorEditor, SIGNAL(valueChanged()), this, SIGNAL(valueChanged()));
 		m_editor = colorEditor;
@@ -266,7 +272,7 @@ ParameterEditor::ParameterEditor(Parameter* param, QWidget* parent):
 	QHBoxLayout * layout = new QHBoxLayout(this);
 	layout->setMargin(0);
 	layout->setSpacing(0);
-	layout->addWidget(m_editor);		
+	layout->addWidget(m_editor);
 	layout->addWidget(settingsButton);
 	setLayout(layout);
 }
@@ -281,9 +287,13 @@ void ParameterEditor::updateValue()
 		BooleanInput * editor = static_cast<BooleanInput*>(m_editor);
 		editor->setValue(m_param->value().toBool());
 	}
-	else if (m_param->type() == QVariant::Color) {
+	else if (m_param->type() == QVariant::Int) {
+		IntegerInput * editor = static_cast<IntegerInput*>(m_editor);
+		editor->setValue(m_param->value().toInt());
+	}
+	else if (m_param->type() == QVariant::List && m_param->widget() == Parameter::Widget_Color) {
 		ColorEditor * editor = static_cast<ColorEditor*>(m_editor);
-		editor->setColor(m_param->value().value<QColor>()); 
+		editor->setValue(m_param->value().toList());
 	}
 	else if (m_param->type() == qMetaTypeId<GLTexture>()) {
 		FileEditor * editor = static_cast<FileEditor*>(m_editor);
@@ -305,9 +315,13 @@ QVariant ParameterEditor::value() const
 		BooleanInput * editor = static_cast<BooleanInput*>(m_editor);
 		return editor->value();
 	}
-	else if (m_param->type() == QVariant::Color) {
+	else if (m_param->type() == QVariant::Int) {
+		IntegerInput * editor = static_cast<IntegerInput*>(m_editor);
+		return editor->value();
+	}
+	else if (m_param->type() == QVariant::List && m_param->widget() == Parameter::Widget_Color) {
 		ColorEditor * editor = static_cast<ColorEditor*>(m_editor);
-		return editor->color();		
+		return editor->value();
 	}
 	else if (m_param->type() == qMetaTypeId<GLTexture>()) {
 		FileEditor * editor = static_cast<FileEditor*>(m_editor);
@@ -388,6 +402,7 @@ FileEditor::FileEditor(QWidget * parent /*= 0*/) : QWidget(parent)
 	m_lineEdit = new QLineEdit(this);
 	m_lineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::MinimumExpanding));
 	m_lineEdit->setFrame(false);
+	connect(m_lineEdit, SIGNAL(editingFinished()), this, SLOT(textChanged()));
 	
 	QToolButton * button = new QToolButton(this);
 	button->setToolButtonStyle(Qt::ToolButtonTextOnly);
@@ -415,6 +430,12 @@ void FileEditor::openFileDialog()
 	emit done(this);
 }
 
+void FileEditor::textChanged()
+{
+	emit valueChanged();
+	emit done(this);
+}
+
 QString FileEditor::text() const
 {
 	return m_lineEdit->text();
@@ -429,12 +450,6 @@ void FileEditor::setText(const QString & str)
 //
 // Color Editor
 //
-
-ColorEditor::ColorEditor(QColor color, QWidget* parent /*= 0*/):
-		QWidget(parent), m_color(color)
-{
-	init();
-}
 
 ColorEditor::ColorEditor(QWidget* parent /*= 0*/): QWidget(parent)
 {
@@ -461,34 +476,45 @@ void ColorEditor::init()
 //	setFocusProxy(button);
 }
 
-QColor ColorEditor::color() const
+const QVariant & ColorEditor::value() const
 {
-	return m_color;
+	return m_value;
 }
 
-void ColorEditor::setColor(QColor color)
+void ColorEditor::setValue(const QVariant & value)
 {
-	m_color = color;
+	m_value = value;
+	m_color = variantToColor(value);
 	updateLabel();
 }
 
+
 void ColorEditor::updateLabel()
 {
-	QString text = "[";
+	QString text = "[" + m_value.toStringList().join(", ") + "]";
+	/*QString text = "[";
 	text += QString().setNum(m_color.redF(), 'g', 2) + ", ";
 	text += QString().setNum(m_color.greenF(), 'g', 2) + ", ";
 	text += QString().setNum(m_color.blueF(), 'g', 2) + ", ";
 	text += QString().setNum(m_color.alphaF(), 'g', 2);
-	text += "]";
+	text += "]";*/
 
 	m_colorLabel->setText(text);
 }
 
 void ColorEditor::openColorPicker()
 {
-	QColor color = QColorDialog::getColor(m_color);
+	QColor color;
+	if (m_value.toList().count() == 4) {
+		color = QColor(QColorDialog::getRgba(m_color.rgba()));
+	}
+	else {
+		color = QColorDialog::getColor(m_color);
+	}
+
 	if (color.isValid() && m_color != color) {
 		m_color = color;
+		m_value = colorToVariant(color, m_value.toList().count());
 		updateLabel();
 		emit valueChanged();
 	}
@@ -506,7 +532,7 @@ DoubleNumInput::DoubleNumInput(QWidget * parent) : QWidget(parent), m_slider(NUL
 
 	m_spinBox = new QDoubleSpinBox(this);
 	m_spinBox->setRange(-10000.0, 10000.0);
-	m_spinBox->setDecimals(2);
+	m_spinBox->setDecimals(3);
 	m_spinBox->setSingleStep(0.1);
 // 	m_spinBox->setFocusProxy(this);
 	connect(m_spinBox, SIGNAL(valueChanged(double)), this, SLOT(spinBoxValueChanged(double)));
@@ -525,8 +551,10 @@ void DoubleNumInput::setSingleStep(double step)
 {
 	m_spinBox->setSingleStep(step);
 	if (m_slider) {
-		m_slider->setRange( qRound(m_spinBox->minimum() / m_spinBox->singleStep()),
-			qRound(m_spinBox->maximum() / m_spinBox->singleStep()));
+		double min = m_spinBox->minimum();
+		double max = m_spinBox->maximum();
+		m_slider->setRange( qRound(min / step), qRound(max / step));
+		//m_slider->setSingleStep( ... );
 	}
 }
 
@@ -600,6 +628,7 @@ void DoubleNumInput::spinBoxValueChanged(double value)
 }
 
 
+// Boolean parameter editor.
 BooleanInput::BooleanInput(QWidget * parent /*= 0*/) : QWidget(parent), m_comboBox(NULL)
 {
 	setAutoFillBackground(true);
@@ -612,7 +641,6 @@ BooleanInput::BooleanInput(QWidget * parent /*= 0*/) : QWidget(parent), m_comboB
 	QHBoxLayout * layout = new QHBoxLayout(this);
 	layout->setMargin(1);
 	layout->addWidget(m_comboBox);
-	
 }
 
 bool BooleanInput::value() const
@@ -625,18 +653,43 @@ void BooleanInput::setValue(bool value)
 	m_comboBox->setCurrentIndex(value);
 }
 
-void BooleanInput::keyPressEvent(QKeyEvent* event)
-{
-	if (m_comboBox)
-		m_comboBox->event(event);
-}
-
 void BooleanInput::comboBoxValueChanged(int value)
 {
 	emit valueChanged(value != 0);
 }
 
 
+// Integer parameter editor.
+IntegerInput::IntegerInput(QWidget * parent /*= 0*/) : QWidget(parent), m_spinBox(NULL)
+{
+	setAutoFillBackground(true);
+	
+	m_spinBox = new QSpinBox(this);
+	m_spinBox->setRange(-65535, 65535);
+	connect(m_spinBox, SIGNAL(valueChanged(int)), this, SLOT(spinBoxValueChanged(int)));
+	
+	QHBoxLayout * layout = new QHBoxLayout(this);
+	layout->setMargin(1);
+	layout->addWidget(m_spinBox);
+}
+
+int IntegerInput::value() const
+{
+	return m_spinBox->value();
+}
+
+void IntegerInput::setValue(int value)
+{
+	m_spinBox->setValue(value);
+}
+
+void IntegerInput::spinBoxValueChanged(int value)
+{
+	emit valueChanged(value);
+}
+
+
+// Texture properties.
 TexturePropertiesDialog::TexturePropertiesDialog(QWidget * parent) : QDialog(parent)
 {
 	setupUi(this);

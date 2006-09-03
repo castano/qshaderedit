@@ -110,11 +110,18 @@ namespace {
 		{
 		}
 		
-		ArbParameter(const QString& name): m_location(-1)
+		ArbParameter(const QString & name): m_location(-1)
 		{
 			setName(name);
+			
+			if( name.contains("color", Qt::CaseInsensitive) ) {
+				setWidget(Widget_Color);
+			}
 		}
-
+		
+		virtual int rows() const { return 4; }
+		virtual int columns() const { return 1; }
+		
 		Stage stage() const { return m_stage; }
 		void setStage(Stage stage) { m_stage = stage; }
 		
@@ -355,34 +362,6 @@ public:
 		return m_parameterArray.at(idx);
 	}
 
-	/*
-	virtual EditorType getParameterEditor(int idx) const
-	{
-		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		
-		const ArbParameter & param = m_parameterArray[idx];
-		
-		if( param.name().contains("color", Qt::CaseInsensitive) ) {
-			return EditorType_Color;
-		}
-		else {
-			return EditorType_Vector;
-		}
-	}
-	
-	virtual int getParameterRows(int idx) const 
-	{
-		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		return 4;
-	}
-	
-	virtual int getParameterColumns(int idx) const
-	{
-		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
-		return 1;
-	}
-	*/
-	
 	virtual bool isValid() const
 	{
 		return true;
@@ -483,8 +462,8 @@ private:
 	void parseProgram(const QByteArray & code, Stage stage)
 	{
 		// Get parameters. @@ Create these regular expressions only once.
-		QRegExp paramRegExp("\\s*PARAM\\s+(\\w+)(?:\\[(\\d+)\\])?\\s*=\\s*(\\S.*)");
-		QRegExp commentRegExp("#.*$");
+		static QRegExp paramRegExp("\\s*PARAM\\s+(\\w+)(?:\\[(\\d+)\\])?\\s*=\\s*(\\S.*)");
+		static QRegExp commentRegExp("#.*$");
 		
 		int start = 0;
 		int end = qMin(code.indexOf(';'), code.indexOf('\n'));
@@ -517,8 +496,8 @@ private:
 		ArbParameter * param = new ArbParameter(name);
 		param->setStage(stage);
 
-		QRegExp localRegExp("program\\.local\\[(\\d+)\\]");
-		QRegExp envRegExp("program\\.env\\[(\\d+)\\]");
+		static QRegExp localRegExp("program\\.local\\[(\\d+)\\]");
+		static QRegExp envRegExp("program\\.env\\[(\\d+)\\]");
 		
 		//qDebug() << "name:" << name << "value:" << value;
 		
@@ -544,7 +523,8 @@ private:
 	{
 		// @@ Add support for parameters in the format: "program.local[0..1]"
 		//qDebug() << "value:" << value;
-		QStringList values = value.split(QRegExp("[\\{\\s,\\}]+"), QString::SkipEmptyParts);
+		static QRegExp rx("[\\{\\s,\\}]+");
+		QStringList values = value.split(rx, QString::SkipEmptyParts);
 		if(values.count() == size) {
 			for(int i = 0; i < size; i++) {
 				addVectorParameter(name + "[" + QString::number(i) + "]", values.at(i), stage);
@@ -557,15 +537,7 @@ private:
 		foreach(const ArbParameter * p, m_parameterArray) {
 			GLenum stage = p->stage() == Stage_Vertex ? GL_VERTEX_PROGRAM_ARB : GL_FRAGMENT_PROGRAM_ARB;
 			
-			if (p->type() == QVariant::Color) {
-				QColor color = p->value().value<QColor>();
-
-				if (p->nameSpace() == Namespace_Local)
-					glProgramLocalParameter4dARB(GL_VERTEX_PROGRAM_ARB, p->location(), color.redF(), color.greenF(), color.blueF(), color.alphaF());
-				else if (p->nameSpace() == Namespace_Environment)
-					glProgramEnvParameter4dARB(GL_VERTEX_PROGRAM_ARB, p->location(), color.redF(), color.greenF(), color.blueF(), color.alphaF());
-			}
-			else if (p->type() == QVariant::List) {
+			if (p->type() == QVariant::List) {
 				QVariantList list = p->value().toList();
 				Q_ASSERT(list.count() == 4);
 				

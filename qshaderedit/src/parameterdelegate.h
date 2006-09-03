@@ -46,7 +46,7 @@ class Effect;
 class QDoubleSpinBox;
 class QLabel;
 class QComboBox;
-
+class QSpinBox;
 
 class ParameterEditor: public QWidget
 {
@@ -85,6 +85,7 @@ public:
 
 private slots:
 	void openFileDialog();
+	void textChanged();
 
 signals:
 	void valueChanged();
@@ -99,12 +100,11 @@ class ColorEditor: public QWidget
 {
 	Q_OBJECT
 public:
-	ColorEditor(QColor color, QWidget* parent = 0);
 	ColorEditor(QWidget* parent = 0);
 
-	QColor color() const;
-	void setColor(QColor color);
-
+	const QVariant & value() const;
+	void setValue(const QVariant & color);
+	
 signals:
 	void valueChanged();
 	void done(QWidget* widget);
@@ -118,6 +118,7 @@ private:
 
 private:
 	QColor m_color;
+	QVariant m_value;
 	QLabel* m_colorLabel;
 };
 
@@ -155,6 +156,7 @@ private:
 };
 
 
+/// Boolean parameter editor.
 class BooleanInput : public QWidget
 {
 	Q_OBJECT
@@ -169,9 +171,6 @@ public slots:
 signals:
 	void valueChanged(bool value);
 
-protected:
-	void keyPressEvent(QKeyEvent* event);
-
 private slots:
 	void comboBoxValueChanged(int value);
 	
@@ -180,6 +179,30 @@ private:
 };
 
 
+/// Integer parameter editor.
+class IntegerInput : public QWidget
+{
+	Q_OBJECT
+public:
+	IntegerInput(QWidget * parent = 0);
+
+	int value() const;
+
+public slots:
+	void setValue(int value);
+
+signals:
+	void valueChanged(int value);
+
+private slots:
+	void spinBoxValueChanged(int value);
+	
+private:
+	QSpinBox * m_spinBox;
+};
+
+
+/// Texture properties.
 class TexturePropertiesDialog : public QDialog, public Ui::TexturePropertiesDialog
 {
 	Q_OBJECT
