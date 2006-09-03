@@ -7,7 +7,6 @@ Misc:
 
 Parameter panel:
 - Matrix editor.
-- Avoid compilation while parameter editors are open to prevent crash.
 
 Textures:
 - lazy load textures to avoid double loading, and unnecesary load of default texture.

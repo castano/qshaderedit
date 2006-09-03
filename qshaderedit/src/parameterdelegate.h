@@ -33,10 +33,14 @@ public:
 
 private slots:
 	void editorValueChanged();
+	void editorOpened();
+	void editorClosed();
 
 private:
 	QWidget* createScalarEditor(QWidget* parent, const QVariant& min, const QVariant& max) const;
 	QWidget* createBooleanEditor(QWidget* parent) const;
+
+	mutable bool m_editorActive;
 };
 
 
@@ -59,6 +63,8 @@ public:
 	
 signals:
 	void valueChanged();
+	void activated();
+	void done();
 	
 private slots:
 	void openParameterSettings();
@@ -89,6 +95,7 @@ private slots:
 
 signals:
 	void valueChanged();
+	void activated();
 	void done(QWidget *);
 
 private:
@@ -108,6 +115,7 @@ public:
 signals:
 	void valueChanged();
 	void done(QWidget* widget);
+	void activated();
 
 private slots:
 	void openColorPicker();

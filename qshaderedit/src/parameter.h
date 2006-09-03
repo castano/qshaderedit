@@ -60,7 +60,7 @@ public:
 	
 protected:
 	void setName(const QString& name) { m_name = name; }
-	void setWidget(Widget w) { Q_ASSERT(m_value.type() == QVariant::List); m_widget = w; }
+	void setWidget(Widget w) { /*Q_ASSERT(m_value.type() == QVariant::List);*/ m_widget = w; }
 	
 private:
 	QString m_name;

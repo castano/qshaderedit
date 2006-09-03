@@ -26,7 +26,7 @@ namespace {
 }
 
 
-ParameterDelegate::ParameterDelegate(QObject *parent /*= 0*/) : QItemDelegate(parent)
+ParameterDelegate::ParameterDelegate(QObject *parent /*= 0*/) : QItemDelegate(parent), m_editorActive(false)
 {
 	s_toolButtonIcon = QIcon(":images/toolbutton.png");
 	s_colorPickerIcon = QIcon(":images/colorpicker.png");
@@ -60,6 +60,8 @@ QWidget * ParameterDelegate::createEditor(QWidget * parent, const QStyleOptionVi
 		ParameterEditor* editor = new ParameterEditor(param, parent);
 		editor->installEventFilter(const_cast<ParameterDelegate*>(this));
 		connect(editor, SIGNAL(valueChanged()), this, SLOT(editorValueChanged()));
+		connect(editor, SIGNAL(activated()), this, SLOT(editorOpened()));
+		connect(editor, SIGNAL(done()), this, SLOT(editorClosed()));
 		return editor;
 	}
 }
@@ -200,7 +202,17 @@ QWidget* ParameterDelegate::createBooleanEditor(QWidget* parent) const
 
 bool ParameterDelegate::isEditorActive() const
 {
-	return false;
+	return m_editorActive;
+}
+
+void ParameterDelegate::editorOpened()
+{
+	m_editorActive = true;
+}
+
+void ParameterDelegate::editorClosed()
+{
+	m_editorActive = false;
 }
 
 const QString & ParameterDelegate::lastPath()
@@ -251,11 +263,15 @@ ParameterEditor::ParameterEditor(Parameter* param, QWidget* parent):
 	else if (m_param->type() == QVariant::List && m_param->widget() == Parameter::Widget_Color) {
 		ColorEditor * colorEditor = new ColorEditor(this);
 		connect(colorEditor, SIGNAL(valueChanged()), this, SIGNAL(valueChanged()));
+		connect(colorEditor, SIGNAL(activated()), this, SIGNAL(activated()));
+		connect(colorEditor, SIGNAL(done(QWidget*)), this, SIGNAL(done()));
 		m_editor = colorEditor;
 	}
 	else if (m_param->type() == qMetaTypeId<GLTexture>()) {
 		FileEditor * fileEditor = new FileEditor(this);
 		connect(fileEditor, SIGNAL(valueChanged()), this, SIGNAL(valueChanged()));
+		connect(fileEditor, SIGNAL(activated()), this, SIGNAL(activated()));
+		connect(fileEditor, SIGNAL(done(QWidget*)), this, SIGNAL(done()));
 		m_editor = fileEditor;
 	}
 	else {
@@ -334,6 +350,8 @@ QVariant ParameterEditor::value() const
 
 void ParameterEditor::openParameterSettings()
 {
+	emit activated();
+	
 	if (m_param->type() == QVariant::Double) {
 		QDialog * dialog = new QDialog(this);
 		Ui::ParamPropertiesDialog ui;
@@ -375,8 +393,8 @@ void ParameterEditor::openParameterSettings()
 			m_param->setDescription(dialog.descriptionEdit->text());
 		}
 	}
-	
 	updateMetaData();
+	emit done();
 }
 
 void ParameterEditor::updateMetaData()
@@ -421,6 +439,7 @@ FileEditor::FileEditor(QWidget * parent /*= 0*/) : QWidget(parent)
 
 void FileEditor::openFileDialog()
 {
+	emit activated();
 	QString fileName = QFileDialog::getOpenFileName(this, "Choose file", s_lastPath, "Images (*.png *.jpg *.ppm)");
 	if( !fileName.isEmpty() && fileName != m_lineEdit->text() ) {
 		m_lineEdit->setText(fileName);
@@ -504,6 +523,7 @@ void ColorEditor::updateLabel()
 
 void ColorEditor::openColorPicker()
 {
+	emit activated();
 	QColor color;
 	if (m_value.toList().count() == 4) {
 		color = QColor(QColorDialog::getRgba(m_color.rgba()));
