@@ -135,9 +135,11 @@ void QShaderEdit::createActions()
 	m_clearRecentAction->setEnabled(false);
 	connect(m_clearRecentAction, SIGNAL(triggered()), this, SLOT(clearRecentFiles()));
 	
-	m_compile = new QAction(tr("&Compile"), this);
-	m_compile->setShortcut(tr("F7"));
-	connect(m_compile, SIGNAL(triggered()), this, SLOT(keyTimeout()));
+	m_compileAction = new QAction(tr("&Compile"), this);
+	m_compileAction->setCheckable(true);
+	m_compileAction->setChecked(true);
+	m_compileAction->setShortcut(tr("F7"));
+	connect(m_compileAction, SIGNAL(toggled(bool)), this, SLOT(compileChecked(bool)));
 }
 
 void QShaderEdit::createMenus()
@@ -277,6 +279,7 @@ void QShaderEdit::createToolbars()
 	m_fileToolBar->addAction(m_newAction);
 	m_fileToolBar->addAction(m_openAction);
 	m_fileToolBar->addAction(m_saveAction);
+	m_fileToolBar->addAction(m_compileAction);
 
 	m_techniqueToolBar = new QToolBar(tr("Technique Toolbar"), this);
 	m_techniqueToolBar->setObjectName("TechniqueToolBar");
@@ -914,6 +917,16 @@ void QShaderEdit::keyTimeout()
 	QApplication::restoreOverrideCursor();
 }
 
+void QShaderEdit::compileChecked(bool checked)
+{
+	setAutoCompile(checked);
+	
+	if(checked == true)
+	{
+		// If checked, trigger compilation.
+		keyTimeout();
+	}
+}
 
 void QShaderEdit::build(bool silent)
 {

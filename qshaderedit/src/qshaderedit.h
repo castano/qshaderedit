@@ -42,7 +42,8 @@ protected slots:
 	void setAutoCompile(bool enable);
 	void shaderTextChanged();
 	void keyTimeout();
-
+	void compileChecked(bool checked);
+	
 	void build(bool silent);
 	
 	void setModified();
@@ -50,7 +51,7 @@ protected slots:
 	void techniqueChanged(int index);
 	void cursorPositionChanged();
 	void selectScene();
-		
+	
 protected:
 	
 	void newEffect(const EffectFactory * effectFactory);
@@ -122,7 +123,7 @@ private:
 	QAction * m_recentFileSeparator;
 	QAction * m_clearRecentAction;
 	
-	QAction * m_compile;
+	QAction * m_compileAction;
 	
 	// Timers.
 	QTimer * m_timer;	// compilation timer.
