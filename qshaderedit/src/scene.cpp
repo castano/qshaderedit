@@ -117,6 +117,33 @@ public:
 		m_dlist = glGenLists(1);
 		glNewList(m_dlist, GL_COMPILE);
 		glBegin(GL_QUADS);
+		glNormal3f(0, 0, 1);
+		
+		for(int i = 0; i < 15; i++) {
+			float v0 = float(i) / 15;
+			float v1 = float(i+1) / 15;
+			
+			for(int e = 0; e < 15; e++) {
+				float u0 = float(e) / 15;
+				float u1 = float(e+1) / 15;
+
+				glTexCoord2f(u0, 1-v0);
+				glVertex2f(2*u0-1, 2*v0-1);
+				
+				glTexCoord2f(u1, 1-v0);
+				glVertex2f(2*u1-1, 2*v0-1);
+				
+				glTexCoord2f(u1, 1-v1);
+				glVertex2f(2*u1-1, 2*v1-1);
+				
+				glTexCoord2f(u0, 1-v1);
+				glVertex2f(2*u0-1, 2*v1-1);
+			}
+		}
+		
+		glEnd();
+		/*
+		glBegin(GL_QUADS);
 			glNormal3f(0, 0, 1);
 			glTexCoord2f(0, 1);
 			glVertex2f(-1, -1);
@@ -133,6 +160,7 @@ public:
 			glTexCoord2f(0, 0);
 			glVertex2f(-1, 1);
 		glEnd();
+		*/
 		glEndList();
 	}
 };
