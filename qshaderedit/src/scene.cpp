@@ -116,7 +116,7 @@ public:
 	{
 		m_dlist = glGenLists(1);
 		glNewList(m_dlist, GL_COMPILE);
-		glBegin(GL_QUADS);
+		glBegin(GL_TRIANGLES);
 		glNormal3f(0, 0, 1);
 		
 		for(int i = 0; i < 15; i++) {
@@ -132,6 +132,12 @@ public:
 				
 				glTexCoord2f(u1, 1-v0);
 				glVertex2f(2*u1-1, 2*v0-1);
+				
+				glTexCoord2f(u1, 1-v1);
+				glVertex2f(2*u1-1, 2*v1-1);
+				
+				glTexCoord2f(u0, 1-v0);
+				glVertex2f(2*u0-1, 2*v0-1);
 				
 				glTexCoord2f(u1, 1-v1);
 				glVertex2f(2*u1-1, 2*v1-1);

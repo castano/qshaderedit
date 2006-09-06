@@ -196,6 +196,9 @@ public:
 
 	int value() const;
 
+	void setRange(int min, int max);
+	void clearRange();
+	
 public slots:
 	void setValue(int value);
 

@@ -258,6 +258,11 @@ ParameterEditor::ParameterEditor(Parameter* param, QWidget* parent):
 	else if (m_param->type() == QVariant::Int) {
 		IntegerInput * intEditor = new IntegerInput(this);
 		connect(intEditor, SIGNAL(valueChanged(int)), this, SIGNAL(valueChanged()));
+		if (param->minValue().isValid() && param->maxValue().isValid()) {
+			int min = param->minValue().toInt();
+			int max = param->maxValue().toInt();
+			intEditor->setRange(min, max);
+		}
 		m_editor = intEditor;
 	}
 	else if (m_param->type() == QVariant::List && m_param->widget() == Parameter::Widget_Color) {
@@ -403,6 +408,13 @@ void ParameterEditor::updateMetaData()
 		DoubleNumInput * editor = static_cast<DoubleNumInput*>(m_editor);
 		if (m_param->hasRange())
 			editor->setRange(m_param->minValue().toDouble(), m_param->maxValue().toDouble());
+		else
+			editor->clearRange();
+	}
+	else if (m_param->type() == QVariant::Int) {
+		IntegerInput * editor = static_cast<IntegerInput*>(m_editor);
+		if (m_param->hasRange())
+			editor->setRange(m_param->minValue().toInt(), m_param->maxValue().toInt());
 		else
 			editor->clearRange();
 	}
@@ -696,6 +708,16 @@ IntegerInput::IntegerInput(QWidget * parent /*= 0*/) : QWidget(parent), m_spinBo
 int IntegerInput::value() const
 {
 	return m_spinBox->value();
+}
+
+void IntegerInput::setRange(int min, int max)
+{
+	m_spinBox->setRange(min, max);
+}
+
+void IntegerInput::clearRange()
+{
+	m_spinBox->setRange(-65535, 65535);
 }
 
 void IntegerInput::setValue(int value)
