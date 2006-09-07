@@ -13,6 +13,7 @@
 #include <QtCore/QHash>
 #include <QtCore/QLibrary>
 #include <QtCore/QThread>
+#include <QtCore/QFileInfo>
 
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
@@ -399,6 +400,8 @@ private:
 
 	OutputParser* m_outputParser;
 
+	QString m_effectPath;
+	
 
 public:
 
@@ -468,6 +471,9 @@ public:
 		Q_ASSERT(file != NULL);
 
 		m_effectText = file->readAll();
+		
+		QFileInfo info(*file);
+		m_effectPath = info.path();
 
 		m_time.start();
 	}
@@ -523,7 +529,10 @@ public:
 	
 	void threadedBuild()
 	{
-		m_effect = cgCreateEffect(m_context, m_effectText.data(), NULL);
+		QString includeOption = "-I" + m_effectPath;
+		const char * options[] = { includeOption.toAscii(), NULL };
+		
+		m_effect = cgCreateEffect(m_context, m_effectText.data(), options);
 		
 		// Output compilation errors.
 		//if (output != NULL) output->log(cgGetLastListing(m_context), 0, m_outputParser);
@@ -959,9 +968,9 @@ class CgFxEffectFactory : public EffectFactory
 
 		rule.type = Highlighter::BuiltinFunction;
 		rule.pattern = QRegExp(
-			"\\b(abs|acos|all|any|asin|atan|atan2|ceil|clamp|cos|cosh|cross|degrees|determinant|dot|length|"
-			"max|min|radians|reflect|refract|round|saturate|sin|sinh|tan|tanh|transpose|"
-			"lerp|tex1D(proj)?|tex2D(proj)?|texRECT(proj)?|tex3D(proj)?|texCUBE(proj)?|"
+			"\\b(abs|acos|all|any|asin|atan|atan2|ceil|clamp|cos|cosh|cross|degrees|determinant|dot|floor|length|lerp|"
+			"max|min|mul|radians|reflect|refract|round|saturate|sin|sinh|tan|tanh|transpose|"
+			"tex1D(proj)?|tex2D(proj)?|texRECT(proj)?|tex3D(proj)?|texCUBE(proj)?|"
 			"offsettex2D|offsettexRECT|offsettex2DScaleBias|offsettexRECTScaleBias|tex1D_dp3|tex2D_dp3x2|"
 			"texRECT_dp3x2|tex3D_dp3x3|texCUBE_dp3x3|texCUBE_reflect_dp3x3|texCUBE_reflect_eye_dp3x3|tex_dp3x2_depth|"
 			"(un)?pack_4(u)?byte|(un)?pack_2ushort|(un)?pack_2half)\\b");
