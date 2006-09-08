@@ -962,7 +962,7 @@ class CgFxEffectFactory : public EffectFactory
 			"WorldViewProjection(Inverse)?(Transpose)?|ModelView(Projection)?(Inverse)?(Transpose)?|View(Inverse)?(Transpose)?|"
 			"World(Inverse)?(Transpose)?|Projection(Inverse)?(Transpose)?|Time|ViewportSize|"
 			"MinFilter|MagFilter|WrapS|WrapT|BorderColor|"
-			"POSITION|COLOR[0-1]?|TEXCOORD[0-7]?|"
+			"POSITION|COLOR[0-1]?|TEXCOORD[0-7]?|NORMAL|"
 			"VertexProgram|FragmentProgram|DepthTestEnable|CullFaceEnable|register\\(c[1-2]+\\))\\b");
 		rules.append(rule);
 

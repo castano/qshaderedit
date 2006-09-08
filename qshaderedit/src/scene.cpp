@@ -196,6 +196,76 @@ public:
 REGISTER_SCENE_FACTORY(QuadSceneFactory);
 
 
+class TriangleScene : public DisplayListScene
+{
+	public:
+		TriangleScene()
+		{
+			m_dlist = glGenLists(1);
+			glNewList(m_dlist, GL_COMPILE);
+			glBegin(GL_TRIANGLES);
+			glNormal3f(0, 0, 1);
+		
+			for(int i = 0; i < 15; i++) {
+				float v0 = float(i) / 15;
+				float v1 = float(i+1) / 15;
+				
+				for(int e = 0; e <= i; e++) {
+					float u0 = float(e) / 15;
+					float u1 = float(e+1) / 15;
+
+					if( e < i ) {
+						glTexCoord3f(u0, 1-v0, v0-u0);
+						glVertex2f(2*u0-1, 2*v0-1);
+						
+						glTexCoord3f(u1, 1-v0, v0-u1);
+						glVertex2f(2*u1-1, 2*v0-1);
+						
+						glTexCoord3f(u1, 1-v1, v1-u1);
+						glVertex2f(2*u1-1, 2*v1-1);
+					}
+
+					glTexCoord3f(u0, 1-v0, v0-u0);
+					glVertex2f(2*u0-1, 2*v0-1);
+					
+					glTexCoord3f(u1, 1-v1, v1-u1);
+					glVertex2f(2*u1-1, 2*v1-1);
+					
+					glTexCoord3f(u0, 1-v1, v1-u0);
+					glVertex2f(2*u0-1, 2*v1-1);
+				}
+			}
+			
+			glEnd();
+			glEndList();
+		}
+};
+
+// Triangle scene factory.
+class TriangleSceneFactory : public SceneFactory
+{
+	public:
+		virtual QString name() const
+		{
+			return tr("Triangle");
+		}
+		virtual QString description() const
+		{
+			return tr("Triangle");
+		}
+		virtual QIcon icon() const
+		{
+			return QIcon();
+		}
+		virtual Scene * createScene() const
+		{
+			return new TriangleScene();
+		}
+};
+
+REGISTER_SCENE_FACTORY(TriangleSceneFactory);
+
+
 class CubeScene : public DisplayListScene
 {
 public:
