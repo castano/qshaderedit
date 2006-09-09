@@ -151,13 +151,16 @@ private:
 	
 	OutputParser* m_outputParser;
 
+	bool m_built;
+	
 public:
 	
 	// Ctor.
 	ArbEffect(const EffectFactory * factory) : Effect(factory),
 		m_vertexProgramText(s_vertexProgramText),
 		m_fragmentProgramText(s_fragmentProgramText),
-		m_outputParser(NULL)
+		m_outputParser(NULL),
+		m_built(false)
 	{
 		m_time.start();
 
@@ -312,6 +315,7 @@ public:
 		deletePrograms();
 		resetParameters();
 		
+		m_built = false;
 		bool succeed = true;
 		
 		if(output != NULL) output->clear();
@@ -342,6 +346,10 @@ public:
 		}
 		glDisable( GL_FRAGMENT_PROGRAM_ARB );
 		
+		if( succeed ) {
+			m_built = true;
+		}
+		
 		return succeed;
 	}	
 	
@@ -364,7 +372,7 @@ public:
 
 	virtual bool isValid() const
 	{
-		return true;
+		return m_built;
 	}
 	
 	virtual bool isAnimated() const

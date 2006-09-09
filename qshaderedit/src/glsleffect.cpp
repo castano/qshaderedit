@@ -462,9 +462,6 @@ public:
 		Q_ASSERT( m_fragmentShader == 0 );
 		m_fragmentShader = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
 
-		Q_ASSERT( m_program == 0 );
-		m_program = glCreateProgramObjectARB();
-
 		if(output != NULL) output->clear();
 
 		if(output != NULL) output->info("Compiling vertex shader...");
@@ -513,6 +510,9 @@ public:
 			return false;
 		}
 
+		Q_ASSERT( m_program == 0 );
+		m_program = glCreateProgramObjectARB();
+		
 		// Link the program.
 		if(output != NULL) output->info("Linking...");
 		glAttachObjectARB(m_program, m_vertexShader);

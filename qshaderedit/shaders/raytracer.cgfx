@@ -168,7 +168,7 @@ fixed3 Shade(float3 i, float3 n, float3 v, Sphere hitobj)
 	// lighting
 	fixed3 diff = hitobj.color * hitobj.Kd;
 	if (hitobj.tex) {
-		diff *= tex2D(checkSampler, i.xz);	// floor texture
+		diff *= tex2D(checkSampler, i.xz).rgb;	// floor texture
 	}
 	fixed3 spec = lightColor * hitobj.Ks;
 	fixed shadowFactor = shadowed ? 0.25 : 1.0;

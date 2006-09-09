@@ -185,37 +185,39 @@ void QGLView::paintGL()
 		return;
 	}
 	
-	if( m_effect != NULL && !m_effect->isValid() ) {
-		// Do not update the screen while effect is compiling. 
-		return;
-	}
-	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	
-	if( m_effect != NULL && m_effect->isValid() && m_scene != NULL ) {
+	if( m_scene != NULL ) {
+	
+		if( m_effect != NULL && m_effect->isValid() ) {
 		
-		// Setup ligh parameters @@ Move this to scene->setup() or begin()
-		float light_vector[4] = {1.2f/sqrt(3.08f), 1.0f/sqrt(3.08f), 0.8f/sqrt(3.08f), 0.0f};
-		glLightfv( GL_LIGHT0, GL_POSITION, light_vector );
-		
-		if( m_wireframeAction->isChecked() ) {
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			// Setup ligh parameters @@ Move this to scene->setup() or begin()
+			float light_vector[4] = {1.2f/sqrt(3.08f), 1.0f/sqrt(3.08f), 0.8f/sqrt(3.08f), 0.0f};
+			glLightfv( GL_LIGHT0, GL_POSITION, light_vector );
+			
+			if( m_wireframeAction->isChecked() ) {
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			}
+			else {
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			}
+			
+			m_effect->begin();
+			
+			for(int i = 0; i < m_effect->getPassNum(); i++) {
+				m_effect->beginPass(i);
+				
+				m_scene->draw(m_effect);
+				
+				m_effect->endPass();
+			}
+			
+			m_effect->end();
 		}
 		else {
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			m_scene->draw(NULL);
 		}
-		
- 		m_effect->begin();
-		
-		for(int i = 0; i < m_effect->getPassNum(); i++) {
-			m_effect->beginPass(i);
-			
-			m_scene->draw(m_effect);
-			
-			m_effect->endPass();
-		}
-		
-		m_effect->end();
 	}
 	
  	swapBuffers();
@@ -262,17 +264,21 @@ void QGLView::mouseMoveEvent(QMouseEvent *event)
 {
 	QPoint pos = event->pos();
 
-	if(m_button == Qt::LeftButton) {
+	if(m_button == Qt::LeftButton && event->modifiers() == Qt::NoModifier) {
 		m_alpha += (240.0f * (pos - m_pos).x()) / height();
 		m_beta += (240.0f * (pos - m_pos).y()) / height();
 		if(m_beta < -90) m_beta = -90;
 		else if(m_beta > 90) m_beta = 90;
 	}
-	else if(m_button == Qt::RightButton) {
+	else if(m_button == Qt::RightButton ||
+		(m_button == Qt::LeftButton && event->modifiers() == Qt::ControlModifier)) 
+	{
 		m_x -= (4.0f * (pos - m_pos).x()) / height();
 		m_y += (4.0f * (pos - m_pos).y()) / height();
 	}
-	else if(m_button == Qt::MidButton) {
+	else if(m_button == Qt::MidButton ||
+		(m_button == Qt::LeftButton && event->modifiers() == Qt::ShiftModifier)) 
+	{
 		m_z -= (5.0f * (pos - m_pos).y()) / height();
 	}
 
