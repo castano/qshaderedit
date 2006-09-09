@@ -274,13 +274,14 @@ void QGLView::mouseMoveEvent(QMouseEvent *event)
 	else if(m_button == Qt::RightButton ||
 		(m_button == Qt::LeftButton && event->modifiers() == Qt::ControlModifier)) 
 	{
-		m_x -= (4.0f * (pos - m_pos).x()) / height();
-		m_y += (4.0f * (pos - m_pos).y()) / height();
+		m_x -= (0.5 * m_z * (pos - m_pos).x()) / height();
+		m_y += (0.5 * m_z * (pos - m_pos).y()) / height();
 	}
 	else if(m_button == Qt::MidButton ||
 		(m_button == Qt::LeftButton && event->modifiers() == Qt::ShiftModifier)) 
 	{
-		m_z -= (5.0f * (pos - m_pos).y()) / height();
+		m_z -= (m_z * (pos - m_pos).y()) / height();
+		if( m_z < 0.00001 ) m_z = 0.00001;
 	}
 
 	m_pos = pos;
@@ -297,7 +298,7 @@ void QGLView::mouseReleaseEvent(QMouseEvent *event)
 
 void QGLView::wheelEvent(QWheelEvent *e)
 {
-	m_z += (e->delta()/120.0)/10.0;
+	m_z += (m_z * e->delta()/120.0)/20.0;
 	updateMatrices();
 	updateGL();
 }

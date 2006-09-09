@@ -534,22 +534,27 @@ public:
 
 		emit built(true);
 	}
+	
+	virtual bool isBuilding() const 
+	{
+		return false;
+	}
 
 
 	// Parameter info.
-	int parameterCount() const
+	virtual int parameterCount() const
 	{
 		return m_parameterArray.count();		
 	}
 
-	const Parameter * parameterAt(int idx) const
+	virtual const Parameter * parameterAt(int idx) const
 	{
 		Q_ASSERT(isValid());
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());
 		return m_parameterArray.at(idx);
 	}
 
-	Parameter * parameterAt(int idx)
+	virtual Parameter * parameterAt(int idx)
 	{
 		Q_ASSERT(isValid());
 		Q_ASSERT(idx >= 0 && idx < m_parameterArray.count());

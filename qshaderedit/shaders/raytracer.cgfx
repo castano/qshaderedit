@@ -78,7 +78,7 @@ static Sphere objects[NOBJECTS] = {
 		1.0, 1.0, 0.5, true
 	}
 };
-const float eps = 0.001;	// error epsilon
+static const float eps = 0.001;	// error epsilon
 
 float SphereIntersect(Sphere s, Ray ray, out bool hit)
 {
@@ -252,29 +252,29 @@ float4 RayTracePS(VertexOutput IN) : COLOR
 
 technique arbfp1
 {
-    pass p0
+	pass p0
 	{
 		VertexProgram = compile arbvp1 RayTraceVS();
 		FragmentProgram = compile arbfp1 RayTracePS();
-    }
+	}
 }
 
 technique fp30
 {
-    pass p0
+	pass p0
 	{
 		VertexProgram = compile arbvp1 RayTraceVS();
 		FragmentProgram = compile fp30 RayTracePS();
-    }
+	}
 }
 
 technique fp40
 {
-    pass p0
+	pass p0
 	{
 		VertexProgram = compile arbvp1 RayTraceVS();
 		FragmentProgram = compile fp40 RayTracePS();
-    }
+	}
 }
 
 

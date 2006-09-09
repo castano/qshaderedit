@@ -351,6 +351,11 @@ public:
 		emit built(succeed);
 	}	
 	
+	virtual bool isBuilding() const 
+	{
+		return false;
+	}
+	
 	
 	// Parameter info.
 	virtual int parameterCount() const

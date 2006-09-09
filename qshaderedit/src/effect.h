@@ -47,6 +47,7 @@ public:
 	
 	// Compilation.
 	virtual void build(bool threaded) = 0;
+	virtual bool isBuilding() const = 0; 
 	
 	// Parameter info.
 	virtual int parameterCount() const = 0;

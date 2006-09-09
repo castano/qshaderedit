@@ -5,6 +5,7 @@
 #include "texmanager.h"
 #include "parameter.h"
 
+#include <QtCore/QDebug> //
 #include <QtCore/QCoreApplication>
 #include <QtCore/QFile>
 #include <QtCore/QByteArray>
@@ -404,6 +405,24 @@ private:
 
 	QString m_effectPath;
 	
+	// Builder thread.
+	class BuilderThread : public QThread
+	{
+		CgFxEffect * m_effect;
+		//QGLContext m_context;
+	public:
+		BuilderThread(CgFxEffect * effect) : m_effect(effect)//, m_context(QGLFormat(), NULL)
+		{
+		//m_context.create(QGLContext::currentContext());
+		}
+		void run() 
+		{
+		//m_context.makeCurrent();
+			m_effect->threadedBuild(); 
+		}
+	};
+	friend class BuilderThread;
+	BuilderThread m_thread;	
 
 public:
 
@@ -413,7 +432,8 @@ public:
 		m_technique(NULL),
 		m_pass(NULL),
 		m_effectText(s_effectText),
-		m_animated(false)
+		m_animated(false),
+		m_thread(this)
 	{
 		m_context = cgCreateContext();
 
@@ -510,23 +530,6 @@ public:
 		m_effectText = str;
 	}
 
-	// Builder thread.
-	class BuilderThread : public QThread
-	{
-		CgFxEffect * m_effect;
-		//QGLContext m_context;
-	public:
-		BuilderThread(CgFxEffect * effect) : m_effect(effect)//, m_context(QGLFormat(), NULL)
-		{
-			//m_context.create(QGLContext::currentContext());
-		}
-		void run() 
-		{
-			//m_context.makeCurrent();
-			m_effect->threadedBuild(); 
-		}
-	};
-	friend class BuilderThread;
 	
 	void threadedBuild()
 	{
@@ -574,8 +577,7 @@ public:
 	//	}
 
 	//	initParameters();
-		
-		emit built(true);
+	//	emit built(true);
 	}
 	
 	// Compilation.
@@ -585,38 +587,46 @@ public:
 
 		emit infoMessage(tr("Compiling cg effect..."));
 
-		if (threaded)
-		{
-			BuilderThread thread(this);
-			thread.start();
+		if (threaded) {
+			m_thread.start();
 			
-			while(thread.isRunning()) {
+			while(m_thread.isRunning()) {
 				QCoreApplication::processEvents();
 			}
 			
 			if(m_effect != NULL) {
 				initParameters();
 			}
+			emit built(true);
 		}
-		else
-		{
+		else {
 			threadedBuild();
+			
+			if(m_effect != NULL) {
+				initParameters();
+			}
+			emit built(true);
 		}
+	}
+	
+	virtual bool isBuilding() const
+	{
+		return m_thread.isRunning();
 	}
 
 	// Parameter info.
-	int parameterCount() const
+	virtual int parameterCount() const
 	{
 		return m_parameterArray.count();
 	}
 	
-	const Parameter * parameterAt(int idx) const
+	virtual const Parameter * parameterAt(int idx) const
 	{
 		Q_ASSERT(idx >= 0 && idx < parameterCount());
 		return m_parameterArray.at(idx); 	
 	}
 
-	Parameter * parameterAt(int idx)
+	virtual Parameter * parameterAt(int idx)
 	{
 		Q_ASSERT(idx >= 0 && idx < parameterCount());
 		return m_parameterArray.at(idx); 	

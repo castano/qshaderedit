@@ -11,7 +11,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QTimer>
 #include <QtCore/QSettings>
-//#include <QtCore/QtDebug>
+#include <QtCore/QtDebug>	//
 #include <QtGui/QApplication>
 #include <QtGui/QMenu>
 #include <QtGui/QToolBar>
@@ -895,8 +895,8 @@ void QShaderEdit::shaderTextChanged()
 
 void QShaderEdit::keyTimeout()
 {
-	if( m_paramViewDock->isEditorActive() ) {
-		// Editor is active, delay compilation util it finishes.
+	// Delay recompilation while editor is active or while compiling.
+	if(m_paramViewDock->isEditorActive() || m_effect->isBuilding()) {
 		m_timer->start(1500);
 		return;
 	}
@@ -960,6 +960,8 @@ void QShaderEdit::build(bool silent)
 
 void QShaderEdit::built(bool succeed)
 {
+	qDebug() << "Built!";
+	
 	disconnect(m_effect, SIGNAL(infoMessage(QString)), m_logViewDock, SLOT(info(QString)));
 	disconnect(m_effect, SIGNAL(errorMessage(QString)), m_logViewDock, SLOT(error(QString)));
 	disconnect(m_effect, SIGNAL(buildMessage(QString,int,OutputParser*)), m_logViewDock, SLOT(log(QString,int,OutputParser*)));
