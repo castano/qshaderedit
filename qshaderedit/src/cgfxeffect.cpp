@@ -14,6 +14,8 @@
 #include <QtCore/QLibrary>
 #include <QtCore/QThread>
 #include <QtCore/QFileInfo>
+#include <QtOpenGL/QGLContext>
+#include <QtOpenGL/QGLPixelBuffer>
 
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
@@ -512,17 +514,16 @@ public:
 	class BuilderThread : public QThread
 	{
 		CgFxEffect * m_effect;
-		MessagePanel * m_output;
-		
+		//QGLContext m_context;
 	public:
-		BuilderThread(CgFxEffect * effect, MessagePanel * output) : m_effect(effect) 
+		BuilderThread(CgFxEffect * effect) : m_effect(effect)//, m_context(QGLFormat(), NULL)
 		{
-			
+			//m_context.create(QGLContext::currentContext());
 		}
-		
-		void run()
+		void run() 
 		{
-			m_effect->threadedBuild();
+			//m_context.makeCurrent();
+			m_effect->threadedBuild(); 
 		}
 	};
 	friend class BuilderThread;
@@ -535,10 +536,11 @@ public:
 		m_effect = cgCreateEffect(m_context, m_effectText.data(), options);
 		
 		// Output compilation errors.
-		//if (output != NULL) output->log(cgGetLastListing(m_context), 0, m_outputParser);
+		emit buildMessage(cgGetLastListing(m_context), 0, m_outputParser);
 
 		if (m_effect == NULL)
 		{
+			emit built(false);
 			return;
 		}
 		
@@ -549,64 +551,20 @@ public:
 			if (cgValidateTechnique(technique))
 			{
 				const char * name = cgGetTechniqueName(technique);
-				//if (output != NULL) output->info(tr("Validated technique '%1'").arg(name));
+				emit infoMessage(tr("Validated technique '%1'").arg(name));
 				m_techniqueList.append(technique);
 			}
 
 			// Output validation errors.
-			//if (output != NULL) output->log(cgGetLastListing(m_context), 0, m_outputParser);
+			emit buildMessage(cgGetLastListing(m_context), 0, m_outputParser);
 
 			technique = cgGetNextTechnique(technique);
 		}
-	}
-	
-	// Compilation.
-	virtual bool build(MessagePanel * output)
-	{
-		freeEffect();
-
-		if(output != NULL) output->clear();
-
-		if(output != NULL) output->info(tr("Compiling cg effect..."));
-
-		//m_effect = cgCreateEffect(m_context, m_effectText.data(), NULL);
-		BuilderThread thread(this, output);
-		//connect(builderThread, SIGNAL(finished()) this, SIGNAL(built(bool)));
-		thread.start();
 		
-		while(thread.isRunning()) {
-			QCoreApplication::processEvents();
-		}
-
-		// Output compilation errors.
-		if (output != NULL) output->log(cgGetLastListing(m_context), 0, m_outputParser);
-
-		if (m_effect == NULL)
-		{
-			return false;
-		}
-		
-		/*
-		// Read and validate techniques.
-		CGtechnique technique = cgGetFirstTechnique(m_effect);
-		while(technique != NULL)
-		{
-			if (cgValidateTechnique(technique))
-			{
-				const char * name = cgGetTechniqueName(technique);
-				if (output != NULL) output->info(tr("Validated technique '%1'").arg(name));
-				m_techniqueList.append(technique);
-			}
-
-			// Output validation errors.
-			if (output != NULL) output->log(cgGetLastListing(m_context), 0, m_outputParser);
-
-			technique = cgGetNextTechnique(technique);
-		}
-		*/
 		if (m_techniqueList.count() == 0)
 		{
-			return false;
+			emit built(false);
+			return;
 		}
 		selectTechnique(0);
 
@@ -615,9 +573,35 @@ public:
 	//		printf("%s\n", cgGetErrorString(error));
 	//	}
 
-		initParameters();
+	//	initParameters();
+		
+		emit built(true);
+	}
+	
+	// Compilation.
+	virtual void build(bool threaded)
+	{
+		freeEffect();
 
-		return true;
+		emit infoMessage(tr("Compiling cg effect..."));
+
+		if (threaded)
+		{
+			BuilderThread thread(this);
+			thread.start();
+			
+			while(thread.isRunning()) {
+				QCoreApplication::processEvents();
+			}
+			
+			if(m_effect != NULL) {
+				initParameters();
+			}
+		}
+		else
+		{
+			threadedBuild();
+		}
 	}
 
 	// Parameter info.

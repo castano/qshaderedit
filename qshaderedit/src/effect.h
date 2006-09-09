@@ -12,10 +12,11 @@ class QByteArray;
 class MessagePanel;
 class EffectFactory;
 class Parameter;
-
+class OutputParser;
 
 class Effect : public QObject
 {
+	Q_OBJECT
 public:
 	enum EditorType {
 		EditorType_None,
@@ -45,7 +46,7 @@ public:
 	virtual void setInput(int i, const QByteArray & str) = 0;
 	
 	// Compilation.
-	virtual bool build(MessagePanel * output) = 0;
+	virtual void build(bool threaded) = 0;
 	
 	// Parameter info.
 	virtual int parameterCount() const = 0;
@@ -72,7 +73,11 @@ public:
 	virtual void end() = 0;
 	
 signals:
+	void infoMessage(QString msg);
+	void errorMessage(QString msg);
+	void buildMessage(QString msg, int input, OutputParser * parser);
 	void built(bool succeed);
+	
 	
 private:
 	EffectFactory const * const m_factory;

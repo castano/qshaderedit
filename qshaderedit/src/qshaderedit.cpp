@@ -935,20 +935,46 @@ void QShaderEdit::build(bool silent)
 	m_paramViewDock->clear();
 
 	if( silent ) {
-		m_effect->build(NULL);
+		m_effect->build(false);
+		built(true);
 	}
 	else {
-		if( m_effect->build(m_logViewDock) ) {
-			statusBar()->showMessage(tr("Compilation succeed."), 2000);
-			m_logViewDock->info(tr("Compilation succeed."));
+		// clear messages.
+		m_logViewDock->clear();
+		
+		// Connect effect signals.
+		connect(m_effect, SIGNAL(infoMessage(QString)), m_logViewDock, SLOT(info(QString)));
+		connect(m_effect, SIGNAL(errorMessage(QString)), m_logViewDock, SLOT(error(QString)));
+		connect(m_effect, SIGNAL(buildMessage(QString,int,OutputParser*)), m_logViewDock, SLOT(log(QString,int,OutputParser*)));
+		connect(m_effect, SIGNAL(built(bool)), this, SLOT(built(bool)));
+		
+		// Stop animation while building.
+		if( m_effect->isAnimated() ) {
+			m_animationTimer->stop();
 		}
-		else {
-			statusBar()->showMessage(tr("Compilation failed."), 2000);
-			m_logViewDock->setVisible(true);
-			m_logViewDock->error(tr("Compilation failed."));
-		}
+		
+		// Start builder thread.
+		m_effect->build(true);
 	}
+}
 
+void QShaderEdit::built(bool succeed)
+{
+	disconnect(m_effect, SIGNAL(infoMessage(QString)), m_logViewDock, SLOT(info(QString)));
+	disconnect(m_effect, SIGNAL(errorMessage(QString)), m_logViewDock, SLOT(error(QString)));
+	disconnect(m_effect, SIGNAL(buildMessage(QString,int,OutputParser*)), m_logViewDock, SLOT(log(QString,int,OutputParser*)));
+	disconnect(m_effect, SIGNAL(built(bool)), this, SLOT(built(bool)));
+	
+	if( succeed ) {
+		statusBar()->showMessage(tr("Compilation succeed."), 2000);
+		m_logViewDock->info(tr("Compilation succeed."));
+	}
+	else {
+		statusBar()->showMessage(tr("Compilation failed."), 2000);
+		m_logViewDock->setVisible(true);
+		m_logViewDock->error(tr("Compilation failed."));
+	}
+	
 	updateTechniques();
 	m_paramViewDock->setEffect(m_effect);
 

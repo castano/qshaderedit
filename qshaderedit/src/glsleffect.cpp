@@ -451,7 +451,7 @@ public:
 		}
 	}
 
-	virtual bool build(MessagePanel * output)
+	virtual void build(bool threaded)
 	{
 		// Delete previous effect.
 		deleteProgram();
@@ -462,9 +462,7 @@ public:
 		Q_ASSERT( m_fragmentShader == 0 );
 		m_fragmentShader = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
 
-		if(output != NULL) output->clear();
-
-		if(output != NULL) output->info("Compiling vertex shader...");
+		emit infoMessage(tr("Compiling vertex shader..."));
 		const char * vertexStrings[] = { m_vertexShaderText.data() };
 		glShaderSourceARB(m_vertexShader, 1, vertexStrings, NULL);
 		glCompileShaderARB(m_vertexShader);
@@ -474,14 +472,12 @@ public:
 		// Get error log.
 		QByteArray infoLog;
 		GLint charsWritten, infoLogLength;
-		if(output != NULL) {
-			glGetObjectParameterivARB(m_vertexShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
-			infoLog.resize(infoLogLength);
-			glGetInfoLogARB(m_vertexShader, infoLogLength, &charsWritten, infoLog.data());
-			output->log(infoLog, 0, m_outputParser);
-		}
+		glGetObjectParameterivARB(m_vertexShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
+		infoLog.resize(infoLogLength);
+		glGetInfoLogARB(m_vertexShader, infoLogLength, &charsWritten, infoLog.data());
+		emit buildMessage(infoLog, 0, m_outputParser);
 
-		if(output != NULL) output->info("Compiling fragment shader...");
+		emit infoMessage(tr("Compiling fragment shader..."));
 		const char * fragmentStrings[] = { m_fragmentShaderText.data() };
 		glShaderSourceARB(m_fragmentShader, 1, fragmentStrings, NULL);
 		glCompileShaderARB(m_fragmentShader);
@@ -489,55 +485,54 @@ public:
 		QCoreApplication::processEvents();
 		
 		// Get error log.
-		if(output != NULL) {
-			infoLog.clear();
-			glGetObjectParameterivARB(m_fragmentShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
-			infoLog.resize(infoLogLength);
-			glGetInfoLogARB(m_fragmentShader, infoLogLength, &charsWritten, infoLog.data());
-			output->log(infoLog, 1, m_outputParser);
-		}
+		infoLog.clear();
+		glGetObjectParameterivARB(m_fragmentShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
+		infoLog.resize(infoLogLength);
+		glGetInfoLogARB(m_fragmentShader, infoLogLength, &charsWritten, infoLog.data());
+		emit buildMessage(infoLog, 1, m_outputParser);
 
 		// Check compilation.
 		GLint vertexCompileSucceed = GL_FALSE;
 		glGetObjectParameterivARB(m_vertexShader, GL_OBJECT_COMPILE_STATUS_ARB, &vertexCompileSucceed);
 		if( vertexCompileSucceed == GL_FALSE ) {
-			return false;
+			emit built(false);
+			return;
 		}
 
 		GLint fragmentCompileSucceed = GL_FALSE;
 		glGetObjectParameterivARB(m_fragmentShader, GL_OBJECT_COMPILE_STATUS_ARB, &fragmentCompileSucceed);
 		if( fragmentCompileSucceed == GL_FALSE ) {
-			return false;
+			emit built(false);
+			return;
 		}
 
 		Q_ASSERT( m_program == 0 );
 		m_program = glCreateProgramObjectARB();
 		
 		// Link the program.
-		if(output != NULL) output->info("Linking...");
+		emit infoMessage(tr("Linking..."));
 		glAttachObjectARB(m_program, m_vertexShader);
 		glAttachObjectARB(m_program, m_fragmentShader);
 		glLinkProgramARB(m_program);
 
 		// Get error log.
-		if(output != NULL) {
-			infoLog.clear();
-			glGetObjectParameterivARB(m_program, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
-			infoLog.resize(infoLogLength);
-			glGetInfoLogARB(m_program, infoLogLength, &charsWritten, infoLog.data());
-			output->log(infoLog, -1, m_outputParser);
-		}
+		infoLog.clear();
+		glGetObjectParameterivARB(m_program, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
+		infoLog.resize(infoLogLength);
+		glGetInfoLogARB(m_program, infoLogLength, &charsWritten, infoLog.data());
+		emit buildMessage(infoLog, -1, m_outputParser);
 
 		// Test linker result.
 		GLint linkSucceed = GL_FALSE;
 		glGetObjectParameterivARB(m_program, GL_OBJECT_LINK_STATUS_ARB, &linkSucceed);
 		if( linkSucceed == GL_FALSE ) {
-			return false;
+			emit built(false);
+			return;
 		}
 
-		initParameters(output);
+		initParameters();
 
-		return true;
+		emit built(true);
 	}
 
 
@@ -653,7 +648,7 @@ private:
 		}
 	}
 
-	void initParameters(MessagePanel * output)
+	void initParameters()
 	{
 		m_timeUniform = -1;
 		
@@ -739,7 +734,7 @@ private:
 					parameter->setTextureUnit(unit++);
 				}
 				else {
-					if(output) output->error(tr("Texture unit limit hit, ignoring parameter '%1'").arg(parameter->name()));
+					emit errorMessage(tr("Texture unit limit hit, ignoring parameter '%1'").arg(parameter->name()));
 				}
 			}
 		}

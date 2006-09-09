@@ -228,6 +228,7 @@ void QGLView::paintGL()
 
 void QGLView::updateMatrices()
 {
+	makeCurrent();
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	

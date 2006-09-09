@@ -310,7 +310,7 @@ public:
 		}		
 	}
 	
-	virtual bool build(MessagePanel * output)
+	virtual void build(bool threaded)
 	{
 		deletePrograms();
 		resetParameters();
@@ -318,13 +318,11 @@ public:
 		m_built = false;
 		bool succeed = true;
 		
-		if(output != NULL) output->clear();
-		
-		if(output != NULL) output->info("Compiling vertex program...");
+		emit infoMessage(tr("Compiling vertex program..."));
 		glGenProgramsARB( 1, &m_vp );
 		glBindProgramARB( GL_VERTEX_PROGRAM_ARB, m_vp );
 		glProgramStringARB( GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, m_vertexProgramText.length(), m_vertexProgramText );
-		if( checkProgramError(output, 0) ) {
+		if( checkProgramError(0) ) {
 			succeed = false;
 		}
 		else {
@@ -334,11 +332,11 @@ public:
 		
 		QCoreApplication::processEvents();
 		
-		if(output != NULL) output->info("Compiling fragment program...");
+		emit infoMessage(tr("Compiling fragment program..."));
 		glGenProgramsARB( 1, &m_fp );
 		glBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, m_fp );
 		glProgramStringARB( GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, m_fragmentProgramText.length(), m_fragmentProgramText );
-		if( checkProgramError(output, 1) ) {
+		if( checkProgramError(1) ) {
 			succeed = false;
 		}
 		else {
@@ -350,7 +348,7 @@ public:
 			m_built = true;
 		}
 		
-		return succeed;
+		emit built(succeed);
 	}	
 	
 	
@@ -445,13 +443,13 @@ private:
 		glDeleteProgramsARB( 1, &m_fp );
 	}
 	
-	bool checkProgramError(MessagePanel * output, int inputNumber = -1)
+	bool checkProgramError(int inputNumber = -1)
 	{
 		GLint position;
 		glGetIntegerv( GL_PROGRAM_ERROR_POSITION_ARB, &position );
 		if( position != -1 ) {
 			const char * error = (const char *) glGetString( GL_PROGRAM_ERROR_STRING_ARB );
-			if( output ) output->log(QString(error), inputNumber, m_outputParser);
+			emit buildMessage(QString(error), inputNumber, m_outputParser);
 			qDebug("%s", error);
 			return true;
 		}

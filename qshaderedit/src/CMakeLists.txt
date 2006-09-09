@@ -47,7 +47,8 @@ SET(MOC_SRCS
 	parameterdelegate.h
 	qglview.h
 	qshaderedit.h
-	newdialog.h)
+	newdialog.h
+	effect.h)
 
 SET(UIC_SRCS 
 	newdialog.ui 
