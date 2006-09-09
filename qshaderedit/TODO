@@ -1,7 +1,4 @@
 
-Bugs:
-- fix double compilation bug. Already sent RFE to trolltech.
-
 Misc:
 - display line and column numbers to status bar. @@ I need to send an RFE to TT.
 
@@ -13,13 +10,13 @@ Textures:
 - add support for multiple image plugins.
 - add dds image plugin.
 - add noise plugin to generate noise texture.
+- add support for procedural texture generation.
 - get supported texture extensions from QImageReader::supported...
 
 Effects:
 - Better threading for smooth compilation.
 - add support for matrix parameters in cgfx.
 - add support for texture parameters in ARB programs.
-- add glfx support?
 - add support for custom xml effect file format.
 - integrated help.
 
@@ -37,4 +34,14 @@ KDE integration:
 - use ktexteditor interface.
 - add support for autocompletion and syntax highlight.
 - highlight errors.
+
+
+Effect file formats:
+- Luxinia shaders: http://www.luxinia.de/index.php/Api/Shader
+- Ogre materials: http://www.ogre3d.org/docs/manual/manual_14.html#SEC23
+- Hyperion shaders (o3shd) and effects (xml): www.oZone3D.Net
+- glfx: http://glfx.sourceforge.net/
+- pyfx: http://graphics.cs.lth.se/pyfx/
+- unity shaders: http://www.unifycommunity.com/wiki/index.php?title=Shader_Archive
+- Collada FX: http://www.khronos.org/collada/
 
