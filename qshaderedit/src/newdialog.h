@@ -24,7 +24,7 @@ class NewDialog : public QDialog
 		void openEffect();
 		
 	private:
-		Ui::Dialog ui;
+		Ui::NewDialog ui;
 };
 
 

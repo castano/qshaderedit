@@ -2,7 +2,7 @@
  <author></author>
  <comment></comment>
  <exportmacro></exportmacro>
- <class>Dialog</class>
+ <class>NewDialog</class>
  <widget class="QDialog" name="Dialog" >
   <property name="geometry" >
    <rect>

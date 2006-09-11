@@ -32,7 +32,11 @@ SET(SRCS
 	outputparser.h
 	outputparser.cpp
 	scene.h
-	scene.cpp)
+	scene.cpp
+	finddialog.h
+	finddialog.cpp
+	gotodialog.h
+	gotodialog.cpp)
 
 IF(FOUND_CG)
 	SET(SRCS ${SRCS} cgeffect.cpp cgfxeffect.cpp)
@@ -48,12 +52,16 @@ SET(MOC_SRCS
 	qglview.h
 	qshaderedit.h
 	newdialog.h
+	finddialog.h
+	gotodialog.h
 	effect.h)
 
 SET(UIC_SRCS 
 	newdialog.ui 
 	parameterpropertiesdialog.ui
-	texturepropertiesdialog.ui)
+	texturepropertiesdialog.ui
+	finddialog.ui
+	gotodialog.ui)
 
 SET(RCC_SRCS
 	qshaderedit.qrc)

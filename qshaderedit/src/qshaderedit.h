@@ -126,6 +126,10 @@ private:
 	
 	QAction * m_compileAction;
 	
+	QAction * m_findAction;
+	QAction * m_findNextAction;
+	QAction * m_gotoAction;
+	
 	// Timers.
 	QTimer * m_timer;	// compilation timer.
 	QTimer * m_animationTimer;

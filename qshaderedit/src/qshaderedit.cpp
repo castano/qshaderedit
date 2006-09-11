@@ -140,6 +140,21 @@ void QShaderEdit::createActions()
 	m_compileAction->setChecked(true);
 	m_compileAction->setShortcut(tr("F7"));
 	connect(m_compileAction, SIGNAL(toggled(bool)), this, SLOT(compileChecked(bool)));
+	
+	m_findAction = new QAction(tr("&Find"), this);
+	m_findAction->setEnabled(false);
+	m_findAction->setShortcut(tr("Ctrl+F"));
+	connect(m_findAction, SIGNAL(triggered()), m_editor, SLOT(findDialog()));
+	
+	m_findNextAction = new QAction(tr("&Find Next"), this);
+	m_findNextAction->setEnabled(false);
+	m_findNextAction->setShortcut(tr("F3"));
+	connect(m_findNextAction, SIGNAL(triggered()), m_editor, SLOT(findNext()));
+	
+	m_gotoAction = new QAction(tr("&Goto"), this);
+	m_gotoAction->setEnabled(false);
+	m_gotoAction->setShortcut(tr("Ctrl+G"));
+	connect(m_gotoAction, SIGNAL(triggered()), m_editor, SLOT(gotoDialog()));
 }
 
 void QShaderEdit::createMenus()
@@ -213,6 +228,12 @@ void QShaderEdit::createMenus()
 	connect(m_editor, SIGNAL(pasteAvailable(bool)), action, SLOT(setEnabled(bool)));
 	editMenu->addAction(action);
 
+	editMenu->addSeparator();
+	
+	editMenu->addAction(m_findAction);
+	editMenu->addAction(m_findNextAction);
+	editMenu->addAction(m_gotoAction);
+	
 	QMenu * viewMenu = menuBar()->addMenu(tr("&View"));
 	
 	// Should this be under the "Panels" menu? 
@@ -235,7 +256,7 @@ void QShaderEdit::createMenus()
 	for(int i = 0; i < count; i++) {
 		const SceneFactory * factory = SceneFactory::factoryList().at(i);
 		Q_ASSERT(factory != NULL);
-
+		
 		action = new QAction(QString("&%1 %2").arg(i+1).arg(factory->name()), this);
 		action->setData(factory->name());
 		connect(action, SIGNAL(triggered()), this, SLOT(selectScene()));
@@ -425,6 +446,10 @@ void QShaderEdit::updateActions()
 	//m_saveAction->setVisible(m_file != NULL);
 	m_saveAction->setEnabled(m_modified);
 	m_saveAsAction->setEnabled(true);
+	
+	m_findAction->setEnabled(true);
+	m_findNextAction->setEnabled(true);
+	m_gotoAction->setEnabled(true);
 
 	QString fileName;
 	if( m_file == NULL ) {

@@ -1,5 +1,7 @@
 
 #include "editor.h"
+#include "finddialog.h"
+#include "gotodialog.h"
 
 #include <QtCore/QDebug>
 #include <QtGui/QTabBar>
@@ -99,6 +101,28 @@ void Editor::nextTab()
 void Editor::previousTab()
 {
 	setCurrentIndex(currentIndex() -1);	
+}
+
+void Editor::findDialog()
+{
+	FindDialog dialog(this);
+	
+	int result = dialog.exec();
+	if( result == QDialog::Accepted ) {
+	}
+}
+
+void Editor::gotoDialog()
+{
+	GotoDialog dialog(this);
+	
+	int result = dialog.exec();
+	if( result == QDialog::Accepted ) {
+	}
+}
+
+void Editor::findNext()
+{
 }
 
 void Editor::onCurrentChanged(int idx)

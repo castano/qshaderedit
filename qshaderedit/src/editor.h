@@ -28,6 +28,10 @@ public slots:
 	void nextTab();
 	void previousTab();
 
+	void findDialog();
+	void gotoDialog();
+	void findNext();
+	
 signals:
 	void cursorPositionChanged();
 	void copyAvailable(bool available);
