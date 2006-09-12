@@ -467,7 +467,7 @@ public:
 		glShaderSourceARB(m_vertexShader, 1, vertexStrings, NULL);
 		glCompileShaderARB(m_vertexShader);
 
-	//	QCoreApplication::processEvents();
+		QCoreApplication::processEvents();
 		
 		// Get error log.
 		QByteArray infoLog;
@@ -482,7 +482,7 @@ public:
 		glShaderSourceARB(m_fragmentShader, 1, fragmentStrings, NULL);
 		glCompileShaderARB(m_fragmentShader);
 
-	//	QCoreApplication::processEvents();
+		QCoreApplication::processEvents();
 		
 		// Get error log.
 		infoLog.clear();
