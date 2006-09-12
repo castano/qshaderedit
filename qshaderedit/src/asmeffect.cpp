@@ -370,6 +370,7 @@ public:
 	}
 	virtual Parameter * parameterAt(int idx)
 	{
+		Q_ASSERT(idx >= 0 && idx < parameterCount());
 		return m_parameterArray.at(idx);
 	}
 
