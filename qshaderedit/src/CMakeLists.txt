@@ -36,7 +36,11 @@ SET(SRCS
 	finddialog.h
 	finddialog.cpp
 	gotodialog.h
-	gotodialog.cpp)
+	gotodialog.cpp
+	glutils.h
+	glutils.cpp
+	imageplugin.h
+	imageplugin.cpp)
 
 IF(FOUND_CG)
 	SET(SRCS ${SRCS} cgeffect.cpp cgfxeffect.cpp)

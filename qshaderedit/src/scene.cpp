@@ -119,6 +119,11 @@ public:
 		glBegin(GL_TRIANGLES);
 		glNormal3f(0, 0, 1);
 		
+		if( GLEW_ARB_multitexture || GLEW_VERSION_1_3 ) {
+			glMultiTexCoord3f(GL_TEXTURE6, 1, 0, 0);
+			glMultiTexCoord3f(GL_TEXTURE7, 0, 1, 0);
+		}
+		
 		for(int i = 0; i < 15; i++) {
 			float v0 = float(i) / 15;
 			float v1 = float(i+1) / 15;

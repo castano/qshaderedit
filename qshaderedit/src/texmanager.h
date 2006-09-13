@@ -36,7 +36,7 @@ public:
 	GLint magnificationFilter() const;
 	void setFilteringMode(GLint min, GLint mag) const;
 	
-		
+	
 private:
 	class Private;
 	GLTexture(Private * p);
@@ -44,17 +44,6 @@ private:
 };
 
 Q_DECLARE_METATYPE(GLTexture);
-
-
-// Image plugin interface.
-class ImagePlugin
-{
-public:
-	virtual bool canLoad(QString name) const = 0;
-	virtual bool load(QString name, GLuint obj, GLuint * target) const = 0;
-};
-
-// @@ Image plugin factory.
 
 
 #endif // TEXMANAGER_H

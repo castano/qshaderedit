@@ -1,161 +1,11 @@
 
 #include "texmanager.h"
+#include "glutils.h"
+#include "imageplugin.h"
 
 #include <QtCore/QSharedData>
 #include <QtCore/QDebug>
 #include <QtGui/QImage>
-#include <QtGui/QImageReader>
-#include <QtOpenGL/QGLContext>
-
-
-namespace {
-	
-	// Report OpenGL errors.
-	static void ReportGLErrors() {
-		int error = glGetError();
-
-		if( error != GL_NO_ERROR ) {
-			switch( error ) {
-				case GL_INVALID_ENUM:
-					qDebug( "*** ReportGLErrors: Invalid enum.\n" );
-				break;
-				case GL_INVALID_VALUE:
-					qDebug( "*** ReportGLErrors: Invalid value.\n" );
-				break;
-				case GL_INVALID_OPERATION:
-					qDebug( "*** ReportGLErrors: Invalid operation.\n" );
-				break;
-				case GL_STACK_OVERFLOW:
-					qDebug( "*** ReportGLErrors: Stack overflow.\n" );
-				break;
-				case GL_STACK_UNDERFLOW:
-					qDebug( "*** ReportGLErrors: Stack underflow.\n" );
-				break;
-				case GL_OUT_OF_MEMORY:
-					qDebug( "*** ReportGLErrors: Out of memory.\n" );
-				break;
-				default:
-					qDebug( "*** ReportGLErrors: Unknown error!\n" );
-			}
-		}
-	}
-
-	// Taken from Qt, but do not mirror.
-	static QImage convertToBGRA(const QImage &image)
-	{
-		QImage img = image;
-		if (image.format() != QImage::Format_ARGB32) {
-			img = image.convertToFormat(QImage::Format_ARGB32);
-		}
-		
-		if (QSysInfo::ByteOrder == QSysInfo::BigEndian) {
-			// mirror + swizzle
-			QImage res = img.copy();
-			for (int i=0; i < img.height(); i++) {
-				uint *p = (uint*) img.scanLine(i);
-			//	uint *q = (uint*) res.scanLine(img.height() - i - 1);
-				uint *q = (uint*) res.scanLine(i);
-				uint *end = p + img.width();
-				while (p < end) {
-					*q = ((*p << 24) & 0xff000000)
-						 | ((*p >> 24) & 0x000000ff)
-						 | ((*p << 8) & 0x00ff0000)
-						 | ((*p >> 8) & 0x0000ff00);
-					p++;
-					q++;
-				}
-			}
-			return res;
-		}
-		else {
-			return img;
-		//	return img.mirrored();
-		}
-	}
-	
-	inline static uint nextPowerOfTwo( uint x ) 
-	{
-		uint p = 1;
-		while( x > p ) {
-			p += p;
-		}
-		return p;
-	}
-	
-	
-	// Image plugin that supports all the image types that Qt supports.
-	class QtImagePlugin
-	{
-	public:
-	
-		virtual QList<QByteArray> supportedFormats() const
-		{
-			return QImageReader::supportedImageFormats();
-		}
-		
-		virtual bool canLoad(const QString & fileName) const
-		{
-			return true;
-		}
-		
-		virtual QImage load(QString name, GLuint obj, GLuint * target) const
-		{
-			Q_ASSERT(obj != 0);
-			Q_ASSERT(target != NULL);
-			
-			QImage image;
-			if( name.isEmpty() || !image.load(name) ) {
-				image.load(":/images/default.png");
-			}
-			
-			QImage glImage = convertToBGRA(image);
-			
-			int w = glImage.width();
-			int h = glImage.height();
-			
-			// Resize texture if NP2 not supported.
-			if( !GLEW_ARB_texture_non_power_of_two ) {
-				w = nextPowerOfTwo(w);
-				h = nextPowerOfTwo(h);
-			}
-			
-			// Clamp to maximum texture size.
-			GLint maxTextureSize = 256;
-			glGetIntegerv( GL_MAX_TEXTURE_SIZE, &maxTextureSize );
-			if( w > maxTextureSize ) w = maxTextureSize; 
-			if( h > maxTextureSize ) h = maxTextureSize; 
-			
-			if(glImage.width() != w || glImage.height() != h) {
-				glImage = glImage.scaled(w, h);
-			}
-			
-			*target = GL_TEXTURE_2D;
-			glBindTexture(GL_TEXTURE_2D, obj);
-			
-			if(GLEW_SGIS_generate_mipmap || GLEW_VERSION_1_4) {
-				glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glImage.width(), glImage.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, glImage.bits());
-			}
-			else {
-				gluBuild2DMipmaps(GL_TEXTURE_2D, 4, glImage.width(), glImage.height(), GL_BGRA, GL_UNSIGNED_BYTE, glImage.bits());
-			}
-			
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			
-			ReportGLErrors();
-			
-			return image;
-		}
-	};
-
-	// @@ Add dds plugin.
-	// @@ Add exr plugin.
-	// @@ Add hdr plugin.
-
-	static QtImagePlugin s_imageLoader;
-
-} // namespace
 
 
 class GLTexture::Private : public QSharedData
@@ -167,7 +17,7 @@ public:
 		
 		// load default texture
 		m_name = "default.png";
-		QImage image = s_imageLoader.load(":images/default.png", m_object, &m_target);
+		QImage image = ImagePluginManager::load(":images/default.png", m_object, &m_target);
 		m_image = QPixmap::fromImage(image);
 		m_icon = QPixmap::fromImage(image.scaled(16, 16, Qt::KeepAspectRatio, Qt::FastTransformation));
 	}
@@ -175,12 +25,9 @@ public:
 	{
 		glGenTextures(1, &m_object);
 		
-		// @@ Traverse image plugins.
-		if( s_imageLoader.canLoad(m_name) ) {
-			QImage image = s_imageLoader.load(m_name, m_object, &m_target);
-			m_image = QPixmap::fromImage(image);
-			m_icon = QPixmap::fromImage(image.scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-		}	
+		QImage image = ImagePluginManager::load(m_name, m_object, &m_target);
+		m_image = QPixmap::fromImage(image);
+		m_icon = QPixmap::fromImage(image.scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 	}
 	~Private()
 	{

@@ -4,6 +4,7 @@
 #include "outputparser.h"
 #include "texmanager.h"
 #include "parameter.h"
+#include "glutils.h"
 
 #include <QtCore/QDebug> //
 #include <QtCore/QCoreApplication>
@@ -406,19 +407,17 @@ private:
 	QString m_effectPath;
 	
 	// Builder thread.
-	class BuilderThread : public QThread
+	class BuilderThread : public GLThread
 	{
 		CgFxEffect * m_effect;
-		//QGLContext m_context;
 	public:
-		BuilderThread(CgFxEffect * effect) : m_effect(effect)//, m_context(QGLFormat(), NULL)
+		BuilderThread(CgFxEffect * effect) : m_effect(effect)
 		{
-		//m_context.create(QGLContext::currentContext());
 		}
 		void run() 
 		{
-		//m_context.makeCurrent();
-			m_effect->threadedBuild(); 
+			//makeCurrent();
+			m_effect->threadedBuild();
 		}
 	};
 	friend class BuilderThread;
