@@ -16,6 +16,7 @@ class MessagePanel;
 class EffectFactory;
 class Parameter;
 class OutputParser;
+class QGLWidget;
 
 class Effect : public QObject
 {

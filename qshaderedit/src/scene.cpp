@@ -114,7 +114,7 @@ class QuadScene : public DisplayListScene
 public:
 	QuadScene()
 	{
-		const bool hasMultiTexture = GLEW_ARB_multitexture || GLEW_VERSION_1_3;		
+		const bool hasMultiTexture = GLEW_ARB_multitexture || GLEW_VERSION_1_3;
 		
 		m_dlist = glGenLists(1);
 		glNewList(m_dlist, GL_COMPILE);

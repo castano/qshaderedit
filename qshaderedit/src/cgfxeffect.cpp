@@ -416,7 +416,7 @@ private:
 		}
 		void run() 
 		{
-			makeCurrent();
+			//makeCurrent();
 			m_effect->threadedBuild();
 		}
 	};
@@ -575,7 +575,7 @@ public:
 	//		printf("%s\n", cgGetErrorString(error));
 	//	}
 
-		initParameters();
+	//	initParameters();
 	//	emit built(true);
 	}
 	
@@ -594,7 +594,7 @@ public:
 			}
 			
 			if(m_effect != NULL) {
-		//		initParameters();
+				initParameters();
 			}
 			emit built(true);
 		}
@@ -602,7 +602,7 @@ public:
 			threadedBuild();
 			
 			if(m_effect != NULL) {
-		//		initParameters();
+				initParameters();
 			}
 			emit built(true);
 		}
