@@ -1,20 +1,24 @@
 
 Misc:
 - display line and column numbers to status bar. @@ I need to send an RFE to TT.
+- double compilation still happens on osx and windows...
 
 Parameter panel:
 - Matrix editor.
+- Adjust double slider steps correctly, maintain original range, allow custom steps.
+- Add integer sliders.
+- Add intenger and bool parameter config dialogs.
 
 Textures:
+- argh, texture parameters are not preseved after compilation!
 - lazy load textures to avoid double loading, and unnecesary load of default texture.
-- add support for multiple image plugins.
 - add dds image plugin.
 - add noise plugin to generate noise texture.
 - add support for procedural texture generation.
 - get supported texture extensions from QImageReader::supported...
 
 Effects:
-- Better threading for smooth compilation.
+- Fix GL threading on linux. Test on windows.
 - add support for matrix parameters in cgfx.
 - add support for texture parameters in ARB programs.
 - add support for custom xml effect file format.
