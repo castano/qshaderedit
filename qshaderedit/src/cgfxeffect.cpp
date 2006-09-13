@@ -411,12 +411,12 @@ private:
 	{
 		CgFxEffect * m_effect;
 	public:
-		BuilderThread(CgFxEffect * effect) : m_effect(effect)
+		BuilderThread(CgFxEffect * effect, QGLWidget * widget) : GLThread(widget), m_effect(effect)
 		{
 		}
 		void run() 
 		{
-			//makeCurrent();
+			makeCurrent();
 			m_effect->threadedBuild();
 		}
 	};
@@ -425,14 +425,14 @@ private:
 
 public:
 
-	CgFxEffect(const EffectFactory * factory) : Effect(factory),
+	CgFxEffect(const EffectFactory * factory, QGLWidget * widget) : Effect(factory),
 		m_context(NULL),
 		m_effect(NULL),
 		m_technique(NULL),
 		m_pass(NULL),
 		m_effectText(s_effectText),
 		m_animated(false),
-		m_thread(this)
+		m_thread(this, widget)
 	{
 		m_context = cgCreateContext();
 
@@ -575,7 +575,7 @@ public:
 	//		printf("%s\n", cgGetErrorString(error));
 	//	}
 
-	//	initParameters();
+		initParameters();
 	//	emit built(true);
 	}
 	
@@ -594,7 +594,7 @@ public:
 			}
 			
 			if(m_effect != NULL) {
-				initParameters();
+		//		initParameters();
 			}
 			emit built(true);
 		}
@@ -602,7 +602,7 @@ public:
 			threadedBuild();
 			
 			if(m_effect != NULL) {
-				initParameters();
+		//		initParameters();
 			}
 			emit built(true);
 		}
@@ -913,10 +913,10 @@ class CgFxEffectFactory : public EffectFactory
 		return QIcon();
 	}
 
-	virtual Effect * createEffect() const
+	virtual Effect * createEffect(QGLWidget * widget) const
 	{
 		Q_ASSERT(isSupported());
-		return new CgFxEffect(this);
+		return new CgFxEffect(this, widget);
 	}
 
 	virtual QList<Highlighter::Rule> highlightingRules() const

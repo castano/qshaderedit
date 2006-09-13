@@ -621,7 +621,7 @@ void QShaderEdit::newEffect(const EffectFactory * effectFactory)
 		return;
 
 	m_effectFactory = effectFactory;
-	m_effect = m_effectFactory->createEffect();
+	m_effect = m_effectFactory->createEffect(m_sceneView);
 	Q_ASSERT(m_effect != NULL);
 
 	updateEditor();
@@ -754,7 +754,7 @@ bool QShaderEdit::load( const QString& fileName )
 
 	m_effectFactory = EffectFactory::factoryForExtension(fileExtension);
 	if( m_effectFactory ) {
-		m_effect = m_effectFactory->createEffect();
+		m_effect = m_effectFactory->createEffect(m_sceneView);
 		m_effect->load(m_file);
 	}
 

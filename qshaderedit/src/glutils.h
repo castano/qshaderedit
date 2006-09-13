@@ -18,7 +18,7 @@ class GLThread : public QThread
 	QGLPixelBuffer m_pbuffer;
 	
 public:
-	GLThread() : m_pbuffer(QSize(1,1), QGLContext::currentContext()->format())
+	GLThread(QGLWidget * shareWidget) : m_pbuffer(QSize(1,1), shareWidget->format(), shareWidget)
 	{
 	}
 	
@@ -27,6 +27,6 @@ public:
 		m_pbuffer.makeCurrent();
 	}
 };
-	
+
 
 #endif // GLUTILS_H

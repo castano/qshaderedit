@@ -7,6 +7,9 @@
 #include <QtGui/QIcon>
 #include "highlighter.h"
 
+//#undef Q_ASSERT
+//#define Q_ASSERT(b) do { if(!(b)) __asm__ volatile ("trap"); } while(false)
+
 class QFile;
 class QByteArray;
 class MessagePanel;
@@ -93,7 +96,7 @@ public:
 	virtual QString namePlural() const = 0;
 	virtual QString extension() const = 0;
 	virtual QIcon icon() const = 0;
-	virtual Effect * createEffect() const = 0;
+	virtual Effect * createEffect(QGLWidget * widget) const = 0;
 	
 	virtual QList<Highlighter::Rule> highlightingRules() const = 0;
 	virtual QString multiLineCommentStart() const = 0;

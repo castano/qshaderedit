@@ -602,9 +602,10 @@ class ArbEffectFactory : public EffectFactory
 		return QIcon();
 	}
 	
-	virtual Effect * createEffect() const
+	virtual Effect * createEffect(QGLWidget * widget) const
 	{
 		Q_ASSERT(isSupported());
+		Q_UNUSED(widget);
  		return new ArbEffect(this);
 	}
 

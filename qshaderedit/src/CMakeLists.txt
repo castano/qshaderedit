@@ -2,7 +2,6 @@
 SET(SRCS
 	effect.h
 	effect.cpp
-	glfxeffect.cpp
 	glsleffect.cpp
 	asmeffect.cpp
 	main.cpp
@@ -43,7 +42,7 @@ SET(SRCS
 	imageplugin.cpp)
 
 IF(FOUND_CG)
-	SET(SRCS ${SRCS} cgeffect.cpp cgfxeffect.cpp)
+	SET(SRCS ${SRCS} cgfxeffect.cpp)
 ENDIF(FOUND_CG)
 
 
