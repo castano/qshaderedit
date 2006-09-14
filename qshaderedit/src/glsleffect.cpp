@@ -721,33 +721,18 @@ private:
 
 			int location = glGetUniformLocationARB(m_program, str);
 			
-			// try to get old value
-			bool found = false;
-			for (int n = 0; n < m_parameterArray.count(); n++) {
-				GLSLParameter * param = m_parameterArray[n];
-				if (param && param->name() == name && param->glType() == type) {
-					param->setLocation(location);
-					newParameterArray.append(param);
-					m_parameterArray[n] = NULL; // set param to NULL in old list to avoid it being deleted
-					found = true;
-					break;
-				}
+			// Add parameter
+			if( size == 1 ) {
+				GLSLParameter * param = new GLSLParameter(name, type, location);
+				param->setValue(getParameterValue(param));
+				newParameterArray.push_back(param);
 			}
-
-			if (!found) {
-				// Add parameter
-				if( size == 1 ) {
-					GLSLParameter * param = new GLSLParameter(name, type, location);
+			else {
+				// parameter array.
+				for(int i = 0; i < size; i++) {
+					GLSLParameter * param = new GLSLParameter(name + "[" + QString::number(i) + "]", type, location+i);
 					param->setValue(getParameterValue(param));
 					newParameterArray.push_back(param);
-				}
-				else {
-					// parameter array.
-					for(int i = 0; i < size; i++) {
-						GLSLParameter * param = new GLSLParameter(name + "[" + QString::number(i) + "]", type, location);
-						param->setValue(getParameterValue(param));
-						newParameterArray.push_back(param);
-					}
 				}
 			}
 		}
@@ -937,6 +922,14 @@ private:
 
 	QVariant getParameterValue(const GLSLParameter * param)
 	{
+		// Try to get old value.
+		foreach(const GLSLParameter * p, m_parameterArray) {
+			if( p->name() == param->name() ) {
+				return p->value();
+			}
+		}					
+		
+		// Get default value of the corresponding type.
 		switch( param->glType() ) {
 			case GL_FLOAT:
 			{

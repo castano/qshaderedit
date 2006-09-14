@@ -39,7 +39,7 @@ static void assignVariant(QVariant & to, const QVariant & from)
 	if (from.canConvert(type)) {
 		to = from;
 		to.convert(type);
-	}	
+	}
 }
 
 
@@ -76,9 +76,14 @@ void Parameter::setValue(const QVariant& value)
 		}
 	}
 	
-	// convert strings to GLTexture
-	else if (m_value.userType() == qMetaTypeId<GLTexture>() && value.type() == QVariant::String) {
-		m_value = qVariantFromValue(GLTexture::open(value.toString()));
+	else if (m_value.userType() == qMetaTypeId<GLTexture>()) {
+		// convert strings to GLTexture
+		if (value.type() == QVariant::String) {
+			m_value = qVariantFromValue(GLTexture::open(value.toString()));
+		}
+		else if(value.userType() == qMetaTypeId<GLTexture>()) {
+			m_value = value;
+		}
 	}
 	else if (m_value.isValid()) {
 		// only take new value if it can be converted to the new one.

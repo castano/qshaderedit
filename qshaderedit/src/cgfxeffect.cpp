@@ -102,6 +102,7 @@ namespace {
 	class CgParameter : public Parameter
 	{
 	private:
+		QString m_internalName;
 		CGparameter m_handle;
 		bool m_visible;
 		bool m_standard;
@@ -109,26 +110,29 @@ namespace {
 	public:
 		CgParameter() {}
 		
-		CgParameter(CGparameter h) : m_handle(h), m_visible(true), m_standard(false)
+		CgParameter(CGparameter h, QVariant value) : m_handle(h), m_visible(true), m_standard(false)
 		{
 			Q_ASSERT(h != NULL);
-			setName(cgGetParameterName(m_handle));
-			setValue(getParameterValue(m_handle));
+			
+			m_internalName = cgGetParameterName(m_handle);
+			setName(m_internalName);
+			
+			if (value.isValid()) setValue(value);
+			else setValue(getParameterValue(m_handle));
 			
 			readAnnotations();
 			readSemantic();
 			setVisibility();
-			
-			// load texture.
-			if( cgGetParameterClass(m_handle) == CG_PARAMETERCLASS_SAMPLER )
-			{
-				setValue(qVariantFromValue(GLTexture::open(value().toString())));
-			}
 		}
 
 		CGparameter handle() const
 		{
 			return m_handle;
+		}
+		
+		const QString & internalName() const
+		{
+			return m_internalName;
 		}
 		
 		virtual int rows() const
@@ -796,14 +800,15 @@ private:
 		{
 			if(cgIsParameterUsed(parameter, m_effect))
 			{
-				CgParameter * cgParameter = new CgParameter(parameter);
-				
 				// Try to get the old value.
+				QVariant value;
 				foreach(const CgParameter * p, m_parameterArray) {
-					if( p->name() == cgParameter->name() ) {
-						cgParameter->setValue(p->value());
+					if( p->internalName() == cgGetParameterName(parameter) ) {
+						value = p->value();
 					}
-				}					
+				}
+				
+				CgParameter * cgParameter = new CgParameter(parameter, value);
 				
 				// Add non hidden and non standard parameters.
 				if(!cgParameter->isHidden() && !cgParameter->isStandard()) {
@@ -964,7 +969,7 @@ class CgFxEffectFactory : public EffectFactory
 		rule.type = Highlighter::BuiltinFunction;
 		rule.pattern = QRegExp(
 			"\\b(abs|acos|all|any|asin|atan|atan2|ceil|clamp|cos|cosh|cross|degrees|determinant|dot|floor|length|lerp|"
-			"max|min|mul|radians|reflect|refract|round|saturate|sin|sinh|tan|tanh|transpose|"
+			"max|min|mul|normalize|radians|reflect|refract|round|saturate|sin|sinh|tan|tanh|transpose|"
 			"tex1D(proj)?|tex2D(proj)?|texRECT(proj)?|tex3D(proj)?|texCUBE(proj)?|"
 			"offsettex2D|offsettexRECT|offsettex2DScaleBias|offsettexRECTScaleBias|tex1D_dp3|tex2D_dp3x2|"
 			"texRECT_dp3x2|tex3D_dp3x3|texCUBE_dp3x3|texCUBE_reflect_dp3x3|texCUBE_reflect_eye_dp3x3|tex_dp3x2_depth|"

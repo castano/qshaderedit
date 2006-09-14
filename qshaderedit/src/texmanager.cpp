@@ -16,7 +16,7 @@ public:
 		glGenTextures(1, &m_object);
 		
 		// load default texture
-		m_name = "default.png";
+		m_name = "";
 		QImage image = ImagePluginManager::load(":images/default.png", m_object, &m_target);
 		m_image = QPixmap::fromImage(image);
 		m_icon = QPixmap::fromImage(image.scaled(16, 16, Qt::KeepAspectRatio, Qt::FastTransformation));

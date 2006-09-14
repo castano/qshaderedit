@@ -10,15 +10,14 @@ Parameter panel:
 - Add intenger and bool parameter config dialogs.
 
 Textures:
-- argh, texture parameters are not preseved after compilation!
-- lazy load textures to avoid double loading, and unnecesary load of default texture.
+- load and save texture paths relative to the effect.
 - add dds image plugin.
 - add noise plugin to generate noise texture.
 - add support for procedural texture generation.
 - get supported texture extensions from QImageReader::supported...
 
 Effects:
-- Fix GL threading on linux. Test on windows.
+- Fix threading on linux, solve Xlib problems.
 - add support for matrix parameters in cgfx.
 - add support for texture parameters in ARB programs.
 - add support for custom xml effect file format.
