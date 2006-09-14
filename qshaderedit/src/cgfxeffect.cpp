@@ -434,6 +434,8 @@ public:
 		m_animated(false),
 		m_thread(this, widget)
 	{
+		widget->makeCurrent();
+
 		m_context = cgCreateContext();
 
 		cgGLSetManageTextureParameters(m_context, true);
