@@ -189,7 +189,7 @@ void QGLView::paintGL()
 	
 	if( m_scene != NULL ) {
 	
-		if( m_effect != NULL && m_effect->isValid() ) {
+		if( m_effect != NULL && m_effect->isValid() && !m_effect->isBuilding() ) {
 		
 			// Setup ligh parameters @@ Move this to scene->setup() or begin()
 			float light_vector[4] = {1.2f/sqrt(3.08f), 1.0f/sqrt(3.08f), 0.8f/sqrt(3.08f), 0.0f};

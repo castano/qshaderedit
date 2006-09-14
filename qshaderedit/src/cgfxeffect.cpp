@@ -416,7 +416,7 @@ private:
 		}
 		void run() 
 		{
-			//makeCurrent();
+			makeCurrent();
 			m_effect->threadedBuild();
 		}
 	};
@@ -534,6 +534,10 @@ public:
 	
 	void threadedBuild()
 	{
+		freeEffect();
+
+		emit infoMessage(tr("Compiling cg effect..."));
+		
 		QString includeOption = "-I" + m_effectPath;
 		const char * options[] = { includeOption.toAscii(), NULL };
 		
@@ -577,36 +581,32 @@ public:
 	//		printf("%s\n", cgGetErrorString(error));
 	//	}
 
-	//	initParameters();
-	//	emit built(true);
+		initParameters();
+		emit built(true);
 	}
 	
 	// Compilation.
 	virtual void build(bool threaded)
 	{
-		freeEffect();
-
-		emit infoMessage(tr("Compiling cg effect..."));
-
+#if defined(Q_OS_LINUX)
+		threaded = false;
+#endif
+		
 		if (threaded) {
 			m_thread.start();
 			
-			while(m_thread.isRunning()) {
+			/*while(m_thread.isRunning()) {
 				QCoreApplication::processEvents();
 			}
 			
-			if(m_effect != NULL) {
-				initParameters();
-			}
-			emit built(true);
+			if(m_effect != NULL) initParameters();
+			emit built(true);*/
 		}
 		else {
 			threadedBuild();
 			
-			if(m_effect != NULL) {
-				initParameters();
-			}
-			emit built(true);
+			/*if(m_effect != NULL) initParameters();
+			emit built(true);*/
 		}
 	}
 	

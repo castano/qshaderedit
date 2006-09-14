@@ -4,6 +4,7 @@
 #include "outputparser.h"
 #include "texmanager.h"
 #include "parameter.h"
+#include "glutils.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>	// !!!
@@ -293,25 +294,45 @@ private:
 
 	OutputParser* m_outputParser;
 
+	// Builder thread.
+	class BuilderThread : public GLThread
+	{
+		GLSLEffect * m_effect;
+		public:
+			BuilderThread(GLSLEffect * effect, QGLWidget * widget) : GLThread(widget), m_effect(effect)
+			{
+			}
+			void run() 
+			{
+				makeCurrent();
+				m_effect->threadedBuild();
+			}
+	};
+	friend class BuilderThread;
+	BuilderThread m_thread;
+	
 public:
 
 	// Ctor.
-	GLSLEffect(const EffectFactory * factory) : Effect(factory),
+	GLSLEffect(const EffectFactory * factory, QGLWidget * widget) : Effect(factory),
 		m_vertexShader(0),
 		m_fragmentShader(0),
 		m_program(0),
 		m_vertexShaderText(s_vertexShaderText),
 		m_fragmentShaderText(s_fragmentShaderText),
 		m_timeUniform(-1),
-		m_outputParser(0)
+		m_outputParser(0),
+		m_thread(this, widget)
 	{
-		m_time.start();
-
+		widget->makeCurrent();
+		
 		const char* vendor = (const char*)glGetString(GL_VENDOR);
 		if (strcmp(vendor, "ATI Technologies Inc.") == 0)
 			m_outputParser = new AtiGlslOutputParser;
 		else if (strcmp(vendor, "NVIDIA Corporation") == 0)
 			m_outputParser = new NvidiaOutputParser;
+		
+		m_time.start();
 	}
 
 	// Dtor.
@@ -451,11 +472,11 @@ public:
 		}
 	}
 
-	virtual void build(bool threaded)
+	void threadedBuild()
 	{
 		// Delete previous effect.
 		deleteProgram();
-
+		
 		Q_ASSERT( m_vertexShader == 0 );
 		m_vertexShader = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
 
@@ -467,7 +488,7 @@ public:
 		glShaderSourceARB(m_vertexShader, 1, vertexStrings, NULL);
 		glCompileShaderARB(m_vertexShader);
 
-		QCoreApplication::processEvents();
+		//QCoreApplication::processEvents();
 		
 		// Get error log.
 		QByteArray infoLog;
@@ -482,7 +503,7 @@ public:
 		glShaderSourceARB(m_fragmentShader, 1, fragmentStrings, NULL);
 		glCompileShaderARB(m_fragmentShader);
 
-		QCoreApplication::processEvents();
+		//QCoreApplication::processEvents();
 		
 		// Get error log.
 		infoLog.clear();
@@ -533,6 +554,20 @@ public:
 		initParameters();
 
 		emit built(true);
+	}
+	
+	virtual void build(bool threaded)
+	{
+#if defined(Q_OS_LINUX)
+		threaded = false;
+#endif
+		
+		if (threaded) {
+			m_thread.start();
+		}
+		else {
+			threadedBuild();
+		}
 	}
 	
 	virtual bool isBuilding() const 
@@ -1190,8 +1225,7 @@ class GLSLEffectFactory : public EffectFactory
 	virtual Effect * createEffect(QGLWidget * widget) const
 	{
 		Q_ASSERT(isSupported());
-		Q_UNUSED(widget);
- 		return new GLSLEffect(this);
+ 		return new GLSLEffect(this, widget);
 	}
 
 	QList<Highlighter::Rule> highlightingRules() const
