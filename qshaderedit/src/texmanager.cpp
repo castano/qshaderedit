@@ -16,18 +16,15 @@ public:
 		glGenTextures(1, &m_object);
 		
 		// load default texture
-		m_name = "";
-		QImage image = ImagePluginManager::load(":images/default.png", m_object, &m_target);
-		m_image = QPixmap::fromImage(image);
-		m_icon = QPixmap::fromImage(image.scaled(16, 16, Qt::KeepAspectRatio, Qt::FastTransformation));
+		m_image = ImagePluginManager::load(":images/default.png", m_object, &m_target);
+		m_icon = m_image.scaled(16, 16, Qt::KeepAspectRatio, Qt::FastTransformation);
 	}
 	Private(const QString & name) : m_name(name)
 	{
 		glGenTextures(1, &m_object);
 		
-		QImage image = ImagePluginManager::load(m_name, m_object, &m_target);
-		m_image = QPixmap::fromImage(image);
-		m_icon = QPixmap::fromImage(image.scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+		m_image = ImagePluginManager::load(m_name, m_object, &m_target);
+		m_icon = m_image.scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 	}
 	~Private()
 	{
@@ -45,8 +42,8 @@ public:
 	const QString & name() const { return m_name; }
 	GLuint object() const { return m_object; }
 	GLuint target() const { return m_target; }
-	QPixmap icon() const { return m_icon; }
-	QPixmap image() const { return m_image; }
+	QImage icon() const { return m_icon; }
+	QImage image() const { return m_image; }
 
 	static QMap<QString, GLTexture::Private *> s_textureMap;
 
@@ -55,8 +52,8 @@ private:
 	GLuint m_object;
 	GLuint m_target;
 
-	QPixmap m_icon;
-	QPixmap m_image;
+	QImage m_icon;
+	QImage m_image;
 };
 
 //static
@@ -116,12 +113,12 @@ GLuint GLTexture::target() const
 	return m_data->target();
 }
 
-QPixmap GLTexture::icon() const
+QImage GLTexture::icon() const
 {
 	return m_data->icon();
 }
 
-QPixmap GLTexture::image() const
+QImage GLTexture::image() const
 {
 	return m_data->image();
 }

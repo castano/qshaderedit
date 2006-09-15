@@ -388,7 +388,7 @@ void ParameterEditor::openParameterSettings()
 		dialog.setMinFilter(tex.minifyingFilter());
 		dialog.setMagFilter(tex.magnificationFilter());
 		dialog.descriptionEdit->setText(m_param->description());
-		dialog.previewLabel->setPixmap(tex.image());
+		dialog.previewLabel->setPixmap(QPixmap::fromImage(tex.image()));
 
 		if (dialog.exec()) {
 			tex.setWrapMode(dialog.wrapS(), dialog.wrapT());

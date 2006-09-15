@@ -23,8 +23,8 @@ public:
 	const QString& name() const;
 	GLuint object() const;
 	GLuint target() const;
-	QPixmap icon() const;
-	QPixmap image() const;
+	QImage icon() const;
+	QImage image() const;
 
 	
 	GLint wrapS() const;
