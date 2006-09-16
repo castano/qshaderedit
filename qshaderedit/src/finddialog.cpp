@@ -25,8 +25,8 @@ QString FindDialog::searchText() const
 
 FindDialog::Direction FindDialog::direction() const
 {
-	if(ui.forwardRadioButton->isDown()) return Direction_Forward;
-	/*if(ui.backwardRadioButton.isDown())*/ return Direction_Backward;
+	if(ui.backwardRadioButton->isChecked()) return Direction_Backward;
+	/*if(ui.forwardRadioButton->isChecked())*/ return Direction_Forward;
 }
 
 bool FindDialog::wholeWord() const

@@ -2,6 +2,7 @@
 #define EDITOR_H
 
 #include <QtGui/QTabWidget>
+#include <QtGui/QTextDocument>
 
 class QTextEdit;
 
@@ -52,6 +53,11 @@ protected slots:
 
 private:
 	QFont m_font;
+	
+	// @@ This should be pdata, so that QTextDocument is not included in the header
+	QString lastSearch;
+	QTextDocument::FindFlags lastSearchOptions;
+	
 };
 
 

@@ -9,6 +9,9 @@
 #include <QtGui/QTextCursor>
 #include <QtGui/QTextLayout>
 #include <QtGui/QTextBlock>
+//#include <QtGui/QTextDocument>
+#include <QtGui/QMessageBox>
+
 
 Editor::Editor(QWidget * parent) : QTabWidget(parent) 
 {
@@ -107,8 +110,21 @@ void Editor::findDialog()
 {
 	FindDialog dialog(this);
 	
+	// @@ Get current selection and set default value.
+	
 	int result = dialog.exec();
 	if( result == QDialog::Accepted ) {
+		
+		lastSearch = dialog.searchText();
+		
+		lastSearchOptions = 0;
+		if( dialog.caseSensitive() ) lastSearchOptions |= QTextDocument::FindCaseSensitively;
+		if( dialog.wholeWord() ) lastSearchOptions |= QTextDocument::FindWholeWords;
+		if( dialog.direction() == FindDialog::Direction_Backward ) lastSearchOptions |= QTextDocument::FindBackward;
+		
+		if(!currentTextEdit()->find(lastSearch, lastSearchOptions)) {
+			QMessageBox::information(this, tr("Find"), tr("String '%0' not found").arg(lastSearch));
+		}
 	}
 }
 
@@ -116,13 +132,24 @@ void Editor::gotoDialog()
 {
 	GotoDialog dialog(this);
 	
+	// @@ get current line and set default value.
+	
 	int result = dialog.exec();
 	if( result == QDialog::Accepted ) {
+		gotoLine(currentIndex(), dialog.line());
 	}
 }
 
 void Editor::findNext()
 {
+	if( lastSearch == "" ) {
+		findDialog();
+	}
+	else {
+		if(!currentTextEdit()->find(lastSearch, lastSearchOptions)) {
+			QMessageBox::information(this, tr("Find Next"), tr("String '%0' not found").arg(lastSearch)); 
+		}
+	}
 }
 
 void Editor::onCurrentChanged(int idx)
