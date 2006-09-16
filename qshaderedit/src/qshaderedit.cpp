@@ -148,7 +148,7 @@ void QShaderEdit::createActions()
 	
 	m_findNextAction = new QAction(tr("&Find Next"), this);
 	m_findNextAction->setEnabled(false);
-#if Q_OS_DARWIN
+#ifdef Q_WS_MAC
 	m_findNextAction->setShortcut(tr("Ctrl+G"));
 #else
 	m_findNextAction->setShortcut(tr("F3"));
@@ -157,7 +157,7 @@ void QShaderEdit::createActions()
 	
 	m_findPreviousAction = new QAction(tr("&Find Previous"), this);
 	m_findPreviousAction->setEnabled(false);
-#if Q_OS_DARWIN
+#ifdef Q_WS_MAC
 	m_findPreviousAction->setShortcut(tr("Shift+Ctrl+G"));
 #else
 	m_findPreviousAction->setShortcut(tr("Shift+F3"));
