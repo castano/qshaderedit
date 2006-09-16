@@ -22,6 +22,10 @@ QString FindDialog::searchText() const
 {
 	return ui.findComboBox->currentText();
 }
+void FindDialog::setSearchText(const QString & str)
+{
+	ui.findComboBox->addItem(str);
+}
 
 FindDialog::Direction FindDialog::direction() const
 {

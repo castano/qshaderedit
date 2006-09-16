@@ -111,6 +111,11 @@ void Editor::findDialog()
 	FindDialog dialog(this);
 	
 	// @@ Get current selection and set default value.
+	QTextCursor cursor = currentTextEdit()->textCursor();
+	QString selection = cursor.selectedText();
+	if( selection != "" ) {
+		dialog.setSearchText(selection);
+	}
 	
 	int result = dialog.exec();
 	if( result == QDialog::Accepted ) {
@@ -122,7 +127,7 @@ void Editor::findDialog()
 		if( dialog.wholeWord() ) lastSearchOptions |= QTextDocument::FindWholeWords;
 		if( dialog.direction() == FindDialog::Direction_Backward ) lastSearchOptions |= QTextDocument::FindBackward;
 		
-		if(!currentTextEdit()->find(lastSearch, lastSearchOptions)) {
+		if( !find(lastSearch, lastSearchOptions) ) {
 			QMessageBox::information(this, tr("Find"), tr("String '%0' not found").arg(lastSearch));
 		}
 	}
@@ -146,10 +151,42 @@ void Editor::findNext()
 		findDialog();
 	}
 	else {
-		if(!currentTextEdit()->find(lastSearch, lastSearchOptions)) {
+		if( !find(lastSearch, lastSearchOptions) ) {
 			QMessageBox::information(this, tr("Find Next"), tr("String '%0' not found").arg(lastSearch)); 
 		}
 	}
+}
+
+void Editor::findPrevious()
+{
+	if( lastSearch == "" ) {
+		findDialog();
+	}
+	else {
+		if( !find(lastSearch, lastSearchOptions ^ QTextDocument::FindBackward) ) {
+			QMessageBox::information(this, tr("Find Previous"), tr("String '%0' not found").arg(lastSearch)); 
+		}
+	}	
+}
+
+bool Editor::find(const QString & text, QTextDocument::FindFlags flags/*=0*/)
+{
+	QTextCursor cursor = currentTextEdit()->textCursor();
+	
+	if( flags & QTextDocument::FindBackward )
+	{
+		// Move cursor to the beginning of selection.
+		cursor.setPosition(cursor.selectionStart());
+		currentTextEdit()->setTextCursor(cursor);
+	}
+	else
+	{
+		// Move cursor to the end of selection.
+		cursor.setPosition(cursor.selectionEnd());
+		currentTextEdit()->setTextCursor(cursor);
+	}
+	
+	return currentTextEdit()->find(text, flags);
 }
 
 void Editor::onCurrentChanged(int idx)

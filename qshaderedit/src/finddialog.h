@@ -20,6 +20,8 @@ class FindDialog : public QDialog
 		FindDialog(QWidget *parent = 0, bool forward = true);
 		
 		QString searchText() const;
+		void setSearchText(const QString & str);
+		
 		Direction direction() const;
 		bool wholeWord() const;
 		bool caseSensitive() const;

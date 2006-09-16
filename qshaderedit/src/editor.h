@@ -32,6 +32,7 @@ public slots:
 	void findDialog();
 	void gotoDialog();
 	void findNext();
+	void findPrevious();
 	
 signals:
 	void cursorPositionChanged();
@@ -45,6 +46,8 @@ protected:
 	virtual void tabInserted(int index);
 	virtual void tabRemoved(int index);
 
+	bool find(const QString & text, QTextDocument::FindFlags flags=0);
+	
 protected slots:
 	void onCurrentChanged(int idx);
 	void onCopyAvailable(bool available);
