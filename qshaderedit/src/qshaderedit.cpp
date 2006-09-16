@@ -148,8 +148,21 @@ void QShaderEdit::createActions()
 	
 	m_findNextAction = new QAction(tr("&Find Next"), this);
 	m_findNextAction->setEnabled(false);
+#if Q_OS_DARWIN
+	m_findNextAction->setShortcut(tr("Ctrl+G"));
+#else
 	m_findNextAction->setShortcut(tr("F3"));
+#endif
 	connect(m_findNextAction, SIGNAL(triggered()), m_editor, SLOT(findNext()));
+	
+	m_findPreviousAction = new QAction(tr("&Find Previous"), this);
+	m_findPreviousAction->setEnabled(false);
+#if Q_OS_DARWIN
+	m_findPreviousAction->setShortcut(tr("Shift+Ctrl+G"));
+#else
+	m_findPreviousAction->setShortcut(tr("Shift+F3"));
+#endif
+	connect(m_findPreviousAction, SIGNAL(triggered()), m_editor, SLOT(findPrevious()));
 	
 	m_gotoAction = new QAction(tr("&Goto"), this);
 	m_gotoAction->setEnabled(false);
@@ -232,6 +245,7 @@ void QShaderEdit::createMenus()
 	
 	editMenu->addAction(m_findAction);
 	editMenu->addAction(m_findNextAction);
+	editMenu->addAction(m_findPreviousAction);
 	editMenu->addAction(m_gotoAction);
 	
 	QMenu * viewMenu = menuBar()->addMenu(tr("&View"));
@@ -449,6 +463,7 @@ void QShaderEdit::updateActions()
 	
 	m_findAction->setEnabled(true);
 	m_findNextAction->setEnabled(true);
+	m_findPreviousAction->setEnabled(true);
 	m_gotoAction->setEnabled(true);
 
 	QString fileName;

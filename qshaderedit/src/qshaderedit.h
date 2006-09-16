@@ -128,6 +128,7 @@ private:
 	
 	QAction * m_findAction;
 	QAction * m_findNextAction;
+	QAction * m_findPreviousAction;
 	QAction * m_gotoAction;
 	
 	// Timers.
