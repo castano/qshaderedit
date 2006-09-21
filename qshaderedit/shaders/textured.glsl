@@ -5,7 +5,7 @@ varying vec3 v_N;
 void main () {
 	gl_Position = ftransform();
 	gl_TexCoord[0] = gl_MultiTexCoord0;
-	v_V = (gl_ModelViewMatrix[3] - gl_Vertex).xyz;
+	v_V = (gl_ModelViewMatrix * gl_Vertex).xyz;
 	v_N = gl_NormalMatrix * gl_Normal;
 }
 
@@ -32,3 +32,4 @@ void main () {
 }
 
 [Parameters]
+sampler2D tex = load("");

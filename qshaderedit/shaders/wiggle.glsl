@@ -12,7 +12,7 @@ void main () {
 	float wiggleY = cos(gl_Vertex.y * freq.y + time) * scale.y;
 
 	gl_Position = gl_ModelViewProjectionMatrix * vec4(gl_Vertex.x + wiggleY, gl_Vertex.y + wiggleX, gl_Vertex.z, gl_Vertex.w);
-	v_V = (gl_ModelViewMatrix[3] - gl_Vertex).xyz;
+	v_V = (gl_ModelViewMatrix * gl_Vertex).xyz;
 	v_N = gl_NormalMatrix * gl_Normal;
 }
 [FragmentShader]

@@ -6,8 +6,6 @@ float4x4 mvp : ModelViewProjection;
 float4x4 mv : ModelView;
 float3x3 normalMatrix : ModelViewInverseTranspose;
 
-static float3 eye = mv[3].xyz;
-
 struct VertexInput {
 	float4 position : POSITION;
 	float3 normal : NORMAL;
@@ -24,7 +22,7 @@ VertexOutput vp(VertexInput input)
 	VertexOutput output;
 	output.position = mul(input.position, mvp);
 	output.normal = mul(input.normal, normalMatrix);
-	output.view = eye - input.position.xyz;
+	output.view = mul(input.position, mv).xyz;
 	return output;
 }
 
@@ -50,7 +48,7 @@ float4 fp_blinn(VertexOutput input) : COLOR
 
 	float3 ambient = color * amb;
 	float3 diffuse = color * (1.0 - amb) * saturate(dot(L, N));
-	float3 specular = pow(saturate(dot(H, N)), exponent * 2.0f);
+	float3 specular = pow(saturate(dot(H, N)), exponent * 4.0f);
 
 	return float4(ambient + diffuse + specular, 1.0);
 }
