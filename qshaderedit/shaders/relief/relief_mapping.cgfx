@@ -77,7 +77,7 @@ sampler2D color_map = sampler_state
 sampler2D relief_map = sampler_state
 {
 //	Texture = <relief_map_tex>;
-	MinFilter = LinearMipmapLinear;
+	MinFilter = Linear;
 	MagFilter = Linear;
 };
 
@@ -168,7 +168,8 @@ float4 normal_mapping(v2f input, float2 texcoord)
 	N = 2 * N - 1;
 //	N = normalize(2 * N - 1);
 	N.z = sqrt(1.0 - dot(N.xy, N.xy));
-	N.x = -N.x;
+	N.x = -N.x * 2;
+	N = normalize(N);
 //	N = float3(0, 0, 1);
 	
 
@@ -203,20 +204,20 @@ float4 normal_mapping(v2f input, float2 texcoord)
 // and sqrt of cone ratio stored in blue channel
 void ray_intersect_cone(inout float3 p, float3 v)
 {
-	const int num_steps=10;
+	const int num_steps=15;
 	
 	float dist=length(v.xy);
 	
-	for( int i=0;i<num_steps;i++ )
+	for(int i = 0; i < num_steps; i++)
 	{
 		float4 tex = tex2D(relief_map, p.xy);
 		
-		float height = max(0, tex.w - p.z);
+//		float height = max(0, tex.w - p.z);
+		float height = saturate(tex.w - p.z);
 
-		float cone_ratio = tex.z*tex.z;
+		float cone_ratio = tex.z * tex.z;
 		
-		p += v * height * cone_ratio / 
-			(cone_ratio + dist);
+		p += v * height * cone_ratio / (cone_ratio + dist);
 	}
 }
 
@@ -233,8 +234,12 @@ void ray_intersect_relief(inout float3 p, float3 v)
 	for( i=0;i<num_steps_lin;i++ )
 	{
 		float4 tex = tex2D(relief_map, p.xy);
-		if (p.z<tex.w)
+		if (p.z<tex.w) {
 			p+=v;
+		}
+		else {
+			//break;
+		}
 	}
 	
 	for( i=0;i<num_steps_bin;i++ )
@@ -252,8 +257,8 @@ void ray_intersect_relief(inout float3 p, float3 v)
 // depth value stored in alpha channel (black at is object surface)
 void ray_intersect_interval(inout float3 p, float3 v)
 {
-	const int num_steps_lin = 9;
-	const int num_steps_bin = 4;
+	const int num_steps_lin = 10;
+	const int num_steps_bin = 3;
 
 	v /= (v.z * num_steps_lin);
 	
@@ -262,7 +267,7 @@ void ray_intersect_interval(inout float3 p, float3 v)
 	h0 = tex2D(relief_map, p.xy).a;
 	float3 pv = p + v;
 
-	for(int i = 0; i < num_steps_lin; i++)
+	for(int i = 1; i < num_steps_lin; i++)
 	{
 		h1 = tex2D(relief_map, pv.xy).a;
 
@@ -271,18 +276,18 @@ void ray_intersect_interval(inout float3 p, float3 v)
 			h0 = h1;
 			pv = p + v;
 		}
-		else break;
+		else {
+			//break;
+		}
 	}
+
+	float t = (h0 - p.z) / (v.z - h1 + h0);
+	pv = p + v * saturate(t);
 
 	// Refine solution.
 	for(int i = 0; i < num_steps_bin; i++)
 	{
-		float t = (h0 - p.z) / (v.z - h1 + h0);
-		pv = p + v * t;
-
 		float h = tex2D(relief_map, pv.xy).a;
-
-		if( abs(h - pv.z) < 0.01 ) break;
 
 		if (h < pv.z) {
 			h1 = h;
@@ -293,6 +298,9 @@ void ray_intersect_interval(inout float3 p, float3 v)
 			v *= (1 - t);
 			p = pv;
 		}
+
+		t = (h0 - p.z) / (v.z - h1 + h0);
+		pv = p + v * saturate(t);
 	}
 
 	p = pv;
@@ -374,19 +382,6 @@ float4 pixel_shader_normal(v2f input) : COLOR
 }
 
 
-technique cone_mapping
-{
-    pass p0 
-    {
-   		VertexProgram = compile arbvp1 vertex_shader();
-		FragmentProgram  = compile fp40 pixel_shader_cone();
-		AlphaTestEnable = true;
-		AlphaFunc = float2(GEqual, 0.1);
-		CullFaceEnable = true;
-		CullFace = Front;
-    }
-}
-
 technique relief_mapping
 {
     pass p0 
@@ -406,6 +401,19 @@ technique interval_mapping
     {
 		VertexProgram = compile arbvp1 vertex_shader();
 		FragmentProgram  = compile fp40 pixel_shader_interval();
+		AlphaTestEnable = true;
+		AlphaFunc = float2(GEqual, 0.1);
+		CullFaceEnable = true;
+		CullFace = Front;
+    }
+}
+
+technique cone_mapping
+{
+    pass p0 
+    {
+   		VertexProgram = compile arbvp1 vertex_shader();
+		FragmentProgram  = compile fp40 pixel_shader_cone();
 		AlphaTestEnable = true;
 		AlphaFunc = float2(GEqual, 0.1);
 		CullFaceEnable = true;
