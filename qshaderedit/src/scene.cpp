@@ -123,7 +123,7 @@ public:
 		
 		if( hasMultiTexture ) {
 			glMultiTexCoord3f(GL_TEXTURE6, 1, 0, 0);
-			glMultiTexCoord3f(GL_TEXTURE7, 0, 1, 0);
+			glMultiTexCoord3f(GL_TEXTURE7, 0, -1, 0);
 		}
 		
 		for(int i = 0; i < 15; i++) {
