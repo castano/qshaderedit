@@ -2,11 +2,16 @@
 #include "qshaderedit.h"
 
 #include <QtGui/QApplication>
+#include <QtGui/QPlastiqueStyle>
 
 int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
 
+#if Q_OS_WIN32
+	app.setStyle(new QPlastiqueStyle());
+#endif
+	
 	QString filename;
 	if (qApp->arguments().size() > 1) {
 		filename = qApp->arguments().at(1);
