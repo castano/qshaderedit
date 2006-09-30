@@ -4,11 +4,20 @@
 #include <QtGui/QApplication>
 #include <QtGui/QPlastiqueStyle>
 
+#if defined(Q_WS_X11)
+//#include <X11/Xlib.h>
+#endif
+
 int main(int argc, char **argv)
 {
+#if defined(Q_WS_X11)
+	// Apparently this is done inside QApplication already.
+//	XInitThreads();
+#endif
+	
     QApplication app(argc, argv);
 
-#if Q_OS_WIN32
+#if defined(Q_WS_WIN)
 	app.setStyle(new QPlastiqueStyle());
 #endif
 	
@@ -29,6 +38,5 @@ int main(int argc, char **argv)
 	}
 	*/
 	
-	//app.setApplicationName(QApplication::tr("QShaderEditor"));
     return app.exec();
 }
