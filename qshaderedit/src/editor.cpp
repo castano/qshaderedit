@@ -13,7 +13,51 @@
 #include <QtGui/QMessageBox>
 
 
-Editor::Editor(QWidget * parent) : QTabWidget(parent) 
+SourceEdit::SourceEdit(QWidget * parent): QTextEdit(parent)
+{
+}
+
+void SourceEdit::keyPressEvent(QKeyEvent * event)
+{
+	QTextEdit::keyPressEvent(event);
+	if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+	{
+		QTextCursor cursor = this->textCursor();
+		QTextBlock prevBlock = cursor.block().previous();
+		if (prevBlock.isValid()) {
+			QString text = prevBlock.text();
+			QString indentStr("");
+			for (int n = 0; text[n].isSpace(); n++)
+				indentStr += text[n];
+
+			// increase indent
+			text = text.trimmed();
+			QRegExp rx("^(if|else|while|for).*");
+			if (text.endsWith('{') || rx.exactMatch(text))
+				indentStr += '\t';
+			cursor.insertText(indentStr);
+		}
+	}
+	else if (event->key() == Qt::Key_BraceRight)
+	{
+		// decrease indent
+		QTextCursor cursor = this->textCursor();
+		cursor.movePosition(QTextCursor::Left);
+		if (cursor.block().text().endsWith("\t}"))
+			cursor.deletePreviousChar();
+	}
+	else if (event->key() == Qt::Key_BraceLeft)
+	{
+		// decrease indent
+		QTextCursor cursor = this->textCursor();
+		cursor.movePosition(QTextCursor::Left);
+		if (cursor.block().text().endsWith("\t{"))
+			cursor.deletePreviousChar();		
+	}
+}
+
+
+Editor::Editor(QWidget * parent) : QTabWidget(parent)
 {
 	tabBar()->hide();
 
@@ -221,7 +265,7 @@ void Editor::onRedoAvailable(bool available)
 
 QTextEdit * Editor::addEditor(const QString & name)
 {
-	QTextEdit * textEdit = new QTextEdit();
+	SourceEdit * textEdit = new SourceEdit();
 	this->addTab(textEdit, name);
 	textEdit->setFont(m_font);
 	textEdit->setLineWrapMode(QTextEdit::NoWrap);

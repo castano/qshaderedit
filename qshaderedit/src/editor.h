@@ -3,6 +3,7 @@
 
 #include <QtGui/QTabWidget>
 #include <QtGui/QTextDocument>
+#include <QtGui/QTextEdit>
 
 class QTextEdit;
 
@@ -65,5 +66,15 @@ private:
 };
 
 
+class SourceEdit : public QTextEdit
+{
+Q_OBJECT
+
+public:
+	SourceEdit(QWidget * parent = 0);
+
+protected:
+	void keyPressEvent(QKeyEvent * event);
+};
 
 #endif // EDITOR_H
