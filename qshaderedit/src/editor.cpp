@@ -40,26 +40,20 @@ QTextEdit * Editor::currentTextEdit() const
 
 int Editor::line() const
 {
-	// None of these work...
-//	return currentTextEdit()->cursorRect(currentTextEdit()->textCursor()).y();
-	/*
-	int position = currentTextEdit()->textCursor().position();
-	
-	QTextBlock block = currentTextEdit()->document()->findBlock(position);
-//	qDebug() << block.contains(position);
-//	qDebug() << block.text();
-	
-	QTextLayout * layout = block.layout();
-	Q_ASSERT(layout != NULL);
-	//qDebug() << layout->text();
-	qDebug() << layout->lineCount();
-	
-//	qDebug() << layout->text();
-//	return layout->lineForTextPosition(position).lineNumber();
-	
-	return position;
-	*/
+#if QT_VERSION >= 0x040200
+    return currentTextEdit()->textCursor().blockNumber();
+#else
 	return 0;
+#endif
+}
+
+int Editor::column() const
+{
+#if QT_VERSION >= 0x040200
+	return currentTextEdit()->textCursor().columnNumber();
+#else
+	return 0;
+#endif
 }
 
 // slots.

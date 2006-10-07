@@ -1,6 +1,5 @@
 
 Misc:
-- display line and column numbers to status bar. @@ I need to send an RFE to TT.
 - double compilation still happens on osx and windows...
 
 Parameter panel:

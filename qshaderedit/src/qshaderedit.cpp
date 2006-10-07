@@ -583,7 +583,8 @@ void QShaderEdit::techniqueChanged(int index)
 void QShaderEdit::cursorPositionChanged()
 {
 	int line = m_editor->line();
-	m_positionLabel->setText(QString(tr(" Line: %1 ")).arg(line));
+	int column = m_editor->column();
+	m_positionLabel->setText(QString(tr(" Line: %1  Col: %2")).arg(line).arg(column));
 }
 
 void QShaderEdit::selectScene()

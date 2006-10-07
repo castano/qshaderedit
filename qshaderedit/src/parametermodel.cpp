@@ -103,7 +103,7 @@ QVariant ParameterModel::headerData(int section, Qt::Orientation orientation, in
 QModelIndex ParameterModel::buddy(const QModelIndex & index) const
 {
 	if (index.column() == 0) {
-		return createIndex(index.row(), 1, index.internalId());
+		return createIndex(index.row(), 1, (qint32)index.internalId());
 	}
 	return index;
 }

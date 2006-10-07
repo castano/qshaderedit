@@ -17,6 +17,7 @@ public:
 	QTextEdit * currentTextEdit() const;
 
 	int line() const;
+	int column() const;
 	
 public slots:
 	void undo();
