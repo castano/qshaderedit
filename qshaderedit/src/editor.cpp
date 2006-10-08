@@ -84,20 +84,12 @@ QTextEdit * Editor::currentTextEdit() const
 
 int Editor::line() const
 {
-#if QT_VERSION >= 0x040200
     return currentTextEdit()->textCursor().blockNumber();
-#else
-	return 0;
-#endif
 }
 
 int Editor::column() const
 {
-#if QT_VERSION >= 0x040200
 	return currentTextEdit()->textCursor().columnNumber();
-#else
-	return 0;
-#endif
 }
 
 // slots.
