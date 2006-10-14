@@ -88,8 +88,9 @@ QShaderEdit::QShaderEdit(const QString& filename) :
 	// Make sure the main window is shown before the new file dialog.
 	QApplication::processEvents();
 
-	if (filename.isEmpty() || !load(filename))
+	if (filename.isEmpty() || !load(filename)) {
 		newFile(true);
+	}
 }
 
 QShaderEdit::~QShaderEdit()
@@ -325,7 +326,7 @@ void QShaderEdit::createToolbars()
 	m_techniqueCombo->setInsertPolicy(QComboBox::InsertAtBottom);
 	m_techniqueCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
 	m_techniqueCombo->setEnabled(false);
-	connect(m_techniqueCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(techniqueChanged(int)));
+	connect(m_techniqueCombo, SIGNAL(activated(int)), this, SLOT(techniqueChanged(int)));
 
 	QLabel * techniqueLabel = new QLabel(tr("Technique: "), m_techniqueToolBar);
 	techniqueLabel->setBuddy(m_techniqueCombo);
@@ -353,8 +354,7 @@ void QShaderEdit::createDockWindows()
 	m_sceneViewDock->setObjectName("SceneDock");
 	m_sceneViewDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
-	if( QGLFormat::hasOpenGL() )
-	{
+	if( QGLFormat::hasOpenGL() ) {
 		QGLFormat format;
 		//format.setRgba(true);
 		//format.setAlpha(false);
@@ -387,8 +387,7 @@ bool QShaderEdit::closeEffect()
 		if( m_file != NULL ) {
 			fileName = strippedName(*m_file);
 		}
-		else
-		{
+		else {
 			QString extension = m_effectFactory->extension();
 			fileName = tr("untitled") + "." + extension;
 		}
@@ -531,7 +530,10 @@ void QShaderEdit::updateTechniques()
 		m_techniqueCombo->setEnabled(count > 1);
 		
 		int idx = m_techniqueCombo->findText(lastText);
-		if( idx != -1 ) m_techniqueCombo->setCurrentIndex(idx);
+		if( idx != -1 ) {
+			m_techniqueCombo->setCurrentIndex(idx);
+			m_effect->selectTechnique(idx);
+		}
 	}
 }
 
@@ -636,6 +638,8 @@ void QShaderEdit::newEffect(const EffectFactory * effectFactory)
 	if (!closeEffect())
 		return;
 
+	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
 	m_effectFactory = effectFactory;
 	m_effect = m_effectFactory->createEffect(m_sceneView);
 	Q_ASSERT(m_effect != NULL);
@@ -648,6 +652,8 @@ void QShaderEdit::newEffect(const EffectFactory * effectFactory)
 	// Init scene view.
 	m_sceneView->setEffect(m_effect);
 	build(true);
+
+	QApplication::restoreOverrideCursor();
 }
 
 void QShaderEdit::newFile(bool startup)
@@ -765,6 +771,8 @@ bool QShaderEdit::load( const QString& fileName )
 	if (!m_file->open(QIODevice::ReadOnly))
 		return false;
 
+	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
 	int idx = fileName.lastIndexOf('.');
 	QString fileExtension = fileName.mid(idx+1);
 
@@ -792,6 +800,7 @@ bool QShaderEdit::load( const QString& fileName )
 		m_sceneView->resetEffect();
 	}
 
+	QApplication::restoreOverrideCursor();
 	return true;
 }
 
@@ -948,14 +957,14 @@ void QShaderEdit::keyTimeout()
 	// @@ Set status bar message!
 	statusBar()->showMessage(tr("Compiling..."));
 
-	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+//	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 	
 	updateEffectInputs();
 
 	// Compile the effect.
 	build(false);
 
-	QApplication::restoreOverrideCursor();
+//	QApplication::restoreOverrideCursor();
 }
 
 void QShaderEdit::compileChecked(bool checked)
@@ -975,9 +984,10 @@ void QShaderEdit::build(bool silent)
 
 	m_paramViewDock->clear();
 
+	connect(m_effect, SIGNAL(built()), this, SLOT(built()));	
+	
 	if( silent ) {
 		m_effect->build(false);
-		built(true);
 	}
 	else {
 		// clear messages.
@@ -987,7 +997,6 @@ void QShaderEdit::build(bool silent)
 		connect(m_effect, SIGNAL(infoMessage(QString)), m_logViewDock, SLOT(info(QString)));
 		connect(m_effect, SIGNAL(errorMessage(QString)), m_logViewDock, SLOT(error(QString)));
 		connect(m_effect, SIGNAL(buildMessage(QString,int,OutputParser*)), m_logViewDock, SLOT(log(QString,int,OutputParser*)));
-		connect(m_effect, SIGNAL(built(bool)), this, SLOT(built(bool)));
 		
 		// Stop animation while building.
 		if( m_effect->isAnimated() ) {
@@ -999,16 +1008,16 @@ void QShaderEdit::build(bool silent)
 	}
 }
 
-void QShaderEdit::built(bool succeed)
+void QShaderEdit::built()
 {
 	qDebug() << "Built!";
 	
+	disconnect(m_effect, SIGNAL(built()), this, SLOT(built()));	
 	disconnect(m_effect, SIGNAL(infoMessage(QString)), m_logViewDock, SLOT(info(QString)));
 	disconnect(m_effect, SIGNAL(errorMessage(QString)), m_logViewDock, SLOT(error(QString)));
 	disconnect(m_effect, SIGNAL(buildMessage(QString,int,OutputParser*)), m_logViewDock, SLOT(log(QString,int,OutputParser*)));
-	disconnect(m_effect, SIGNAL(built(bool)), this, SLOT(built(bool)));
 	
-	if( succeed ) {
+	if( m_effect->isValid() ) {
 		statusBar()->showMessage(tr("Compilation succeed."), 2000);
 		m_logViewDock->info(tr("Compilation succeed."));
 	}
@@ -1045,6 +1054,7 @@ void QShaderEdit::loadSettings()
 
 	pref.beginGroup("MainWindow");
 	resize(pref.value("size", QSize(640,480)).toSize());
+	bool maximize = pref.value("maximized", false).toBool();
 	QByteArray state = pref.value("state").toByteArray();
 	if (!state.isEmpty()) {
 		restoreState(state);
@@ -1055,6 +1065,10 @@ void QShaderEdit::loadSettings()
 	m_lastEffect = pref.value("lastEffect", ".").toString();
 	SceneFactory::setLastFile(pref.value("lastScene", ".").toString());
 	ParameterPanel::setLastPath(pref.value("lastParameterPath", ".").toString());
+
+	if (maximize) {
+		setWindowState(windowState() & Qt::WindowMaximized);
+	}
 }
 
 void QShaderEdit::saveSettings()
@@ -1062,6 +1076,7 @@ void QShaderEdit::saveSettings()
 	QSettings pref( "Castano Inc", "QShaderEdit" );
 
 	pref.beginGroup("MainWindow");
+	pref.setValue("maximized", isMaximized());
 	pref.setValue("size", size());
 	pref.setValue("state", saveState());
 	pref.endGroup();

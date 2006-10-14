@@ -310,6 +310,7 @@ public:
 		}		
 	}
 	
+	// @@ Add support for threaded compilation.
 	virtual void build(bool threaded)
 	{
 		deletePrograms();
@@ -330,8 +331,6 @@ public:
 		}
 		glDisable( GL_VERTEX_PROGRAM_ARB );
 		
-		QCoreApplication::processEvents();
-		
 		emit infoMessage(tr("Compiling fragment program..."));
 		glGenProgramsARB( 1, &m_fp );
 		glBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, m_fp );
@@ -348,7 +347,7 @@ public:
 			m_built = true;
 		}
 		
-		emit built(succeed);
+		emit built();
 	}	
 	
 	virtual bool isBuilding() const 

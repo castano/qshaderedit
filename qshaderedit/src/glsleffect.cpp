@@ -28,7 +28,7 @@ namespace {
 		"varying vec3 v_N;\n\n"
 		"void main() {\n"
 		"	gl_Position = ftransform();\n"
-		"	v_V = (gl_ModelViewMatrix[3] - gl_Vertex).xyz;\n"
+		"	v_V = (gl_ModelViewMatrix * gl_Vertex).xyz;\n"
 		"	v_N = gl_NormalMatrix * gl_Normal;\n"
 		"}\n";
 
@@ -298,18 +298,20 @@ private:
 	class BuilderThread : public GLThread
 	{
 		GLSLEffect * m_effect;
-		public:
-			BuilderThread(GLSLEffect * effect, QGLWidget * widget) : GLThread(widget), m_effect(effect)
-			{
-			}
-			void run() 
-			{
-				makeCurrent();
-				m_effect->threadedBuild();
-			}
+	public:
+		BuilderThread(GLSLEffect * effect, QGLWidget * widget) : GLThread(widget), m_effect(effect)
+		{
+		}
+		void run() 
+		{
+			makeCurrent();
+			m_effect->threadedBuild();
+		}
 	};
 	friend class BuilderThread;
 	BuilderThread m_thread;
+	
+	QGLWidget * m_widget;
 	
 public:
 
@@ -322,8 +324,10 @@ public:
 		m_fragmentShaderText(s_fragmentShaderText),
 		m_timeUniform(-1),
 		m_outputParser(0),
-		m_thread(this, widget)
+		m_thread(this, widget), 
+		m_widget(widget)
 	{
+		connect(&m_thread, SIGNAL(finished()), this, SIGNAL(built()));		
 		widget->makeCurrent();
 		
 		const char* vendor = (const char*)glGetString(GL_VENDOR);
@@ -488,8 +492,6 @@ public:
 		glShaderSourceARB(m_vertexShader, 1, vertexStrings, NULL);
 		glCompileShaderARB(m_vertexShader);
 
-		//QCoreApplication::processEvents();
-		
 		// Get error log.
 		QByteArray infoLog;
 		GLint charsWritten, infoLogLength;
@@ -503,8 +505,6 @@ public:
 		glShaderSourceARB(m_fragmentShader, 1, fragmentStrings, NULL);
 		glCompileShaderARB(m_fragmentShader);
 
-		//QCoreApplication::processEvents();
-		
 		// Get error log.
 		infoLog.clear();
 		glGetObjectParameterivARB(m_fragmentShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
@@ -516,14 +516,14 @@ public:
 		GLint vertexCompileSucceed = GL_FALSE;
 		glGetObjectParameterivARB(m_vertexShader, GL_OBJECT_COMPILE_STATUS_ARB, &vertexCompileSucceed);
 		if( vertexCompileSucceed == GL_FALSE ) {
-			emit built(false);
+			deleteProgram();
 			return;
 		}
 
 		GLint fragmentCompileSucceed = GL_FALSE;
 		glGetObjectParameterivARB(m_fragmentShader, GL_OBJECT_COMPILE_STATUS_ARB, &fragmentCompileSucceed);
 		if( fragmentCompileSucceed == GL_FALSE ) {
-			emit built(false);
+			deleteProgram();
 			return;
 		}
 
@@ -547,13 +547,11 @@ public:
 		GLint linkSucceed = GL_FALSE;
 		glGetObjectParameterivARB(m_program, GL_OBJECT_LINK_STATUS_ARB, &linkSucceed);
 		if( linkSucceed == GL_FALSE ) {
-			emit built(false);
+			deleteProgram();
 			return;
 		}
 
 		initParameters();
-
-		emit built(true);
 	}
 	
 	virtual void build(bool threaded)
@@ -567,14 +565,14 @@ public:
 		}
 		else {
 			threadedBuild();
+			emit built();
 		}
 	}
 	
 	virtual bool isBuilding() const 
 	{
-		return false;
+		return m_thread.isRunning();
 	}
-
 
 	// Parameter info.
 	virtual int parameterCount() const

@@ -81,7 +81,7 @@ signals:
 	void infoMessage(QString msg);
 	void errorMessage(QString msg);
 	void buildMessage(QString msg, int input, OutputParser * parser);
-	void built(bool succeed);
+	void built();
 	
 	
 private:

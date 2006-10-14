@@ -438,6 +438,7 @@ public:
 		m_animated(false),
 		m_thread(this, widget)
 	{
+		connect(&m_thread, SIGNAL(finished()), this, SIGNAL(built()));
 		widget->makeCurrent();
 
 		m_context = cgCreateContext();
@@ -552,7 +553,7 @@ public:
 
 		if (m_effect == NULL)
 		{
-			emit built(false);
+			freeEffect();
 			return;
 		}
 		
@@ -575,7 +576,7 @@ public:
 		
 		if (m_techniqueList.count() == 0)
 		{
-			emit built(false);
+			freeEffect();
 			return;
 		}
 		selectTechnique(0);
@@ -586,7 +587,6 @@ public:
 	//	}
 
 		initParameters();
-		emit built(true);
 	}
 	
 	// Compilation.
@@ -598,19 +598,10 @@ public:
 		
 		if (threaded) {
 			m_thread.start();
-			
-			/*while(m_thread.isRunning()) {
-				QCoreApplication::processEvents();
-			}
-			
-			if(m_effect != NULL) initParameters();
-			emit built(true);*/
 		}
 		else {
 			threadedBuild();
-			
-			/*if(m_effect != NULL) initParameters();
-			emit built(true);*/
+			emit built();
 		}
 	}
 	

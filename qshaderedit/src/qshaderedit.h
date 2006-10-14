@@ -45,7 +45,7 @@ protected slots:
 	void compileChecked(bool checked);
 	
 	void build(bool silent);
-	void built(bool succeed);
+	void built();
 	
 	void setModified();
 

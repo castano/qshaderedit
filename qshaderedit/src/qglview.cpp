@@ -235,7 +235,7 @@ void QGLView::updateMatrices()
 	float aspect = float(width())/float(height());
 	
 	if( !m_orthoAction->isChecked() ) {
-		gluPerspective(30, aspect, 0.5, 50);
+		gluPerspective(30, aspect, 0.3, 50);
 	}
 	else {
 		glOrtho(-aspect,aspect, -1,1, -30,30);

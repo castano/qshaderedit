@@ -140,7 +140,7 @@ void Editor::findDialog()
 {
 	FindDialog dialog(this);
 	
-	// @@ Get current selection and set default value.
+	// Get current selection and set default value.
 	QTextCursor cursor = currentTextEdit()->textCursor();
 	QString selection = cursor.selectedText();
 	if( selection != "" ) {
