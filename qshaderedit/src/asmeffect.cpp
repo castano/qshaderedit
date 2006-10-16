@@ -313,6 +313,8 @@ public:
 	// @@ Add support for threaded compilation.
 	virtual void build(bool threaded)
 	{
+		Q_UNUSED(threaded);
+
 		deletePrograms();
 		resetParameters();
 		
@@ -552,21 +554,11 @@ private:
 				QVariantList list = p->value().toList();
 				Q_ASSERT(list.count() == 4);
 				
-				if( p->stage() == Stage_Vertex ) {
-					if( p->nameSpace() == Namespace_Local ) {
-						glProgramLocalParameter4dARB(GL_VERTEX_PROGRAM_ARB, p->location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
-					}
-					else if( p->nameSpace() == Namespace_Environment ) {
-						glProgramEnvParameter4dARB(GL_VERTEX_PROGRAM_ARB, p->location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
-					}
+				if( p->nameSpace() == Namespace_Local ) {
+					glProgramLocalParameter4dARB(stage, p->location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
 				}
-				else if( p->stage() == Stage_Fragment ) {
-					if( p->nameSpace() == Namespace_Local ) {
-						glProgramLocalParameter4dARB(GL_FRAGMENT_PROGRAM_ARB, p->location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
-					}
-					else if( p->nameSpace() == Namespace_Environment ) {
-						glProgramEnvParameter4dARB(GL_FRAGMENT_PROGRAM_ARB, p->location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
-					}
+				else if( p->nameSpace() == Namespace_Environment ) {
+					glProgramEnvParameter4dARB(stage, p->location(), list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
 				}
 			}
 		} 

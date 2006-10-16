@@ -1,0 +1,7 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=QShaderEdit
+Exec=qshaderedit
+Icon=qshaderedit
+Type=Application
+Comment=A simple shader editor

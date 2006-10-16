@@ -9,6 +9,8 @@
 class OutputParser
 {
 public:
+	virtual ~OutputParser() {}
+
 	virtual void parseLine(const QString& line) = 0;
 
 	MessagePanel::Type type() const

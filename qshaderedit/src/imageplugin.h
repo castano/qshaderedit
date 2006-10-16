@@ -11,6 +11,7 @@
 class ImagePlugin
 {
 public:
+	virtual ~ImagePlugin() {}
 	virtual QList<QByteArray> supportedFormats() const = 0;
 	virtual bool canLoad(const QString & name) const = 0;
 	virtual QImage load(const QString & name, GLuint obj, GLuint * target) const = 0;

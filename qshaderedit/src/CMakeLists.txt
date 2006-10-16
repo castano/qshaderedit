@@ -4,7 +4,6 @@ SET(SRCS
 	effect.cpp
 	glsleffect.cpp
 	asmeffect.cpp
-	main.cpp
 	editor.h
 	editor.cpp
 	highlighter.h
@@ -41,6 +40,9 @@ SET(SRCS
 	imageplugin.h
 	imageplugin.cpp)
 
+SET(QT_SRCS
+	main.cpp)
+
 IF(FOUND_CG)
 	SET(SRCS ${SRCS} cgfxeffect.cpp)
 ENDIF(FOUND_CG)
@@ -76,6 +78,31 @@ QT4_WRAP_UI(UICS ${UIC_SRCS})
 QT4_ADD_RESOURCES(RCCS ${RCC_SRCS})
 QT4_WRAP_CPP(MOCS ${MOC_SRCS})
 
-ADD_EXECUTABLE(qshaderedit MACOSX_BUNDLE ${SRCS} ${MOCS} ${UICS} ${RCCS})
+ADD_EXECUTABLE(qshaderedit MACOSX_BUNDLE ${SRCS} ${QT_SRCS} ${MOCS} ${UICS} ${RCCS})
 TARGET_LINK_LIBRARIES(qshaderedit ${LIBS})
 INSTALL(TARGETS qshaderedit DESTINATION bin)
+
+# KDE4 target
+FIND_PACKAGE(KDE4 REQUIRED)
+
+IF(KDE4_FOUND)
+
+	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR} ${KDE4_INCLUDE_DIR} ${QT_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+
+	SET(KDE_SRCS
+		kde/main.cpp)
+
+	#kde4_automoc(${kapp4_SRCS})
+	#kde4_add_ui_files(kapp4_SRCS)
+	#kde4_add_kcfg_files(kapp4_SRCS kde/kshaderedit.kcfgc)
+	KDE4_ADD_EXECUTABLE(kshaderedit ${SRCS} ${KDE_SRCS} ${MOCS} ${UICS} ${RCCS})
+
+	TARGET_LINK_LIBRARIES(kshaderedit ${KDE4_KDEUI_LIBS} ${LIBS})
+
+	INSTALL(TARGETS kshaderedit DESTINATION ${BIN_INSTALL_DIR})
+
+	INSTALL(FILES kde/kshaderedit.desktop  DESTINATION  ${XDG_APPS_DIR})
+	INSTALL(FILES kde/kshaderedit.kcfg  DESTINATION  ${KCFG_INSTALL_DIR})
+	#install(FILES kde/kapp4ui.rc  DESTINATION  ${DATA_INSTALL_DIR}/kapp4)
+
+ENDIF(KDE4_FOUND)

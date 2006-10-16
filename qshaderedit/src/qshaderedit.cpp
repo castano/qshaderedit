@@ -778,8 +778,11 @@ bool QShaderEdit::load( const QString& fileName )
 		return false;
 
 	m_file = new QFile(fileName);
-	if (!m_file->open(QIODevice::ReadOnly))
+	if (!m_file->open(QIODevice::ReadOnly)) {
+		delete m_file;
+		m_file = NULL;
 		return false;
+	}
 
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 

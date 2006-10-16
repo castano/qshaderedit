@@ -82,15 +82,15 @@ void ImagePluginManager::removePlugin(const ImagePlugin * plugin)
 
 QImage ImagePluginManager::load(QString name, GLuint obj, GLuint * target)
 {
-	if(s_pluginList == NULL) {
-		return QImage();
-	}
-	
-	foreach(const ImagePlugin * plugin, *s_pluginList) {
-		if(plugin->canLoad(name)) {
-			return plugin->load(name, obj, target);
+	if(s_pluginList != NULL) {
+		foreach(const ImagePlugin * plugin, *s_pluginList) {
+			if(plugin->canLoad(name)) {
+				return plugin->load(name, obj, target);
+			}
 		}
 	}
+
+	return QImage();
 }
 
 
