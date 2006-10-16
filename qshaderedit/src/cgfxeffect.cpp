@@ -850,7 +850,11 @@ class CgFxEffectFactory : public EffectFactory
 {
 	virtual bool isSupported() const
 	{
-
+		// At least OpenGL 1.1 required.
+		if (!GLEW_VERSION_1_1) {
+			return false;
+		}
+		
 		typedef const char * (* GetString)(CGenum sname);
 		
 #if defined(Q_OS_DARWIN)

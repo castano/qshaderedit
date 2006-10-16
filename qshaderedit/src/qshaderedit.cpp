@@ -263,24 +263,25 @@ void QShaderEdit::createMenus()
 	toolbarMenu->addAction(m_fileToolBar->toggleViewAction());
 	toolbarMenu->addAction(m_techniqueToolBar->toggleViewAction());
 
-	QMenu * sceneMenu = menuBar()->addMenu(tr("&Scene"));
-	QMenu * sceneSelectionMenu = sceneMenu->addMenu(tr("&Select"));
-
-	// Use scene plugins to create menus.
-	const int count = SceneFactory::factoryList().count();
-	for(int i = 0; i < count; i++) {
-		const SceneFactory * factory = SceneFactory::factoryList().at(i);
-		Q_ASSERT(factory != NULL);
-		
-		action = new QAction(QString("&%1 %2").arg(i+1).arg(factory->name()), this);
-		action->setData(factory->name());
-		connect(action, SIGNAL(triggered()), this, SLOT(selectScene()));
-		sceneSelectionMenu->addAction(action);
+	if( m_sceneView != NULL ) {	
+		QMenu * sceneMenu = menuBar()->addMenu(tr("&Scene"));
+		QMenu * sceneSelectionMenu = sceneMenu->addMenu(tr("&Select"));
+	
+		// Use scene plugins to create menus.
+		const int count = SceneFactory::factoryList().count();
+		for(int i = 0; i < count; i++) {
+			const SceneFactory * factory = SceneFactory::factoryList().at(i);
+			Q_ASSERT(factory != NULL);
+			
+			action = new QAction(QString("&%1 %2").arg(i+1).arg(factory->name()), this);
+			action->setData(factory->name());
+			connect(action, SIGNAL(triggered()), this, SLOT(selectScene()));
+			sceneSelectionMenu->addAction(action);
+		}
+	
+		m_renderMenu = sceneMenu->addMenu(tr("Render Options"));
+		m_sceneView->populateMenu(m_renderMenu);
 	}
-	
-	m_renderMenu = sceneMenu->addMenu(tr("Render Options"));
-	m_sceneView->populateMenu(m_renderMenu);
-	
 	
 	QMenu * helpMenu = menuBar()->addMenu(tr("&Help"));
 
@@ -381,7 +382,13 @@ void QShaderEdit::createDockWindows()
 }
 
 bool QShaderEdit::closeEffect()
-{	
+{
+	if (m_effect == NULL) {
+		Q_ASSERT(m_file == NULL);
+		// No effect open.
+		return true;
+	}
+	
 	if( m_effectFactory != NULL && m_modified ) {
 		QString fileName;
 		if( m_file != NULL ) {
@@ -634,6 +641,7 @@ void QShaderEdit::keyPressEvent(QKeyEvent * event)
 void QShaderEdit::newEffect(const EffectFactory * effectFactory)
 {
 	Q_ASSERT(effectFactory != NULL);
+	Q_ASSERT(m_sceneView != NULL);
 
 	if (!closeEffect())
 		return;
@@ -764,6 +772,8 @@ void QShaderEdit::clearRecentFiles()
 
 bool QShaderEdit::load( const QString& fileName )
 {
+	Q_ASSERT(m_sceneView != NULL);
+		
 	if (!closeEffect())
 		return false;
 
@@ -778,6 +788,7 @@ bool QShaderEdit::load( const QString& fileName )
 
 	m_effectFactory = EffectFactory::factoryForExtension(fileExtension);
 	if( m_effectFactory ) {
+		Q_ASSERT(m_effectFactory->isSupported());
 		m_effect = m_effectFactory->createEffect(m_sceneView);
 		m_effect->load(m_file);
 	}
@@ -897,10 +908,20 @@ void QShaderEdit::updateRecentFileActions()
 	int numRecentFiles = qMin(files.count(), (int)MaxRecentFiles);
 
 	for (int i = 0; i < numRecentFiles; ++i) {
+		
 		QString text = tr("&%1 %2").arg(i + 1).arg(strippedName(files[i]));
 		m_recentFileActions[i]->setText(text);
 		m_recentFileActions[i]->setData(files[i]);
 		m_recentFileActions[i]->setVisible(true);
+		
+		// Disable entry if file type not supported...
+		int idx = files[i].lastIndexOf('.');
+		QString fileExtension = files[i].mid(idx+1);
+
+		const EffectFactory * factory = EffectFactory::factoryForExtension(fileExtension);
+		if (factory != NULL || !factory->isSupported()) {
+			m_recentFileActions[i]->setEnabled(false);
+		}
 	}
 
 	for (int i = numRecentFiles; i < MaxRecentFiles; ++i) {
