@@ -84,12 +84,12 @@ QTextEdit * Editor::currentTextEdit() const
 
 int Editor::line() const
 {
-    return currentTextEdit()->textCursor().blockNumber();
+    return currentTextEdit()->textCursor().blockNumber() + 1;
 }
 
 int Editor::column() const
 {
-	return currentTextEdit()->textCursor().columnNumber();
+	return currentTextEdit()->textCursor().columnNumber() + 1;
 }
 
 // slots.
