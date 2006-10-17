@@ -1091,7 +1091,7 @@ void QShaderEdit::loadSettings()
 	ParameterPanel::setLastPath(pref.value("lastParameterPath", ".").toString());
 
 	if (maximize) {
-		setWindowState(windowState() & Qt::WindowMaximized);
+		setWindowState(windowState() | Qt::WindowMaximized);
 	}
 }
 
