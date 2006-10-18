@@ -167,7 +167,11 @@ void QShaderEdit::createActions()
 	
 	m_gotoAction = new QAction(tr("&Goto"), this);
 	m_gotoAction->setEnabled(false);
+#ifdef Q_WS_MAC
+	m_gotoAction->setShortcut(tr("Ctrl+L"));
+#else
 	m_gotoAction->setShortcut(tr("Ctrl+G"));
+#endif
 	connect(m_gotoAction, SIGNAL(triggered()), m_editor, SLOT(gotoDialog()));
 }
 

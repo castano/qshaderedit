@@ -1,6 +1,6 @@
 
 #include "finddialog.h"
-
+#include <QtGui/QLineEdit>
 
 FindDialog::FindDialog(QWidget *parent/*=0*/, bool forward/*=true*/) : QDialog(parent)
 {
@@ -24,7 +24,8 @@ QString FindDialog::searchText() const
 }
 void FindDialog::setSearchText(const QString & str)
 {
-	ui.findComboBox->addItem(str);
+	ui.findComboBox->lineEdit()->setText(str);
+	ui.findComboBox->lineEdit()->selectAll();
 }
 
 FindDialog::Direction FindDialog::direction() const

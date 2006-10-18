@@ -167,7 +167,11 @@ void Editor::gotoDialog()
 {
 	GotoDialog dialog(this);
 	
-	// @@ get current line and set default value.
+	// Get current line and set default value.
+	dialog.setLine(line());
+
+	// Set valid range.
+	dialog.setRange(1, 1000);
 	
 	int result = dialog.exec();
 	if( result == QDialog::Accepted ) {

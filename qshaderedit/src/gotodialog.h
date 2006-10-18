@@ -13,6 +13,8 @@ class GotoDialog : public QDialog
 		GotoDialog(QWidget *parent = 0);
 		
 		int line() const;
+		void setLine(int l);
+		void setRange(int minimum, int maximum);
 		
 	private:
 		Ui::GotoDialog ui;
