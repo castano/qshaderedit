@@ -1,22 +1,22 @@
-float3 ambient
+fixed3 ambient
 <
 	string UIName = "Ambient";
 	string UIWidget = "color";
 > = {0.2,0.2,0.2};
 
-float3 diffuse
+fixed3 diffuse
 <
 	string UIName = "Diffuse";
 	string UIWidget = "color";
 > = {1,1,1};
 
-float3 specular
+fixed3 specular
 <
 	string UIName = "Specular";
 	string UIWidget = "color";
 > = {0.75,0.75,0.75};
 
-float shine
+half shine
 <
     string UIName = "Shine";
 	string UIWidget = "slider";
@@ -25,16 +25,16 @@ float shine
 	float UIMax = 64.0f;
 > = 32.0;
 
-float tile
+half tile
 <
 	string UIName = "Tile Factor";
 	string UIWidget = "slider";
 	float UIMin = 1.0;
 	float UIStep = 1.0;
-	float UIMax = 32.0;
+	float UIMax = 16.0;
 > = 1;
 
-float depth
+half depth
 <
 	string UIName = "Depth Factor";
 	string UIWidget = "slider";
@@ -46,13 +46,11 @@ float depth
 bool depth_bias
 <
 	string UIName = "Depth Bias";
-//	string UIWidget = "checkbox";
 > = false;
 
 bool border_clamp
 <
 	string UIName = "Border Clamp";
-//	string UIWidget = "checkbox";
 > = false;
 /*
 texture color_map_tex
@@ -77,7 +75,7 @@ sampler2D color_map = sampler_state
 sampler2D relief_map = sampler_state
 {
 //	Texture = <relief_map_tex>;
-	MinFilter = Linear;
+	MinFilter = LinearMipmapLinear;
 	MagFilter = Linear;
 };
 
@@ -106,9 +104,9 @@ struct a2v
 struct v2f
 {
 	float4 pos : POSITION;
-	float3 view : TEXCOORD0;
-	float3 light : TEXCOORD1;
-	float2 texcoord : TEXCOORD2;
+	half3 view : TEXCOORD0;
+	half3 light : TEXCOORD1;
+	half2 texcoord : TEXCOORD2;
 };
 
 v2f vertex_shader(a2v input)
@@ -139,7 +137,7 @@ v2f vertex_shader(a2v input)
 // and apply depth bias and depth factor
 void setup_ray(v2f input, out float3 p, out float3 v)
 {
-	p = float3(input.texcoord, 0);
+	p = half3(input.texcoord, 0);
 	v = normalize(input.view);
 	
 	//v.z = abs(v.z);
@@ -152,38 +150,41 @@ void setup_ray(v2f input, out float3 p, out float3 v)
 		v.xy *= db;
 	}
 	
-	v.z /= depth;
+	v.xy *= depth;
 }
 
 // do normal mapping using given texture coordinate
 // tangent space phong lighting with optional border clamp
 // normal X and Y stored in red and green channels
-float4 normal_mapping(v2f input, float2 texcoord)
+fixed4 normal_mapping(v2f input, half2 texcoord)
 {
+	fixed2 dsdx = ddx(input.texcoord.xy);
+	fixed2 dsdy = ddy(input.texcoord.xy);
+	
 	// color map
-	float4 color = tex2D(color_map, texcoord);
+	fixed4 color = tex2D(color_map, texcoord, dsdx, dsdy);
 
 	// normal map
-	float3 N = tex2D(relief_map, texcoord).xyz;
+	half3 N = tex2D(relief_map, texcoord, dsdx, dsdy).xyz;
 	N = 2 * N - 1;
 //	N = normalize(2 * N - 1);
 	N.z = sqrt(1.0 - dot(N.xy, N.xy));
-	N.x = -N.x * 2;
-	N = normalize(N);
+	N.x = -N.x;
+//	N = normalize(N);
 //	N = float3(0, 0, 1);
 	
 
 	// light and view in tangent space
-	float3 L = normalize(input.light);
-	float3 V = normalize(input.view);
-	float3 R = reflect(-V, N);
+	half3 L = normalize(input.light);
+	half3 V = normalize(input.view);
+	half3 R = reflect(-V, N);
 
 	// compute diffuse and specular terms
-	float diff = saturate(dot(L, N));
-	float spec = saturate(dot(L, R));
+	fixed diff = saturate(dot(L, N));
+	fixed spec = saturate(dot(L, R));
 
 	// border clamp
-	float alpha=1;
+	fixed alpha=1;
 	if (border_clamp)
 	{
 		if (texcoord.x<0) alpha=0;
@@ -193,8 +194,8 @@ float4 normal_mapping(v2f input, float2 texcoord)
 	}
 	
 	// compute final color
-	float4 finalcolor;
-	finalcolor.xyz = ambient + (color.xyz * diffuse * diff + specular * pow(spec,shine));
+	fixed4 finalcolor;
+	finalcolor.xyz = ambient + (color.xyz * diffuse * diff + specular * fixed(pow(spec,shine)));
 	finalcolor.w = alpha;
 	return finalcolor;
 }
@@ -204,13 +205,16 @@ float4 normal_mapping(v2f input, float2 texcoord)
 // and sqrt of cone ratio stored in blue channel
 void ray_intersect_cone(inout float3 p, float3 v)
 {
-	const int num_steps=15;
+	const int num_steps = 16;
+
+	fixed2 dsdx = ddx(p.xy);
+	fixed2 dsdy = ddy(p.xy);
 	
 	float dist=length(v.xy);
 	
 	for(int i = 0; i < num_steps; i++)
 	{
-		float4 tex = tex2D(relief_map, p.xy);
+		float4 tex = tex2D(relief_map, p.xy, dsdx, dsdy);
 		
 //		float height = max(0, tex.w - p.z);
 		float height = saturate(tex.w - p.z);
@@ -225,7 +229,7 @@ void ray_intersect_cone(inout float3 p, float3 v)
 // depth value stored in alpha channel (black at is object surface)
 void ray_intersect_relief(inout float3 p, float3 v)
 {
-	const int num_steps_lin=10;
+	const int num_steps_lin=8;
 	const int num_steps_bin=5;
 	
 	v /= v.z*num_steps_lin;
@@ -257,10 +261,10 @@ void ray_intersect_relief(inout float3 p, float3 v)
 // depth value stored in alpha channel (black at is object surface)
 void ray_intersect_interval(inout float3 p, float3 v)
 {
-	const int num_steps_lin = 10;
+	const int num_steps_lin = 8;
 	const int num_steps_bin = 3;
 
-	v /= (v.z * num_steps_lin);
+	v /= v.z * num_steps_lin;
 	
 	float h0, h1;
 
@@ -282,7 +286,7 @@ void ray_intersect_interval(inout float3 p, float3 v)
 	}
 
 	float t = (h0 - p.z) / (v.z - h1 + h0);
-	pv = p + v * saturate(t);
+	pv = p + v * t;
 
 	// Refine solution.
 	for(int i = 0; i < num_steps_bin; i++)
@@ -300,7 +304,63 @@ void ray_intersect_interval(inout float3 p, float3 v)
 		}
 
 		t = (h0 - p.z) / (v.z - h1 + h0);
-		pv = p + v * saturate(t);
+		pv = p + v * t;
+	}
+
+	p = pv;
+}
+
+// ray intersect depth map using linear and binary searches
+// depth value stored in alpha channel (black at is object surface)
+void ray_intersect_interval2(inout float3 p, float3 v)
+{
+	const int num_steps_lin = 8;
+	const int num_steps_bin = 3;	// 0 = pom
+
+	v /= (v.z * num_steps_lin);
+	
+	fixed h0, h1;
+
+	fixed2 dsdx = ddx(p.xy);
+	fixed2 dsdy = ddy(p.xy);
+
+	h0 = tex2D(relief_map, p.xy, dsdx, dsdy).a;
+	float3 pv = p + v;
+
+	for(int i = 1; i < num_steps_lin; i++)
+	{
+		h1 = tex2D(relief_map, pv.xy, dsdx, dsdy).a;
+
+		if (pv.z < h1) {
+			p = pv;
+			h0 = h1;
+			pv = p + v;
+		}
+		else {
+			//break;
+		}
+	}
+
+	fixed t = (h0 - p.z) / (v.z - h1 + h0);
+	pv = p + v * t;
+
+	// Refine solution.
+	for(int i = 0; i < num_steps_bin; i++)
+	{
+		fixed h = tex2D(relief_map, pv.xy, dsdx, dsdy).a;
+
+		if (h < pv.z) {
+			h1 = h;
+			v *= t;
+		}
+		else {
+			h0 = h;
+			v *= (1 - t);
+			p = pv;
+		}
+
+		t = (h0 - p.z) / (v.z - h1 + h0);
+		pv = p + v * t;
 	}
 
 	p = pv;
@@ -314,16 +374,17 @@ void ray_intersect_pom(inout float3 p, float3 v)
 {
 	v /= v.z;
 	
-	float h0 = tex2D(relief_map, p.xy + v.xy * 1.000 ).w;
-	float h1 = tex2D(relief_map, p.xy + v.xy * 0.875 ).w;
-	float h2 = tex2D(relief_map, p.xy + v.xy * 0.750 ).w;
-	float h3 = tex2D(relief_map, p.xy + v.xy * 0.625 ).w;
-	float h4 = tex2D(relief_map, p.xy + v.xy * 0.500 ).w;
-	float h5 = tex2D(relief_map, p.xy + v.xy * 0.375 ).w;
-	float h6 = tex2D(relief_map, p.xy + v.xy * 0.250 ).w;
-	float h7 = tex2D(relief_map, p.xy + v.xy * 0.125 ).w;
+	fixed h0 = tex2D(relief_map, p.xy + v.xy * 1.000 ).w;
+	fixed h1 = tex2D(relief_map, p.xy + v.xy * 0.875 ).w;
+	fixed h2 = tex2D(relief_map, p.xy + v.xy * 0.750 ).w;
+	fixed h3 = tex2D(relief_map, p.xy + v.xy * 0.625 ).w;
+	fixed h4 = tex2D(relief_map, p.xy + v.xy * 0.500 ).w;
+	fixed h5 = tex2D(relief_map, p.xy + v.xy * 0.375 ).w;
+	fixed h6 = tex2D(relief_map, p.xy + v.xy * 0.250 ).w;
+	fixed h7 = tex2D(relief_map, p.xy + v.xy * 0.125 ).w;
 	
-	float lower_d, upper_d, lower_h, upper_h;
+	float lower_d, upper_d;
+	fixed lower_h, upper_h;
 	
 	if      (h7 < 0.125) { lower_d = 0.937; upper_d = 0.938; lower_h = h7; upper_h = h7; }
 	else if (h6 < 0.250) { lower_d = 0.750; upper_d = 0.875; lower_h = h6; upper_h = h7; }
@@ -334,14 +395,9 @@ void ray_intersect_pom(inout float3 p, float3 v)
 	else if (h1 < 0.875) { lower_d = 0.125; upper_d = 0.250; lower_h = h1; upper_h = h2; }
 	else                 { lower_d = 0.000; upper_d = 0.125; lower_h = h0; upper_h = h1; }
 	
-	float fParallaxEffect = (lower_d * (upper_d + upper_h) - upper_d * (lower_d + lower_h) - lower_d + upper_d) / (upper_d + upper_h - lower_d - lower_h);
+	half fParallaxEffect = (lower_d * (upper_d + upper_h) - upper_d * (lower_d + lower_h) - lower_d + upper_d) / (upper_d + upper_h - lower_d - lower_h);
 	
 	p.xyz += v*(1 - fParallaxEffect);
-}
-
-float4 pixel_shader_debug(v2f input) : COLOR
-{
-	return float4(0.5*normalize(input.view)+0.5, 1);
 }
 
 float4 pixel_shader_cone(v2f input) : COLOR
@@ -365,6 +421,14 @@ float4 pixel_shader_interval(v2f input) : COLOR
 	float3 p,v;
 	setup_ray(input, p, v);
 	ray_intersect_interval(p, v);
+	return normal_mapping(input, p.xy);
+}
+
+float4 pixel_shader_interval2(v2f input) : COLOR
+{
+	float3 p,v;
+	setup_ray(input, p, v);
+	ray_intersect_interval2(p, v);
 	return normal_mapping(input, p.xy);
 }
 
@@ -400,7 +464,20 @@ technique interval_mapping
     pass p0 
     {
 		VertexProgram = compile arbvp1 vertex_shader();
-		FragmentProgram  = compile fp40 pixel_shader_interval();
+		FragmentProgram  = compile fp30 pixel_shader_interval();
+		AlphaTestEnable = true;
+		AlphaFunc = float2(GEqual, 0.1);
+		CullFaceEnable = true;
+		CullFace = Front;
+    }
+}
+
+technique interval_mapping2
+{
+    pass p0 
+    {
+		VertexProgram = compile arbvp1 vertex_shader();
+		FragmentProgram  = compile fp30 pixel_shader_interval2();
 		AlphaTestEnable = true;
 		AlphaFunc = float2(GEqual, 0.1);
 		CullFaceEnable = true;
@@ -413,7 +490,7 @@ technique cone_mapping
     pass p0 
     {
    		VertexProgram = compile arbvp1 vertex_shader();
-		FragmentProgram  = compile fp40 pixel_shader_cone();
+		FragmentProgram  = compile fp30 pixel_shader_cone();
 		AlphaTestEnable = true;
 		AlphaFunc = float2(GEqual, 0.1);
 		CullFaceEnable = true;
@@ -439,17 +516,9 @@ technique normal_mapping
     pass p0 
     {
 		VertexProgram = compile arbvp1 vertex_shader();
-		FragmentProgram  = compile arbfp1 pixel_shader_normal();
+		FragmentProgram = compile fp30 pixel_shader_normal();
 		CullFaceEnable = true;
 		CullFace = Front;
     }
 }
 
-technique debug
-{
-    pass p0 
-    {
-		VertexProgram = compile arbvp1 vertex_shader();
-		FragmentProgram  = compile arbfp1 pixel_shader_debug();
-    }
-}

@@ -37,7 +37,7 @@ fixed3 backgroundColor : Diffuse
 
 sampler2D checkSampler = sampler_state
 {
-	MinFilter = Linear;
+	MinFilter = LinearMipmapLinear;
 	MagFilter = Linear;
 };
 
