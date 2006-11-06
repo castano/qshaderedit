@@ -20,8 +20,6 @@ SET(SRCS
 	parameterdelegate.cpp
 	qglview.h
 	qglview.cpp
-	qshaderedit.h
-	qshaderedit.cpp
 	teapot.cpp
 	newdialog.h
 	newdialog.cpp
@@ -40,13 +38,14 @@ SET(SRCS
 	imageplugin.h
 	imageplugin.cpp)
 
-SET(QT_SRCS
-	main.cpp)
-
 IF(FOUND_CG)
 	SET(SRCS ${SRCS} cgfxeffect.cpp)
 ENDIF(FOUND_CG)
 
+SET(QT_SRCS ${SRCS}
+	main.cpp
+	qshaderedit.h
+	qshaderedit.cpp)
 
 SET(MOC_SRCS
 	editor.h
@@ -55,11 +54,12 @@ SET(MOC_SRCS
 	parameterpanel.h
 	parameterdelegate.h
 	qglview.h
-	qshaderedit.h
 	newdialog.h
 	finddialog.h
 	gotodialog.h
 	effect.h)
+
+SET(QT_MOC_SRCS qshaderedit.h)
 
 SET(UIC_SRCS 
 	newdialog.ui 
@@ -77,8 +77,9 @@ SET(RCC_SRCS
 QT4_WRAP_UI(UICS ${UIC_SRCS})
 QT4_ADD_RESOURCES(RCCS ${RCC_SRCS})
 QT4_WRAP_CPP(MOCS ${MOC_SRCS})
+QT4_WRAP_CPP(QT_MOCS ${QT_MOC_SRCS})
 
-ADD_EXECUTABLE(qshaderedit MACOSX_BUNDLE ${SRCS} ${QT_SRCS} ${MOCS} ${UICS} ${RCCS})
+ADD_EXECUTABLE(qshaderedit MACOSX_BUNDLE ${QT_SRCS} ${MOCS} ${QT_MOCS} ${UICS} ${RCCS})
 TARGET_LINK_LIBRARIES(qshaderedit ${LIBS})
 INSTALL(TARGETS qshaderedit DESTINATION bin)
 
@@ -89,13 +90,19 @@ IF(KDE4_FOUND)
 
 	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR} ${KDE4_INCLUDE_DIR} ${QT_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
-	SET(KDE_SRCS
-		kde/main.cpp)
+	SET(KDE_SRCS ${SRCS}
+		kde/main.cpp
+		kde/kshaderedit.h
+		kde/kshaderedit.cpp)
 
-	#kde4_automoc(${kapp4_SRCS})
+	SET(KDE_MOC_SRCS kde/kshaderedit.h)
+
+	QT4_WRAP_CPP(KDE_MOCS ${KDE_MOC_SRCS})
+
+	#KDE4_AUTOMOC(${KDE_SRCS})
 	#kde4_add_ui_files(kapp4_SRCS)
 	#kde4_add_kcfg_files(kapp4_SRCS kde/kshaderedit.kcfgc)
-	KDE4_ADD_EXECUTABLE(kshaderedit ${SRCS} ${KDE_SRCS} ${MOCS} ${UICS} ${RCCS})
+	KDE4_ADD_EXECUTABLE(kshaderedit ${KDE_SRCS} ${MOCS} ${KDE_MOCS} ${UICS} ${RCCS})
 
 	TARGET_LINK_LIBRARIES(kshaderedit ${KDE4_KDEUI_LIBS} ${LIBS})
 
@@ -106,3 +113,4 @@ IF(KDE4_FOUND)
 	#install(FILES kde/kapp4ui.rc  DESTINATION  ${DATA_INSTALL_DIR}/kapp4)
 
 ENDIF(KDE4_FOUND)
+

@@ -1,5 +1,5 @@
 
-#include "qshaderedit.h"
+#include "kshaderedit.h"
 
 #include <kapplication.h>
 #include <kaboutdata.h>
@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 	}
 	args->clear();
 	
-	QShaderEdit * shaderEdit = new QShaderEdit(filename);
+	KShaderEdit * shaderEdit = new KShaderEdit(filename);
 	
     return app.exec();
 }
