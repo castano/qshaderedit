@@ -47,3 +47,9 @@ Effect file formats:
 - unity shaders: http://www.unifycommunity.com/wiki/index.php?title=Shader_Archive
 - Collada FX: http://www.khronos.org/collada/
 
+Useful links:
+
+HLSL to GLSL translator:
+It's kind of nice, but still very limited.
+http://sourceforge.net/projects/hlsl2glsl
+

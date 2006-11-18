@@ -4,8 +4,7 @@
 #include "messagepanel.h"
 #include "texmanager.h"
 #include "scene.h"
-
-#include <math.h>
+#include "glutils.h"
 
 #include <QtCore/QUrl>
 #include <QtGui/QMouseEvent>
@@ -235,7 +234,7 @@ void QGLView::updateMatrices()
 	float aspect = float(width())/float(height());
 	
 	if( !m_orthoAction->isChecked() ) {
-		gluPerspective(30, aspect, 0.3, 50);
+		perspective(30, aspect, 0.3, 50);
 	}
 	else {
 		glOrtho(-aspect,aspect, -1,1, -30,30);
