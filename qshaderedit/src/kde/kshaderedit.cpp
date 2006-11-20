@@ -31,7 +31,7 @@
 #include <kmenubar.h>
 #include <kstatusbar.h>
 #include <kfiledialog.h>
-
+#include <krecentfilesaction.h>
 
 /// Ctor.
 KShaderEdit::KShaderEdit(const KUrl & url) :
@@ -46,8 +46,9 @@ KShaderEdit::KShaderEdit(const KUrl & url) :
 	m_positionLabel(NULL),
 	m_openAction(NULL),
 	m_saveAction(NULL),
-	m_recentFileSeparator(NULL),
-	m_clearRecentAction(NULL),
+//	m_recentFileSeparator(NULL),
+//	m_clearRecentAction(NULL),
+	m_recentFiles(NULL),
 	m_timer(NULL),
 	m_animationTimer(NULL),
 	m_file(NULL),
@@ -118,15 +119,16 @@ void KShaderEdit::createActions()
 	m_saveAsAction->setStatusTip(tr("Save the effect under a new name"));
 	m_saveAsAction->setEnabled(false);
 
-	for (int i = 0; i < MaxRecentFiles; ++i) {
-		m_recentFileActions[i] = new KAction(actionCollection(), QString(""));
-		m_recentFileActions[i]->setVisible(false);
-		connect(m_recentFileActions[i], SIGNAL(triggered()), this, SLOT(openRecentFile()));
-	}
+	m_recentFiles = KStdAction::openRecent(this, SLOT(load(const KUrl &)), actionCollection());
+//	for (int i = 0; i < MaxRecentFiles; ++i) {
+//		m_recentFileActions[i] = new KAction(actionCollection(), QString(""));
+//		m_recentFileActions[i]->setVisible(false);
+//		connect(m_recentFileActions[i], SIGNAL(triggered()), this, SLOT(openRecentFile()));
+//	}
 	
-	m_clearRecentAction = new KAction(actionCollection(), tr("&Clear Recent"));
-	m_clearRecentAction->setEnabled(false);
-	connect(m_clearRecentAction, SIGNAL(triggered()), this, SLOT(clearRecentFiles()));
+//	m_clearRecentAction = new KAction(actionCollection(), tr("&Clear Recent"));
+//	m_clearRecentAction->setEnabled(false);
+//	connect(m_clearRecentAction, SIGNAL(triggered()), this, SLOT(clearRecentFiles()));
 /*	
 	m_compileAction = new QAction(tr("&Compile"), this);
 	m_compileAction->setCheckable(true);
@@ -156,13 +158,14 @@ void KShaderEdit::createMenus()
 	fileMenu->addAction(m_newAction);
 	fileMenu->addAction(m_openAction);
 	
-	QMenu * recentFileMenu = fileMenu->addMenu(tr("Open Recent"));
-	for(int i = 0; i < MaxRecentFiles; i++) {
-		recentFileMenu->addAction(m_recentFileActions[i]);
-	}
-	m_recentFileSeparator = recentFileMenu->addSeparator();
-	recentFileMenu->addAction(m_clearRecentAction);
-	updateRecentFileActions();
+//	QMenu * recentFileMenu = fileMenu->addMenu(tr("Open Recent"));
+//	for(int i = 0; i < MaxRecentFiles; i++) {
+//		recentFileMenu->addAction(m_recentFileActions[i]);
+//	}
+//	m_recentFileSeparator = recentFileMenu->addSeparator();
+//	recentFileMenu->addAction(m_clearRecentAction);
+//	updateRecentFileActions();
+	fileMenu->addAction(m_recentFiles);
 	
 	fileMenu->addAction(m_saveAction);
 	fileMenu->addAction(m_saveAsAction);
@@ -686,7 +689,7 @@ void KShaderEdit::open()
 	QStringList effectExtensions;
 	foreach(const EffectFactory * factory, EffectFactory::factoryList()) {
 		if( factory->isSupported() ) {
-			QString effectType = QString("%1 (*.%2)").arg(factory->namePlural()).arg(factory->extension());
+			QString effectType = QString("*.%2|%1 (*.%2)").arg(factory->namePlural()).arg(factory->extension());
 			effectTypes.append(effectType);
 
 			QString effectExtension = factory->extension();
@@ -699,8 +702,8 @@ void KShaderEdit::open()
 		return;
 	}
 
-	//QString fileName = KFileDialog::getOpenFileName(this, tr("Open File"), tr("."), effectTypes.join(";"));
-	QString fileName = KFileDialog::getOpenFileName(m_lastEffect, QString(tr("Effect Files (%1)")).arg(effectExtensions.join(" ")), this, tr("Open File"));
+	//QString fileName = KFileDialog::getOpenFileName(m_lastEffect, effectTypes.join("\n"), this, tr("Open File"));
+	QString fileName = KFileDialog::getOpenFileName(m_lastEffect, QString(tr("%1|Effect Files (%1)")).arg(effectExtensions.join(" ")), this, tr("Open File"));
 
 	if( !fileName.isEmpty() ) {
         m_lastEffect = fileName;
@@ -708,38 +711,39 @@ void KShaderEdit::open()
 	}
 }
 
-void KShaderEdit::openRecentFile()
-{
-	KAction * action = qobject_cast<KAction *>(sender());
-	if (action) {
-		load(action->data().toString());
-	}
-}
+//void KShaderEdit::openRecentFile()
+//{
+//	KAction * action = qobject_cast<KAction *>(sender());
+//	if (action) {
+//		load(action->data().toString());
+//	}
+//}
 
-void KShaderEdit::clearRecentFiles()
-{
-	// @@ TBD
- 	QSettings settings( "Castano Inc", "KShaderEdit" );
-	settings.setValue("recentFileList", QStringList());
+//void KShaderEdit::clearRecentFiles()
+//{
+//	// @@ TBD
+// 	QSettings settings( "Castano Inc", "KShaderEdit" );
+//	settings.setValue("recentFileList", QStringList());
+//
+//	/*foreach (QWidget *widget, QApplication::topLevelWidgets()) {
+//		MainWindow *mainWin = qobject_cast<MainWindow *>(widget);
+//		if (mainWin)
+//			mainWin->updateRecentFileActions();
+//	}*/
+//	
+//	// Only a single main window.
+//	updateRecentFileActions();	
+//}
 
-	/*foreach (QWidget *widget, QApplication::topLevelWidgets()) {
-		MainWindow *mainWin = qobject_cast<MainWindow *>(widget);
-		if (mainWin)
-			mainWin->updateRecentFileActions();
-	}*/
-	
-	// Only a single main window.
-	updateRecentFileActions();	
-}
-
-bool KShaderEdit::load( const KUrl & url )
+bool KShaderEdit::load(const KUrl & url)
 {
 	Q_ASSERT(m_sceneView != NULL);
 		
 	if (!closeEffect())
 		return false;
 
-	QString fileName = url.fileName();
+	QString fileName = url.toLocalFile();
+	qDebug() << "URL = " << url << "|" << fileName;
 
 	m_file = new QFile(fileName);
 	if (!m_file->open(QIODevice::ReadOnly)) {
@@ -848,14 +852,15 @@ void KShaderEdit::saveAs()
 
 void KShaderEdit::setCurrentFile(const QString &fileName)
 {
- 	QSettings settings( "Castano Inc", "KShaderEdit" );
-	QStringList files = settings.value("recentFileList").toStringList();
-	files.removeAll(fileName);
-	files.prepend(fileName);
-	while (files.size() > MaxRecentFiles)
-		files.removeLast();
-
-	settings.setValue("recentFileList", files);
+//	QSettings settings( "Castano Inc", "KShaderEdit" );
+//	QStringList files = settings.value("recentFileList").toStringList();
+//	files.removeAll(fileName);
+//	files.prepend(fileName);
+//	while (files.size() > MaxRecentFiles)
+//		files.removeLast();
+//	settings.setValue("recentFileList", files);
+	
+	m_recentFiles->addUrl(fileName);
 
 	/*foreach (QWidget *widget, QApplication::topLevelWidgets()) {
 		MainWindow *mainWin = qobject_cast<MainWindow *>(widget);
@@ -864,9 +869,9 @@ void KShaderEdit::setCurrentFile(const QString &fileName)
 	}*/
 	
 	// Only a single main window.
-	updateRecentFileActions();
+//	updateRecentFileActions();
 }
-
+/*
 void KShaderEdit::updateRecentFileActions()
 {
 	QSettings settings( "Castano Inc", "KShaderEdit" );
@@ -898,7 +903,7 @@ void KShaderEdit::updateRecentFileActions()
 	m_recentFileSeparator->setVisible(numRecentFiles > 0);
 	m_clearRecentAction->setEnabled(numRecentFiles > 0);
 }
-
+*/
 void KShaderEdit::about()
 {
 	QMessageBox::about(this, tr("About KShaderEdit"),

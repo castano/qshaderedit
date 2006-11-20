@@ -15,6 +15,7 @@ class QComboBox;
 class QLabel;
 class QToolBar;
 class KUrl;
+class KRecentFilesAction;
 struct Effect;
 struct EffectFactory;
 
@@ -34,8 +35,8 @@ protected slots:
 	bool load( const KUrl & url );
 	
 	void open();
-	void openRecentFile();
-	void clearRecentFiles();
+//	void openRecentFile();
+//	void clearRecentFiles();
 	bool save();
 	void saveAs();
 	
@@ -76,7 +77,7 @@ protected:
 	void setModified(bool modified);
 
 	void setCurrentFile(const QString &fileName);
-	void updateRecentFileActions();
+//	void updateRecentFileActions();
 	
 	// Events
 	virtual void closeEvent(QCloseEvent * event);
@@ -120,11 +121,12 @@ private:
 	KAction * m_saveAction;
 	KAction * m_saveAsAction;
 
-	enum { MaxRecentFiles = 5 };
-	KAction * m_recentFileActions[MaxRecentFiles];	
+//	enum { MaxRecentFiles = 5 };
+//	KAction * m_recentFileActions[MaxRecentFiles];	
 
-	QAction * m_recentFileSeparator;
-	KAction * m_clearRecentAction;
+//	QAction * m_recentFileSeparator;
+//	KAction * m_clearRecentAction;
+	KRecentFilesAction * m_recentFiles;
 	
 	KAction * m_compileAction;
 	
