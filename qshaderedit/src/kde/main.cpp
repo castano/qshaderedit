@@ -5,6 +5,7 @@
 #include <kaboutdata.h>
 #include <kcmdlineargs.h>
 #include <klocale.h>
+#include <kurl.h>
 
 static const char description[] = I18N_NOOP("A simple shader editor");
 
@@ -20,7 +21,7 @@ static KCmdLineOptions options[] =
 int main(int argc, char **argv)
 {
 	KAboutData about("kshaderedit", I18N_NOOP("KShaderEdit"), version, description,
-		KAboutData::License_GPL, "(C) 2006 Ignacio Castanñ", 0, 0, "castano-stuff-qshaderedit@lists.sourceforge.net");
+		KAboutData::License_GPL, "(C) 2006 Ignacio Castano", 0, 0, "castano-stuff-qshaderedit@lists.sourceforge.net");
 	about.addAuthor("Ignacio Castano", 0, "castanyo@yahoo.es");
 	about.addAuthor("Lars Uebernickel", 0, "larsuebernickel@gmx.de");
 	about.addCredit("Karl Robillard", 0, "krobillard@san.rr.com");
@@ -44,13 +45,13 @@ int main(int argc, char **argv)
 	// no session.. just start up normally
 	KCmdLineArgs * args = KCmdLineArgs::parsedArgs();
 	
-	QString filename;
+	KUrl url;
 	if (args->count() > 0) {
-		filename = qApp->arguments().at(0);
+		url = qApp->arguments().at(0);
 	}
 	args->clear();
 	
-	KShaderEdit * shaderEdit = new KShaderEdit(filename);
+	KShaderEdit * shaderEdit = new KShaderEdit(url);
 	
     return app.exec();
 }

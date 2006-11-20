@@ -2,6 +2,7 @@
 #define KSHADEREDIT_H
 
 #include <kmainwindow.h>
+#include <kurl.h>
 
 class QTabWidget;
 class QGLView;
@@ -13,6 +14,7 @@ class QFile;
 class QComboBox;
 class QLabel;
 class QToolBar;
+class KUrl;
 struct Effect;
 struct EffectFactory;
 
@@ -20,7 +22,7 @@ class KShaderEdit : public KMainWindow
 {
 	Q_OBJECT
 public:
-	KShaderEdit(const QString& filename = QString());
+	KShaderEdit(const KUrl & url = KUrl());
 	~KShaderEdit();
 
 	virtual QSize sizeHint() const;
@@ -29,7 +31,7 @@ public slots:
 	void newFile(bool startup=false);
 	
 protected slots:
-	bool load( const QString& fileName );
+	bool load( const KUrl & url );
 	
 	void open();
 	void openRecentFile();

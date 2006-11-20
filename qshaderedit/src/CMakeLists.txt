@@ -104,7 +104,7 @@ IF(KDE4_FOUND)
 	#kde4_add_kcfg_files(kapp4_SRCS kde/kshaderedit.kcfgc)
 	KDE4_ADD_EXECUTABLE(kshaderedit ${KDE_SRCS} ${MOCS} ${KDE_MOCS} ${UICS} ${RCCS})
 
-	TARGET_LINK_LIBRARIES(kshaderedit ${KDE4_KDEUI_LIBS} ${LIBS})
+	TARGET_LINK_LIBRARIES(kshaderedit ${KDE4_KDEUI_LIBS} ${KDE4_KIO_LIBS} ${LIBS})
 
 	INSTALL(TARGETS kshaderedit DESTINATION ${BIN_INSTALL_DIR})
 

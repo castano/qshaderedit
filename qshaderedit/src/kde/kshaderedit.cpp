@@ -8,10 +8,10 @@
 #include "newdialog.h"
 #include "scene.h"
 
-#include <QtCore/QFile>
 #include <QtCore/QTimer>
 #include <QtCore/QSettings>
 #include <QtCore/QtDebug>	//
+#include <QtCore/QFile>
 #include <QtGui/QApplication>
 #include <QtGui/QMenu>
 #include <QtGui/QToolBar>
@@ -20,7 +20,6 @@
 #include <QtGui/QTabWidget>
 #include <QtGui/QStatusBar>
 #include <QtGui/QDockWidget>
-#include <QtGui/QFileDialog>
 #include <QtGui/QMessageBox>
 #include <QtGui/QCloseEvent>
 #include <QtGui/QComboBox>
@@ -29,13 +28,13 @@
 #include <kapplication.h>
 #include <kaction.h>
 #include <kstdaction.h>
-
 #include <kmenubar.h>
 #include <kstatusbar.h>
+#include <kfiledialog.h>
 
 
 /// Ctor.
-KShaderEdit::KShaderEdit(const QString& filename) :
+KShaderEdit::KShaderEdit(const KUrl & url) :
 	m_editor(NULL),
 	m_fileToolBar(NULL),
 	m_techniqueToolBar(NULL),
@@ -87,7 +86,7 @@ KShaderEdit::KShaderEdit(const QString& filename) :
 	// Make sure the main window is shown before the new file dialog.
 	QApplication::processEvents();
 
-	if (filename.isEmpty() || !load(filename)) {
+	if (url.isEmpty() || !load(url)) {
 		newFile(true);
 	}
 }
@@ -175,9 +174,7 @@ void KShaderEdit::createMenus()
 	fileMenu->addSeparator();
 	
 	action = KStdAction::quit(this, SLOT(close()), actionCollection());
-//	action->setShortcut(tr("Ctrl+Q"));
-//	action->setStatusTip(tr("Exit the application"));
-//	connect(action, SIGNAL(triggered()), this, SLOT(close()));
+	action->setStatusTip(tr("Exit the application"));
 	fileMenu->addAction(action);
 
 	QMenu * editMenu = menuBar()->addMenu(tr("&Edit"));
@@ -228,7 +225,7 @@ void KShaderEdit::createMenus()
 	// On KDE this should be under the "Preferences" menu.
 	QMenu * toolbarMenu = viewMenu->addMenu(tr("&Toolbars"));
 	toolbarMenu->addAction(m_fileToolBar->toggleViewAction());
-//	toolbarMenu->addAction(m_techniqueToolBar->toggleViewAction());
+	toolbarMenu->addAction(m_techniqueToolBar->toggleViewAction());
 
 	if( m_sceneView != NULL ) {	
 		QMenu * sceneMenu = menuBar()->addMenu(tr("&Scene"));
@@ -253,8 +250,7 @@ void KShaderEdit::createMenus()
 	QMenu * helpMenu = menuBar()->addMenu(tr("&Help"));
 
 	action = KStdAction::aboutApp(this, SLOT(about()), actionCollection());
-//	action->setStatusTip(tr("Show the application's about box"));
-//	connect(action, SIGNAL(triggered()), this, SLOT(about()));
+	action->setStatusTip(tr("Show the application's about box"));
 	helpMenu->addAction(action);
 
 	action = KStdAction::aboutKDE(kapp, SLOT(aboutKDE()), actionCollection());
@@ -284,7 +280,7 @@ void KShaderEdit::createToolbars()
 	m_fileToolBar->addAction(m_openAction);
 	m_fileToolBar->addAction(m_saveAction);
 //	m_fileToolBar->addAction(m_compileAction);
-/*
+
 	m_techniqueToolBar = new QToolBar(tr("Technique Toolbar"), this);
 	m_techniqueToolBar->setObjectName("TechniqueToolBar");
 	this->addToolBar(m_techniqueToolBar);
@@ -300,7 +296,6 @@ void KShaderEdit::createToolbars()
 	techniqueLabel->setBuddy(m_techniqueCombo);
 	m_techniqueToolBar->addWidget(techniqueLabel);
 	m_techniqueToolBar->addWidget(m_techniqueCombo);
-	*/
 }
 
 void KShaderEdit::createStatusbar()
@@ -704,9 +699,8 @@ void KShaderEdit::open()
 		return;
 	}
 
-	//QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), tr("."), effectTypes.join(";"));
-	QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-            m_lastEffect, QString(tr("Effect Files (%1)")).arg(effectExtensions.join(" ")));
+	//QString fileName = KFileDialog::getOpenFileName(this, tr("Open File"), tr("."), effectTypes.join(";"));
+	QString fileName = KFileDialog::getOpenFileName(m_lastEffect, QString(tr("Effect Files (%1)")).arg(effectExtensions.join(" ")), this, tr("Open File"));
 
 	if( !fileName.isEmpty() ) {
         m_lastEffect = fileName;
@@ -738,12 +732,14 @@ void KShaderEdit::clearRecentFiles()
 	updateRecentFileActions();	
 }
 
-bool KShaderEdit::load( const QString& fileName )
+bool KShaderEdit::load( const KUrl & url )
 {
 	Q_ASSERT(m_sceneView != NULL);
 		
 	if (!closeEffect())
 		return false;
+
+	QString fileName = url.fileName();
 
 	m_file = new QFile(fileName);
 	if (!m_file->open(QIODevice::ReadOnly)) {
@@ -792,7 +788,7 @@ bool KShaderEdit::save()
 		// Choose file dialog.
 		QString fileExtension = m_effectFactory->extension();
 		QString effectType = QString("%1 (*.%2)").arg(m_effectFactory->namePlural()).arg(fileExtension);
-		QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), tr("untitled") + "." + fileExtension, effectType);
+		QString fileName = KFileDialog::getSaveFileName(tr("untitled") + "." + fileExtension, effectType, this, tr("Save File"));
 
 		if( fileName.isEmpty() ) {
 			return false;
@@ -830,7 +826,7 @@ void KShaderEdit::saveAs()
 	}
 
 	// Choose file dialog.
-	fileName = QFileDialog::getSaveFileName(this, tr("Save File"), fileName, effectType);
+	fileName = KFileDialog::getSaveFileName(fileName, effectType, this, tr("Save File"));
 
 	if( fileName.isEmpty() ) {
 		return;
