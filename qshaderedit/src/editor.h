@@ -75,6 +75,16 @@ public:
 
 protected:
 	void keyPressEvent(QKeyEvent * event);
+	void paintEvent(QPaintEvent * event);
+
+	QRect lineRect();
+	
+protected slots:
+	void cursorChanged();
+
+private:
+	int m_line;
+	QRect m_lineRect;
 };
 
 #endif // EDITOR_H

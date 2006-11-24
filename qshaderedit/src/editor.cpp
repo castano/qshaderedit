@@ -11,10 +11,12 @@
 #include <QtGui/QTextBlock>
 //#include <QtGui/QTextDocument>
 #include <QtGui/QMessageBox>
+#include <QtGui/QPainter>
 
 
-SourceEdit::SourceEdit(QWidget * parent): QTextEdit(parent)
+SourceEdit::SourceEdit(QWidget * parent): QTextEdit(parent), m_line(0), m_lineRect(lineRect())
 {
+	connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(cursorChanged()));
 }
 
 void SourceEdit::keyPressEvent(QKeyEvent * event)
@@ -53,6 +55,37 @@ void SourceEdit::keyPressEvent(QKeyEvent * event)
 		cursor.movePosition(QTextCursor::Left);
 		if (cursor.block().text().endsWith("\t{"))
 			cursor.deletePreviousChar();		
+	}
+}
+
+void SourceEdit::paintEvent(QPaintEvent * event)
+{
+	QPainter p(viewport());
+	QRect rect = lineRect().intersected(event->region().boundingRect());
+	p.fillRect(rect, QBrush(QColor(240, 240, 240)));
+	p.end();
+	
+	QTextEdit::paintEvent(event);
+}
+
+QRect SourceEdit::lineRect()
+{
+	QRect rect = cursorRect();
+	rect.setLeft(0);
+	rect.setWidth(viewport()->width());
+	return rect;
+}
+
+void SourceEdit::cursorChanged()
+{
+	if (m_line != textCursor().blockNumber())
+	{
+		viewport()->update(m_lineRect);
+		
+		m_lineRect = lineRect();
+		m_line = textCursor().blockNumber();
+		
+		viewport()->update(m_lineRect);
 	}
 }
 
