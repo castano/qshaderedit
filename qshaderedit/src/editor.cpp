@@ -62,7 +62,7 @@ void SourceEdit::paintEvent(QPaintEvent * event)
 {
 	QPainter p(viewport());
 	QRect rect = lineRect().intersected(event->region().boundingRect());
-	p.fillRect(rect, QBrush(QColor(240, 240, 240)));
+	p.fillRect(rect, QBrush(QColor(248, 248, 248)));
 	p.end();
 	
 	QTextEdit::paintEvent(event);
@@ -80,12 +80,15 @@ void SourceEdit::cursorChanged()
 {
 	if (m_line != textCursor().blockNumber())
 	{
-		viewport()->update(m_lineRect);
+		viewport()->update();
+
+		// @@ Optimize updated.
+		//viewport()->update(m_lineRect);
 		
 		m_lineRect = lineRect();
 		m_line = textCursor().blockNumber();
 		
-		viewport()->update(m_lineRect);
+		//viewport()->update(m_lineRect);
 	}
 }
 
