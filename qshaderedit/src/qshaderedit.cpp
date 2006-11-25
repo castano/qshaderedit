@@ -1086,14 +1086,6 @@ void QShaderEdit::loadSettings()
 	resize(pref.value("size", QSize(640,480)).toSize());
 	bool maximize = pref.value("maximized", false).toBool();
 
-#if defined(Q_WS_WIN)
-	// This restores the non maximized size correctly, but also changes position.
-//	QByteArray geometry = pref.value("geometry").toByteArray();
-//	if (!geometry.isEmpty()) {
-//		restoreGeometry(geometry);
-//	}
-#endif
-
 	QByteArray state = pref.value("state").toByteArray();
 	if (!state.isEmpty()) {
 		restoreState(state);
@@ -1118,9 +1110,10 @@ void QShaderEdit::saveSettings()
 	pref.beginGroup("MainWindow");
 	pref.setValue("maximized", isMaximized());
 #if defined(Q_WS_WIN)
-	pref.setValue("geometry", saveGeometry());
-#endif
+	pref.setValue("size", normalGeometry().size());
+#else
 	pref.setValue("size", size());
+#endif
 	pref.setValue("state", saveState());
 	pref.endGroup();
 
