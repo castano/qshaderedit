@@ -522,14 +522,18 @@ void ColorEditor::setValue(const QVariant & value)
 
 void ColorEditor::updateLabel()
 {
-	QString text = "[" + m_value.toStringList().join(", ") + "]";
-	/*QString text = "[";
-	text += QString().setNum(m_color.redF(), 'g', 2) + ", ";
-	text += QString().setNum(m_color.greenF(), 'g', 2) + ", ";
-	text += QString().setNum(m_color.blueF(), 'g', 2) + ", ";
-	text += QString().setNum(m_color.alphaF(), 'g', 2);
-	text += "]";*/
-
+	//QString text = "[" + m_value.toStringList().join(", ") + "]";
+	
+	// @@ This code is already in Parameter::displayValue()
+	QVariantList list = m_value.toList();
+	
+	QString text;
+	foreach(QVariant value, list) {
+		if (text.isEmpty()) text = "[" + QString::number(value.toDouble(), 'g', 3);
+		else text += ", " + QString::number(value.toDouble(), 'g', 3);
+	}
+	text += "]";
+	
 	m_colorLabel->setText(text);
 }
 
