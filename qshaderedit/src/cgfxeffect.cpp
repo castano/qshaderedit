@@ -881,7 +881,7 @@ class CgFxEffectFactory : public EffectFactory
 				int major = rx.cap(1).toInt();
 				int minor = rx.cap(2).toInt();
 
-				if((major == 1 && minor > 4) || major > 1)
+				if((major == 1 && minor >= 4) || major > 1)
 				{
 					return true;
 				}
