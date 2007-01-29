@@ -16,6 +16,7 @@ class QLabel;
 class QToolBar;
 class KUrl;
 class KRecentFilesAction;
+class KAction;
 struct Effect;
 struct EffectFactory;
 

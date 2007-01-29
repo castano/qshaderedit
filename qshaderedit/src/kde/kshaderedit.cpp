@@ -27,7 +27,7 @@
 
 #include <kapplication.h>
 #include <kaction.h>
-#include <kstdaction.h>
+#include <kstandardaction.h>
 #include <kmenubar.h>
 #include <kstatusbar.h>
 #include <kfiledialog.h>
@@ -105,28 +105,28 @@ QSize KShaderEdit::sizeHint() const
 void KShaderEdit::createActions()
 {
 
-	m_newAction = KStdAction::openNew(this, SLOT(newFile()), actionCollection());
+	m_newAction = KStandardAction::openNew(this, SLOT(newFile()), this);
 	m_newAction->setStatusTip(tr("Create a new effect"));
 
-	m_openAction = KStdAction::open(this, SLOT(open()), actionCollection());
+	m_openAction = KStandardAction::open(this, SLOT(open()), this);
 	m_openAction->setStatusTip(tr("Open an existing effect"));
 
-	m_saveAction = KStdAction::save(this, SLOT(save()), actionCollection());
+	m_saveAction = KStandardAction::save(this, SLOT(save()), this);
 	m_saveAction->setEnabled(false);
 	m_saveAction->setStatusTip(tr("Save the effect"));
 
-	m_saveAsAction = KStdAction::saveAs(this, SLOT(saveAs()), actionCollection());
+	m_saveAsAction = KStandardAction::saveAs(this, SLOT(saveAs()), this);
 	m_saveAsAction->setStatusTip(tr("Save the effect under a new name"));
 	m_saveAsAction->setEnabled(false);
 
-	m_recentFiles = KStdAction::openRecent(this, SLOT(load(const KUrl &)), actionCollection());
+	m_recentFiles = KStandardAction::openRecent(this, SLOT(load(const KUrl &)), this);
 //	for (int i = 0; i < MaxRecentFiles; ++i) {
-//		m_recentFileActions[i] = new KAction(actionCollection(), QString(""));
+//		m_recentFileActions[i] = new KAction(QString(""), this);
 //		m_recentFileActions[i]->setVisible(false);
 //		connect(m_recentFileActions[i], SIGNAL(triggered()), this, SLOT(openRecentFile()));
 //	}
 	
-//	m_clearRecentAction = new KAction(actionCollection(), tr("&Clear Recent"));
+//	m_clearRecentAction = new KAction(tr("&Clear Recent"), this);
 //	m_clearRecentAction->setEnabled(false);
 //	connect(m_clearRecentAction, SIGNAL(triggered()), this, SLOT(clearRecentFiles()));
 /*	
@@ -136,16 +136,16 @@ void KShaderEdit::createActions()
 	m_compileAction->setShortcut(tr("F7"));
 	connect(m_compileAction, SIGNAL(toggled(bool)), this, SLOT(compileChecked(bool)));
 */	
-	m_findAction = KStdAction::find(m_editor, SLOT(findDialog()), actionCollection());
+	m_findAction = KStandardAction::find(m_editor, SLOT(findDialog()), this);
 	m_findAction->setEnabled(false);
 	
-	m_findNextAction = KStdAction::findNext(m_editor, SLOT(findNext()), actionCollection());
+	m_findNextAction = KStandardAction::findNext(m_editor, SLOT(findNext()), this);
 	m_findNextAction->setEnabled(false);
 	
-	m_findPreviousAction = KStdAction::findPrev(m_editor, SLOT(findPrevious()), actionCollection());
+	m_findPreviousAction = KStandardAction::findPrev(m_editor, SLOT(findPrevious()), this);
 	m_findPreviousAction->setEnabled(false);
 	
-	m_gotoAction = KStdAction::gotoLine(m_editor, SLOT(gotoDialog()), actionCollection());
+	m_gotoAction = KStandardAction::gotoLine(m_editor, SLOT(gotoDialog()), this);
 	m_gotoAction->setEnabled(false);
 }
 
@@ -176,35 +176,35 @@ void KShaderEdit::createMenus()
 	
 	fileMenu->addSeparator();
 	
-	action = KStdAction::quit(this, SLOT(close()), actionCollection());
+	action = KStandardAction::quit(this, SLOT(close()), this);
 	action->setStatusTip(tr("Exit the application"));
 	fileMenu->addAction(action);
 
 	QMenu * editMenu = menuBar()->addMenu(tr("&Edit"));
 
-	action = KStdAction::undo(m_editor, SLOT(undo()), actionCollection());
+	action = KStandardAction::undo(m_editor, SLOT(undo()), this);
 	action->setEnabled(false);
 	connect(m_editor, SIGNAL(undoAvailable(bool)), action, SLOT(setEnabled(bool)));
 	editMenu->addAction(action);
 
-	action = KStdAction::redo(m_editor, SLOT(redo()), actionCollection());
+	action = KStandardAction::redo(m_editor, SLOT(redo()), this);
 	action->setEnabled(false);
 	connect(m_editor, SIGNAL(redoAvailable(bool)), action, SLOT(setEnabled(bool)));
 	editMenu->addAction(action);
 
 	editMenu->addSeparator();
 
-	action = KStdAction::cut(m_editor, SLOT(cut()), actionCollection());
+	action = KStandardAction::cut(m_editor, SLOT(cut()), this);
 	action->setEnabled(false);
 	connect(m_editor, SIGNAL(copyAvailable(bool)), action, SLOT(setEnabled(bool)));
 	editMenu->addAction(action);
 
-	action = KStdAction::copy(m_editor, SLOT(copy()), actionCollection());
+	action = KStandardAction::copy(m_editor, SLOT(copy()), this);
 	action->setEnabled(false);
 	connect(m_editor, SIGNAL(copyAvailable(bool)), action, SLOT(setEnabled(bool)));
 	editMenu->addAction(action);
 
-	action = KStdAction::paste(m_editor, SLOT(paste()), actionCollection());
+	action = KStandardAction::paste(m_editor, SLOT(paste()), this);
 	action->setEnabled(false);
 	connect(m_editor, SIGNAL(pasteAvailable(bool)), action, SLOT(setEnabled(bool)));
 	editMenu->addAction(action);
@@ -240,7 +240,7 @@ void KShaderEdit::createMenus()
 			const SceneFactory * factory = SceneFactory::factoryList().at(i);
 			Q_ASSERT(factory != NULL);
 			
-			action = new KAction(actionCollection(), QString("&%1 %2").arg(i+1).arg(factory->name()));
+			action = new KAction(QString("&%1 %2").arg(i+1).arg(factory->name()), this);
 			action->setData(factory->name());
 			connect(action, SIGNAL(triggered()), this, SLOT(selectScene()));
 			sceneSelectionMenu->addAction(action);
@@ -252,11 +252,11 @@ void KShaderEdit::createMenus()
 	
 	QMenu * helpMenu = menuBar()->addMenu(tr("&Help"));
 
-	action = KStdAction::aboutApp(this, SLOT(about()), actionCollection());
+	action = KStandardAction::aboutApp(this, SLOT(about()), this);
 	action->setStatusTip(tr("Show the application's about box"));
 	helpMenu->addAction(action);
 
-	action = KStdAction::aboutKDE(kapp, SLOT(aboutKDE()), actionCollection());
+	action = KStandardAction::aboutKDE(kapp, SLOT(aboutKDE()), this);
 //	action->setStatusTip(tr("Show the Qt library's about box"));
 //	connect(action, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
 	helpMenu->addAction(action);
