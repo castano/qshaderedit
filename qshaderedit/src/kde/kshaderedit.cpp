@@ -891,7 +891,7 @@ void KShaderEdit::updateRecentFileActions()
 		QString fileExtension = files[i].mid(idx+1);
 
 		const EffectFactory * factory = EffectFactory::factoryForExtension(fileExtension);
-		if (factory != NULL || !factory->isSupported()) {
+		if (factory == NULL || !factory->isSupported()) {
 			m_recentFileActions[i]->setEnabled(false);
 		}
 	}
