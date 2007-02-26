@@ -184,8 +184,8 @@ QWidget* ParameterDelegate::createScalarEditor(QWidget* parent, const QVariant& 
 		double min = minValue.toDouble();
 		double max = maxValue.toDouble();
 		editor->setRange(min, max);
-		editor->setSingleStep((max - min) / 20.0);
-		editor->setPageStep((max - min) / 10.0);
+		editor->setSingleStep((max - min) / 500.0);
+		editor->setPageStep((max - min) / 20.0);
 	}	
 	editor->installEventFilter(const_cast<ParameterDelegate*>(this));
 	connect(editor, SIGNAL(valueChanged(double)), this, SLOT(editorValueChanged()));
@@ -245,8 +245,8 @@ ParameterEditor::ParameterEditor(Parameter* param, QWidget* parent):
 			double min = param->minValue().toDouble();
 			double max = param->maxValue().toDouble();
 			input->setRange(min, max);
-			input->setSingleStep((max - min) / 20.0);
-			input->setPageStep((max - min) / 10.0);
+			input->setSingleStep((max - min) / 500.0);
+			input->setPageStep((max - min) / 20.0);
 		}
 		m_editor = input;	
 	}
