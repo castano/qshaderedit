@@ -79,7 +79,7 @@ protected:
 	// Events
 	virtual void closeEvent(QCloseEvent * event);
 	virtual void keyPressEvent(QKeyEvent * event);
-	
+	virtual void dropEvent(QDropEvent * event);
 	
 private:
 

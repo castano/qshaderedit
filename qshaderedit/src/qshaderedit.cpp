@@ -11,6 +11,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QTimer>
 #include <QtCore/QSettings>
+#include <QtCore/QUrl>
 #include <QtCore/QtDebug>	//
 #include <QtGui/QApplication>
 #include <QtGui/QMenu>
@@ -368,9 +369,7 @@ void QShaderEdit::createDockWindows()
 		//format.setStencil(false);	// not for now...
 		format.setDoubleBuffer(true);
 		m_sceneView = new QGLView(format, m_sceneViewDock);
-        connect( m_sceneView, SIGNAL(fileDropped(const QString&)),
-                 this, SLOT(load(const QString&)) );
-
+		
 		if( !m_sceneView->init(m_logViewDock) ) {
 			QMessageBox::critical(this, tr("Error"), tr("OpenGL initialization failed."));
 			m_logViewDock->setVisible(true);
@@ -639,6 +638,18 @@ void QShaderEdit::keyPressEvent(QKeyEvent * event)
 	}
 	else {
 		event->ignore();
+	}
+}
+
+void QShaderEdit::dropEvent(QDropEvent *event)
+{
+    QList<QUrl> urls = event->mimeData()->urls();
+	
+	// @@ Make sure the file is a supported effect.
+    event->acceptProposedAction();
+	
+	if( urls.size() ) {
+        load(urls[0].toLocalFile());
 	}
 }
 

@@ -14,8 +14,8 @@
 #include <QtCore/QFile>
 #include <QtGui/QApplication>
 #include <QtGui/QMenu>
-#include <QtGui/QToolBar>
 #include <QtGui/QMenuBar>
+#include <QtGui/QToolBar>
 #include <QtGui/QTextEdit>
 #include <QtGui/QTabWidget>
 #include <QtGui/QStatusBar>
@@ -27,11 +27,14 @@
 
 #include <kapplication.h>
 #include <kaction.h>
+#include <kactioncollection.h>
 #include <kstandardaction.h>
 #include <kmenubar.h>
 #include <kstatusbar.h>
+#include <ktoolbar.h>
 #include <kfiledialog.h>
 #include <krecentfilesaction.h>
+#include <kconfigdialog.h>
 
 /// Ctor.
 KShaderEdit::KShaderEdit(const KUrl & url) :
@@ -46,8 +49,6 @@ KShaderEdit::KShaderEdit(const KUrl & url) :
 	m_positionLabel(NULL),
 	m_openAction(NULL),
 	m_saveAction(NULL),
-//	m_recentFileSeparator(NULL),
-//	m_clearRecentAction(NULL),
 	m_recentFiles(NULL),
 	m_timer(NULL),
 	m_animationTimer(NULL),
@@ -70,8 +71,10 @@ KShaderEdit::KShaderEdit(const KUrl & url) :
 	createActions();
 	createToolbars();
 	createDockWindows();
-	createMenus();
+//	createMenus();
 	createStatusbar();
+
+	setupGUI();
 
     loadSettings();
 
@@ -104,18 +107,21 @@ QSize KShaderEdit::sizeHint() const
 
 void KShaderEdit::createActions()
 {
-
-	m_newAction = KStandardAction::openNew(this, SLOT(newFile()), this);
+	//m_newAction = KStandardAction::openNew(this, SLOT(newFile()), this);
+	m_newAction = actionCollection()->addAction(KStandardAction::New, "file_new", this, SLOT(newFile()));
 	m_newAction->setStatusTip(tr("Create a new effect"));
-
-	m_openAction = KStandardAction::open(this, SLOT(open()), this);
+	
+	//m_openAction = KStandardAction::open(this, SLOT(open()), this);
+	m_openAction = actionCollection()->addAction(KStandardAction::Open, "file_open", this, SLOT(open()));
 	m_openAction->setStatusTip(tr("Open an existing effect"));
 
-	m_saveAction = KStandardAction::save(this, SLOT(save()), this);
-	m_saveAction->setEnabled(false);
+	//m_saveAction = KStandardAction::save(this, SLOT(save()), this);
+	m_saveAction = actionCollection()->addAction(KStandardAction::Save, "file_save", this, SLOT(save()));
 	m_saveAction->setStatusTip(tr("Save the effect"));
+	m_saveAction->setEnabled(false);
 
-	m_saveAsAction = KStandardAction::saveAs(this, SLOT(saveAs()), this);
+	//m_saveAsAction = KStandardAction::saveAs(this, SLOT(saveAs()), this);
+	m_saveAsAction = actionCollection()->addAction(KStandardAction::SaveAs, "file_save_as", this, SLOT(saveAs()));
 	m_saveAsAction->setStatusTip(tr("Save the effect under a new name"));
 	m_saveAsAction->setEnabled(false);
 
@@ -129,6 +135,9 @@ void KShaderEdit::createActions()
 //	m_clearRecentAction = new KAction(tr("&Clear Recent"), this);
 //	m_clearRecentAction->setEnabled(false);
 //	connect(m_clearRecentAction, SIGNAL(triggered()), this, SLOT(clearRecentFiles()));
+
+	KStandardAction::quit(kapp, SLOT(quit()), actionCollection());
+
 /*	
 	m_compileAction = new QAction(tr("&Compile"), this);
 	m_compileAction->setCheckable(true);
@@ -136,21 +145,52 @@ void KShaderEdit::createActions()
 	m_compileAction->setShortcut(tr("F7"));
 	connect(m_compileAction, SIGNAL(toggled(bool)), this, SLOT(compileChecked(bool)));
 */	
-	m_findAction = KStandardAction::find(m_editor, SLOT(findDialog()), this);
+
+	QAction * action;
+	
+	action = actionCollection()->addAction(KStandardAction::Undo, "edit_undo", m_editor, SLOT(undo()));
+	action->setEnabled(false);
+	connect(m_editor, SIGNAL(undoAvailable(bool)), action, SLOT(setEnabled(bool)));
+
+	action = actionCollection()->addAction(KStandardAction::Redo, "edit_redo", m_editor, SLOT(redo()));
+	action->setEnabled(false);
+	connect(m_editor, SIGNAL(redoAvailable(bool)), action, SLOT(setEnabled(bool)));
+
+	action = actionCollection()->addAction(KStandardAction::Cut, "edit_cut", m_editor, SLOT(cut()));
+	action->setEnabled(false);
+	connect(m_editor, SIGNAL(copyAvailable(bool)), action, SLOT(setEnabled(bool)));
+
+	action = actionCollection()->addAction(KStandardAction::Copy, "edit_copy", m_editor, SLOT(copy()));
+	action->setEnabled(false);
+	connect(m_editor, SIGNAL(copyAvailable(bool)), action, SLOT(setEnabled(bool)));
+
+	action = actionCollection()->addAction(KStandardAction::Paste, "edit_paste", m_editor, SLOT(paste()));
+	action->setEnabled(false);
+	connect(m_editor, SIGNAL(pasteAvailable(bool)), action, SLOT(setEnabled(bool)));
+
+
+	//m_findAction = KStandardAction::find(m_editor, SLOT(findDialog()), this);
+	m_findAction = actionCollection()->addAction(KStandardAction::Find, "edit_find", m_editor, SLOT(findDialog()));
 	m_findAction->setEnabled(false);
 	
-	m_findNextAction = KStandardAction::findNext(m_editor, SLOT(findNext()), this);
+	//m_findNextAction = KStandardAction::findNext(m_editor, SLOT(findNext()), this);
+	m_findNextAction = actionCollection()->addAction(KStandardAction::FindNext, "edit_find_next", m_editor, SLOT(findNext()));
 	m_findNextAction->setEnabled(false);
 	
-	m_findPreviousAction = KStandardAction::findPrev(m_editor, SLOT(findPrevious()), this);
+	//m_findPreviousAction = KStandardAction::findPrev(m_editor, SLOT(findPrevious()), this);
+	m_findPreviousAction = actionCollection()->addAction(KStandardAction::FindPrev, "edit_find_prev", m_editor, SLOT(findPrevious()));
 	m_findPreviousAction->setEnabled(false);
 	
-	m_gotoAction = KStandardAction::gotoLine(m_editor, SLOT(gotoDialog()), this);
+	//m_gotoAction = KStandardAction::gotoLine(m_editor, SLOT(gotoDialog()), this);
+	m_gotoAction = actionCollection()->addAction(KStandardAction::GotoLine, "edit_goto", m_editor, SLOT(gotoDialog()));
 	m_gotoAction->setEnabled(false);
+
+	KStandardAction::preferences(this, SLOT(optionsPreferences()), this);
 }
 
 void KShaderEdit::createMenus()
 {
+/*
 	KAction * action = NULL;
 
 	QMenu * fileMenu = menuBar()->addMenu(tr("&File"));
@@ -256,10 +296,11 @@ void KShaderEdit::createMenus()
 	action->setStatusTip(tr("Show the application's about box"));
 	helpMenu->addAction(action);
 
-	action = KStandardAction::aboutKDE(kapp, SLOT(aboutKDE()), this);
+//	action = KStandardAction::aboutKDE(kapp, SLOT(aboutKDE()), this);
 //	action->setStatusTip(tr("Show the Qt library's about box"));
 //	connect(action, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
 	helpMenu->addAction(action);
+*/
 /*	
 	action = new QAction(tr("&Next Tab"), this);
 	action->setShortcut(tr("Alt+Right"));
@@ -275,17 +316,19 @@ void KShaderEdit::createMenus()
 
 void KShaderEdit::createToolbars()
 {
-	m_fileToolBar = new QToolBar(tr("File Toolbar"), this);
-	m_fileToolBar->setObjectName("FileToolBar");
-	this->addToolBar(m_fileToolBar);
+	m_fileToolBar = new KToolBar("fileToolBar", this, Qt::TopToolBarArea);
+	//m_fileToolBar = new QToolBar(tr("File Toolbar"), this);
+	//m_fileToolBar->setObjectName("FileToolbar");
+	//this->addToolBar(m_fileToolBar);
 
-	m_fileToolBar->addAction(m_newAction);
-	m_fileToolBar->addAction(m_openAction);
-	m_fileToolBar->addAction(m_saveAction);
+//	m_fileToolBar->addAction(m_newAction);
+//	m_fileToolBar->addAction(m_openAction);
+//	m_fileToolBar->addAction(m_saveAction);
 //	m_fileToolBar->addAction(m_compileAction);
 
+	//m_techniqueToolBar = new KToolBar(tr("techniqueToolBar"), this, Qt::TopToolBarArea);
 	m_techniqueToolBar = new QToolBar(tr("Technique Toolbar"), this);
-	m_techniqueToolBar->setObjectName("TechniqueToolBar");
+	m_techniqueToolBar->setObjectName("techniqueToolBar");
 	this->addToolBar(m_techniqueToolBar);
 
 	m_techniqueCombo = new QComboBox();
@@ -329,9 +372,7 @@ void KShaderEdit::createDockWindows()
 		//format.setStencil(false);	// not for now...
 		format.setDoubleBuffer(true);
 		m_sceneView = new QGLView(format, m_sceneViewDock);
-        connect( m_sceneView, SIGNAL(fileDropped(const QString&)),
-                 this, SLOT(load(const QString&)) );
-
+		
 		if( !m_sceneView->init(m_logViewDock) ) {
 			QMessageBox::critical(this, tr("Error"), tr("OpenGL initialization failed."));
 			m_logViewDock->setVisible(true);
@@ -603,6 +644,18 @@ void KShaderEdit::keyPressEvent(QKeyEvent * event)
 	}
 }
 
+void KShaderEdit::dropEvent(QDropEvent *event)
+{
+    QList<QUrl> urls = event->mimeData()->urls();
+	
+	// @@ Make sure the file is a supported effect.
+    event->acceptProposedAction();
+	
+	if( urls.size() ) {
+        load(urls[0]);
+	}
+}
+
 
 void KShaderEdit::newEffect(const EffectFactory * effectFactory)
 {
@@ -737,13 +790,18 @@ void KShaderEdit::open()
 
 bool KShaderEdit::load(const KUrl & url)
 {
-	Q_ASSERT(m_sceneView != NULL);
-		
-	if (!closeEffect())
-		return false;
-
 	QString fileName = url.toLocalFile();
 	qDebug() << "URL = " << url << "|" << fileName;
+	
+	return load(fileName);
+}
+
+bool KShaderEdit::load(const QString & fileName)
+{
+	Q_ASSERT(m_sceneView != NULL);
+	
+	if (!closeEffect())
+		return false;
 
 	m_file = new QFile(fileName);
 	if (!m_file->open(QIODevice::ReadOnly)) {
@@ -1102,4 +1160,15 @@ QString KShaderEdit::strippedName(const QString & fileName)
 QString KShaderEdit::strippedName(const QFile & file)
 {
 	return QFileInfo(file).fileName();
+}
+
+void KShaderEdit::optionsPreferences()
+{
+	if (KConfigDialog::showDialog("settings"))
+	{
+		return;
+	}
+
+	//KConfigDialog * dialog = new KConfigDialog(this, "settings", Settings::self());
+
 }

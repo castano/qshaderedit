@@ -15,8 +15,8 @@ class QComboBox;
 class QLabel;
 class QToolBar;
 class KUrl;
+class QAction;
 class KRecentFilesAction;
-class KAction;
 struct Effect;
 struct EffectFactory;
 
@@ -33,11 +33,10 @@ public slots:
 	void newFile(bool startup=false);
 	
 protected slots:
-	bool load( const KUrl & url );
+	bool load(const QString & fileName);
+	bool load(const KUrl & url);
 	
 	void open();
-//	void openRecentFile();
-//	void clearRecentFiles();
 	bool save();
 	void saveAs();
 	
@@ -56,6 +55,8 @@ protected slots:
 	void techniqueChanged(int index);
 	void cursorPositionChanged();
 	void selectScene();
+
+	void optionsPreferences();
 	
 protected:
 	
@@ -83,7 +84,7 @@ protected:
 	// Events
 	virtual void closeEvent(QCloseEvent * event);
 	virtual void keyPressEvent(QKeyEvent * event);
-	
+	virtual void dropEvent(QDropEvent * event);
 	
 private:
 
@@ -94,7 +95,6 @@ private:
 
 	static QString strippedName(const QString & fileName);
 	static QString strippedName(const QFile & file);
-
 
 	// Central widget.
 	Editor * m_editor;
@@ -117,24 +117,19 @@ private:
 	QMenu * m_renderMenu;
 	
 	// Actions.
-	KAction * m_newAction;
-	KAction * m_openAction;
-	KAction * m_saveAction;
-	KAction * m_saveAsAction;
+	QAction * m_newAction;
+	QAction * m_openAction;
+	QAction * m_saveAction;
+	QAction * m_saveAsAction;
 
-//	enum { MaxRecentFiles = 5 };
-//	KAction * m_recentFileActions[MaxRecentFiles];	
-
-//	QAction * m_recentFileSeparator;
-//	KAction * m_clearRecentAction;
 	KRecentFilesAction * m_recentFiles;
 	
-	KAction * m_compileAction;
+	QAction * m_compileAction;
 	
-	KAction * m_findAction;
-	KAction * m_findNextAction;
-	KAction * m_findPreviousAction;
-	KAction * m_gotoAction;
+	QAction * m_findAction;
+	QAction * m_findNextAction;
+	QAction * m_findPreviousAction;
+	QAction * m_gotoAction;
 	
 	// Timers.
 	QTimer * m_timer;	// compilation timer.

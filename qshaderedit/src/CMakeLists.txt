@@ -110,7 +110,7 @@ IF(KDE4_FOUND)
 
 	INSTALL(FILES kde/kshaderedit.desktop  DESTINATION  ${XDG_APPS_DIR})
 	INSTALL(FILES kde/kshaderedit.kcfg  DESTINATION  ${KCFG_INSTALL_DIR})
-	#install(FILES kde/kapp4ui.rc  DESTINATION  ${DATA_INSTALL_DIR}/kapp4)
+	install(FILES kde/kshadereditui.rc  DESTINATION  ${DATA_INSTALL_DIR}/kshaderedit)
 
 ENDIF(KDE4_FOUND)
 
