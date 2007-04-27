@@ -118,100 +118,14 @@ public:
 		
 		m_dlist = glGenLists(1);
 		glNewList(m_dlist, GL_COMPILE);
-		glBegin(GL_TRIANGLES);
-		glNormal3f(0, 0, 1);
-		
-		if( hasMultiTexture ) {
-			glMultiTexCoord3f(GL_TEXTURE6, 1, 0, 0);
-			glMultiTexCoord3f(GL_TEXTURE7, 0, -1, 0);
-		}
-
-#if 1
-		for(int i = 0; i < 15; i++) {
-			float v0 = float(i) / 15;
-			float v1 = float(i+1) / 15;
-
-			for(int e = 0; e < 15; e++) {
-				float u0 = float(e) / 15;
-				float u1 = float(e+1) / 15;
-
-				glTexCoord2f(u0, 1-v0);
-				glVertex2f(2*u0-1, 2*v0-1);
-
-				glTexCoord2f(u1, 1-v0);
-				glVertex2f(2*u1-1, 2*v0-1);
-
-				glTexCoord2f(u1, 1-v1);
-				glVertex2f(2*u1-1, 2*v1-1);
-
-				glTexCoord2f(u0, 1-v0);
-				glVertex2f(2*u0-1, 2*v0-1);
-
-				glTexCoord2f(u1, 1-v1);
-				glVertex2f(2*u1-1, 2*v1-1);
-
-				glTexCoord2f(u0, 1-v1);
-				glVertex2f(2*u0-1, 2*v1-1);
-			}
-		}
-#else
-		for(int i = 0; i < 16; i++) {
-			float v0 = float(i) / 16;
-			float v1 = float(i+1) / 16;
-			
-			for(int e = 0; e < 16; e++) {
-				float u0 = float(e) / 16;
-				float u1 = float(e+1) / 16;
-
-				int dir = (i < 16/2) ^ (e < 16/2);
-				
-				if (dir)
-				{
-					glTexCoord2f(u0, 1-v0);
-					glVertex2f(2*u0-1, 2*v0-1);
-					
-					glTexCoord2f(u1, 1-v0);
-					glVertex2f(2*u1-1, 2*v0-1);
-					
-					glTexCoord2f(u0, 1-v1);
-					glVertex2f(2*u0-1, 2*v1-1);
-					
-					glTexCoord2f(u0, 1-v1);
-					glVertex2f(2*u0-1, 2*v1-1);
-					
-					glTexCoord2f(u1, 1-v0);
-					glVertex2f(2*u1-1, 2*v0-1);
-					
-					glTexCoord2f(u1, 1-v1);
-					glVertex2f(2*u1-1, 2*v1-1);
-				}
-				else
-				{
-					glTexCoord2f(u0, 1-v0);
-					glVertex2f(2*u0-1, 2*v0-1);
-					
-					glTexCoord2f(u1, 1-v0);
-					glVertex2f(2*u1-1, 2*v0-1);
-					
-					glTexCoord2f(u1, 1-v1);
-					glVertex2f(2*u1-1, 2*v1-1);
-					
-					glTexCoord2f(u1, 1-v1);
-					glVertex2f(2*u1-1, 2*v1-1);
-					
-					glTexCoord2f(u0, 1-v1);
-					glVertex2f(2*u0-1, 2*v1-1);
-					
-					glTexCoord2f(u0, 1-v0);
-					glVertex2f(2*u0-1, 2*v0-1);
-				}
-			}
-		}
-#endif
-		glEnd();
-		/*
 		glBegin(GL_QUADS);
 			glNormal3f(0, 0, 1);
+	
+			if( hasMultiTexture ) {
+				glMultiTexCoord3f(GL_TEXTURE6, 1, 0, 0);
+				glMultiTexCoord3f(GL_TEXTURE7, 0, -1, 0);
+			}
+		
 			glTexCoord2f(0, 1);
 			glVertex2f(-1, -1);
 
@@ -227,7 +141,6 @@ public:
 			glTexCoord2f(0, 0);
 			glVertex2f(-1, 1);
 		glEnd();
-		*/
 		glEndList();
 	}
 };
@@ -256,6 +169,194 @@ public:
 
 REGISTER_SCENE_FACTORY(QuadSceneFactory);
 
+// Experimental scenes for tessellation
+#if 0
+
+class EvenQuadScene : public DisplayListScene
+{
+public:
+	EvenQuadScene()
+	{
+		const bool hasMultiTexture = GLEW_ARB_multitexture || GLEW_VERSION_1_3;
+		
+		m_dlist = glGenLists(1);
+		glNewList(m_dlist, GL_COMPILE);
+		glBegin(GL_TRIANGLES);
+		glNormal3f(0, 0, 1);
+		
+		if( hasMultiTexture ) {
+			glMultiTexCoord3f(GL_TEXTURE6, 1, 0, 0);
+			glMultiTexCoord3f(GL_TEXTURE7, 0, -1, 0);
+		}
+		
+		for(int i = 0; i < 16; i++) {
+			float v0 = float(i) / 16;
+			float v1 = float(i+1) / 16;
+			
+			for(int e = 0; e < 16; e++) {
+				float u0 = float(e) / 16;
+				float u1 = float(e+1) / 16;
+				
+				int dir = (i < 8) ^ (e < 8);
+				
+				if (dir)
+				{
+					glTexCoord2f(u0, 1-v0);
+					glVertex2f(2*u0-1, 2*v0-1);
+					//glVertex2f(e-8, i-8);
+					
+					glTexCoord2f(u1, 1-v0);
+					glVertex2f(2*u1-1, 2*v0-1);
+					//glVertex2f(e+1-8, i-8);
+					
+					glTexCoord2f(u0, 1-v1);
+					glVertex2f(2*u0-1, 2*v1-1);
+					//glVertex2f(e-8, i+1-8);
+					
+					glTexCoord2f(u0, 1-v1);
+					glVertex2f(2*u0-1, 2*v1-1);
+					//glVertex2f(e-8, i+1-8);
+					
+					glTexCoord2f(u1, 1-v0);
+					glVertex2f(2*u1-1, 2*v0-1);
+					//glVertex2f(e+1-8, i-8);
+					
+					glTexCoord2f(u1, 1-v1);
+					glVertex2f(2*u1-1, 2*v1-1);
+					//glVertex2f(e+1-8, i+1-8);
+				}
+				else
+				{
+					glTexCoord2f(u0, 1-v0);
+					glVertex2f(2*u0-1, 2*v0-1);
+					//glVertex2f(e-8, i-8);
+					
+					glTexCoord2f(u1, 1-v0);
+					glVertex2f(2*u1-1, 2*v0-1);
+					//glVertex2f(e+1-8, i-8);
+					
+					glTexCoord2f(u1, 1-v1);
+					glVertex2f(2*u1-1, 2*v1-1);
+					//glVertex2f(e+1-8, i+1-8);
+					
+					glTexCoord2f(u1, 1-v1);
+					glVertex2f(2*u1-1, 2*v1-1);
+					//glVertex2f(e+1-8, i+1-8);
+					
+					glTexCoord2f(u0, 1-v1);
+					glVertex2f(2*u0-1, 2*v1-1);
+					//glVertex2f(e-8, i+1-8);
+					
+					glTexCoord2f(u0, 1-v0);
+					glVertex2f(2*u0-1, 2*v0-1);
+					//glVertex2f(e-8, i-8);
+				}
+			}
+		}		
+		glEnd();
+		glEndList();
+	}
+};
+
+// Even quad scene factory.
+class EvenQuadSceneFactory : public SceneFactory
+{
+public:
+	virtual QString name() const
+	{
+		return tr("Even Quad");
+	}
+	virtual QString description() const
+	{
+		return tr("Even Quad");
+	}
+	virtual QIcon icon() const
+	{
+		return QIcon();
+	}
+	virtual Scene * createScene() const
+	{
+		return new EvenQuadScene();
+	}
+};
+
+REGISTER_SCENE_FACTORY(EvenQuadSceneFactory);
+
+
+class OddQuadScene : public DisplayListScene
+{
+public:
+	OddQuadScene()
+	{
+		const bool hasMultiTexture = GLEW_ARB_multitexture || GLEW_VERSION_1_3;
+		
+		m_dlist = glGenLists(1);
+		glNewList(m_dlist, GL_COMPILE);
+		glBegin(GL_TRIANGLES);
+		glNormal3f(0, 0, 1);
+		
+		if( hasMultiTexture ) {
+			glMultiTexCoord3f(GL_TEXTURE6, 1, 0, 0);
+			glMultiTexCoord3f(GL_TEXTURE7, 0, -1, 0);
+		}
+		
+		for(int i = 0; i < 15; i++) {
+			float v0 = float(i) / 15;
+			float v1 = float(i+1) / 15;
+			
+			for(int e = 0; e < 15; e++) {
+				float u0 = float(e) / 15;
+				float u1 = float(e+1) / 15;
+				
+				glTexCoord2f(u0, 1-v0);
+				glVertex2f(2*u0-1, 2*v0-1);
+				
+				glTexCoord2f(u1, 1-v0);
+				glVertex2f(2*u1-1, 2*v0-1);
+				
+				glTexCoord2f(u1, 1-v1);
+				glVertex2f(2*u1-1, 2*v1-1);
+				
+				glTexCoord2f(u0, 1-v0);
+				glVertex2f(2*u0-1, 2*v0-1);
+				
+				glTexCoord2f(u1, 1-v1);
+				glVertex2f(2*u1-1, 2*v1-1);
+				
+				glTexCoord2f(u0, 1-v1);
+				glVertex2f(2*u0-1, 2*v1-1);
+			}
+		}
+		glEnd();
+		glEndList();
+	}
+};
+
+// OddQuad scene factory.
+class OddQuadSceneFactory : public SceneFactory
+{
+public:
+	virtual QString name() const
+	{
+		return tr("Odd Quad");
+	}
+	virtual QString description() const
+	{
+		return tr("Odd Quad");
+	}
+	virtual QIcon icon() const
+	{
+		return QIcon();
+	}
+	virtual Scene * createScene() const
+	{
+		return new OddQuadScene();
+	}
+};
+
+REGISTER_SCENE_FACTORY(OddQuadSceneFactory);
+
+
 
 class TriangleScene : public DisplayListScene
 {
@@ -267,13 +368,13 @@ class TriangleScene : public DisplayListScene
 			glBegin(GL_TRIANGLES);
 			glNormal3f(0, 0, 1);
 		
-			for(int i = 0; i < 15; i++) {
-				float v0 = float(i) / 15;
-				float v1 = float(i+1) / 15;
+			for(int i = 0; i < 16; i++) {
+				float v0 = float(i) / 16;
+				float v1 = float(i+1) / 16;
 				
 				for(int e = 0; e <= i; e++) {
-					float u0 = float(e) / 15;
-					float u1 = float(e+1) / 15;
+					float u0 = float(e) / 16;
+					float u1 = float(e+1) / 16;
 
 					if( e < i ) {
 						glTexCoord3f(u0, 1-v0, v0-u0);
@@ -325,6 +426,8 @@ class TriangleSceneFactory : public SceneFactory
 };
 
 REGISTER_SCENE_FACTORY(TriangleSceneFactory);
+
+#endif
 
 
 class CubeScene : public DisplayListScene
