@@ -182,12 +182,6 @@ public:
 		m_dlist = glGenLists(1);
 		glNewList(m_dlist, GL_COMPILE);
 		glBegin(GL_TRIANGLES);
-		glNormal3f(0, 0, 1);
-		
-		if( hasMultiTexture ) {
-			glMultiTexCoord3f(GL_TEXTURE6, 1, 0, 0);
-			glMultiTexCoord3f(GL_TEXTURE7, 0, -1, 0);
-		}
 		
 		for(int i = 0; i < 16; i++) {
 			float v0 = float(i) / 16;
@@ -201,55 +195,23 @@ public:
 				
 				if (dir)
 				{
-					glTexCoord2f(u0, 1-v0);
 					glVertex2f(2*u0-1, 2*v0-1);
-					//glVertex2f(e-8, i-8);
-					
-					glTexCoord2f(u1, 1-v0);
 					glVertex2f(2*u1-1, 2*v0-1);
-					//glVertex2f(e+1-8, i-8);
-					
-					glTexCoord2f(u0, 1-v1);
 					glVertex2f(2*u0-1, 2*v1-1);
-					//glVertex2f(e-8, i+1-8);
 					
-					glTexCoord2f(u0, 1-v1);
 					glVertex2f(2*u0-1, 2*v1-1);
-					//glVertex2f(e-8, i+1-8);
-					
-					glTexCoord2f(u1, 1-v0);
 					glVertex2f(2*u1-1, 2*v0-1);
-					//glVertex2f(e+1-8, i-8);
-					
-					glTexCoord2f(u1, 1-v1);
 					glVertex2f(2*u1-1, 2*v1-1);
-					//glVertex2f(e+1-8, i+1-8);
 				}
 				else
 				{
-					glTexCoord2f(u0, 1-v0);
 					glVertex2f(2*u0-1, 2*v0-1);
-					//glVertex2f(e-8, i-8);
-					
-					glTexCoord2f(u1, 1-v0);
 					glVertex2f(2*u1-1, 2*v0-1);
-					//glVertex2f(e+1-8, i-8);
-					
-					glTexCoord2f(u1, 1-v1);
 					glVertex2f(2*u1-1, 2*v1-1);
-					//glVertex2f(e+1-8, i+1-8);
 					
-					glTexCoord2f(u1, 1-v1);
 					glVertex2f(2*u1-1, 2*v1-1);
-					//glVertex2f(e+1-8, i+1-8);
-					
-					glTexCoord2f(u0, 1-v1);
 					glVertex2f(2*u0-1, 2*v1-1);
-					//glVertex2f(e-8, i+1-8);
-					
-					glTexCoord2f(u0, 1-v0);
 					glVertex2f(2*u0-1, 2*v0-1);
-					//glVertex2f(e-8, i-8);
 				}
 			}
 		}		
@@ -293,38 +255,59 @@ public:
 		m_dlist = glGenLists(1);
 		glNewList(m_dlist, GL_COMPILE);
 		glBegin(GL_TRIANGLES);
-		glNormal3f(0, 0, 1);
-		
-		if( hasMultiTexture ) {
-			glMultiTexCoord3f(GL_TEXTURE6, 1, 0, 0);
-			glMultiTexCoord3f(GL_TEXTURE7, 0, -1, 0);
-		}
 		
 		for(int i = 0; i < 15; i++) {
-			float v0 = float(i) / 15;
-			float v1 = float(i+1) / 15;
+			float v0, v1;
+			if (i < 7) {
+				v0 = float(i-8) / 8;
+				v1 = float(i-7) / 8;
+			}
+			else if(i == 7) {
+				v0 = float(i-8) / 8;
+				v1 = float(i-6) / 8;
+			}
+			else {
+				v0 = float(i-7) / 8;
+				v1 = float(i-6) / 8;
+			}
 			
 			for(int e = 0; e < 15; e++) {
-				float u0 = float(e) / 15;
-				float u1 = float(e+1) / 15;
+				float u0, u1;
 				
-				glTexCoord2f(u0, 1-v0);
-				glVertex2f(2*u0-1, 2*v0-1);
+				if (e < 7) {
+					u0 = float(e-8) / 8;
+					u1 = float(e-7) / 8;
+				}
+				else if(e == 7) {
+					u0 = float(e-8) / 8;
+					u1 = float(e-6) / 8;
+				}
+				else {
+					u0 = float(e-7) / 8;
+					u1 = float(e-6) / 8;
+				}
 				
-				glTexCoord2f(u1, 1-v0);
-				glVertex2f(2*u1-1, 2*v0-1);
+				int dir = (i < 8) ^ (e < 8);
 				
-				glTexCoord2f(u1, 1-v1);
-				glVertex2f(2*u1-1, 2*v1-1);
-				
-				glTexCoord2f(u0, 1-v0);
-				glVertex2f(2*u0-1, 2*v0-1);
-				
-				glTexCoord2f(u1, 1-v1);
-				glVertex2f(2*u1-1, 2*v1-1);
-				
-				glTexCoord2f(u0, 1-v1);
-				glVertex2f(2*u0-1, 2*v1-1);
+				if (dir) {
+					glVertex2f(u0, v0);
+					glVertex2f(u1, v0);
+					glVertex2f(u0, v1);
+					
+					glVertex2f(u0, v1);
+					glVertex2f(u1, v0);
+					glVertex2f(u1, v1);
+				}
+				else
+				{
+					glVertex2f(u0, v0);
+					glVertex2f(u1, v0);
+					glVertex2f(u1, v1);
+					
+					glVertex2f(u0, v0);
+					glVertex2f(u1, v1);
+					glVertex2f(u0, v1);
+				}
 			}
 		}
 		glEnd();
