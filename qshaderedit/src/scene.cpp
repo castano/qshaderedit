@@ -170,7 +170,7 @@ public:
 REGISTER_SCENE_FACTORY(QuadSceneFactory);
 
 // Experimental scenes for tessellation
-#if 0
+#if 1
 
 class EvenQuadScene : public DisplayListScene
 {
@@ -340,6 +340,32 @@ public:
 REGISTER_SCENE_FACTORY(OddQuadSceneFactory);
 
 
+static void baryTexCoord(float x, float y)
+{
+	float z = 1 - x - y;
+	
+	if (fabs(x) < 0.001f) {
+		x = 0.0f;
+		float sum = y + z;
+		y /= sum;
+		z /= sum;
+	}
+	if (fabs(y) < 0.001f) {
+		y = 0.0f;
+		float sum = x + z;
+		x /= sum;
+		z /= sum;
+	}
+	if (fabs(z) < 0.001f) {
+		z = 0.0f;
+		float sum = x + y;
+		x /= sum;
+		y /= sum;
+	}
+	
+	glTexCoord3f(x, y, z);
+}
+
 
 class TriangleScene : public DisplayListScene
 {
@@ -351,32 +377,32 @@ class TriangleScene : public DisplayListScene
 			glBegin(GL_TRIANGLES);
 			glNormal3f(0, 0, 1);
 		
-			for(int i = 0; i < 16; i++) {
-				float v0 = float(i) / 16;
-				float v1 = float(i+1) / 16;
+			for(int i = 0; i < 15; i++) {
+				float v0 = float(i) / 15;
+				float v1 = float(i+1) / 15;
 				
 				for(int e = 0; e <= i; e++) {
-					float u0 = float(e) / 16;
-					float u1 = float(e+1) / 16;
+					float u0 = float(e) / 15;
+					float u1 = float(e+1) / 15;
 
 					if( e < i ) {
-						glTexCoord3f(u0, 1-v0, v0-u0);
+						baryTexCoord(u0, 1-v0);
 						glVertex2f(2*u0-1, 2*v0-1);
 						
-						glTexCoord3f(u1, 1-v0, v0-u1);
+						baryTexCoord(u1, 1-v0);
 						glVertex2f(2*u1-1, 2*v0-1);
 						
-						glTexCoord3f(u1, 1-v1, v1-u1);
+						baryTexCoord(u1, 1-v1);
 						glVertex2f(2*u1-1, 2*v1-1);
 					}
 
-					glTexCoord3f(u0, 1-v0, v0-u0);
+					baryTexCoord(u0, 1-v0);
 					glVertex2f(2*u0-1, 2*v0-1);
 					
-					glTexCoord3f(u1, 1-v1, v1-u1);
+					baryTexCoord(u1, 1-v1);
 					glVertex2f(2*u1-1, 2*v1-1);
 					
-					glTexCoord3f(u0, 1-v1, v1-u0);
+					baryTexCoord(u0, 1-v1);
 					glVertex2f(2*u0-1, 2*v1-1);
 				}
 			}
