@@ -20,21 +20,22 @@
 #include <QtGui/QTabWidget>
 #include <QtGui/QStatusBar>
 #include <QtGui/QDockWidget>
-#include <QtGui/QMessageBox>
 #include <QtGui/QCloseEvent>
 #include <QtGui/QComboBox>
 #include <QtGui/QLabel>
 
-#include <kapplication.h>
-#include <kaction.h>
-#include <kactioncollection.h>
-#include <kstandardaction.h>
-#include <kmenubar.h>
+#include <KApplication>
+#include <KAction>
+#include <KActionCollection>
+#include <KStandardAction>
+#include <KMenuBar>
 #include <kstatusbar.h>
 #include <ktoolbar.h>
 #include <kfiledialog.h>
 #include <krecentfilesaction.h>
 #include <kconfigdialog.h>
+#include <KMessageBox>
+#include <KLocale>
 
 /// Ctor.
 KShaderEdit::KShaderEdit(const KUrl & url) :
@@ -76,7 +77,7 @@ KShaderEdit::KShaderEdit(const KUrl & url) :
 
 	setupGUI();
 
-    loadSettings();
+    readConfig();
 
 	// Start timers.
 	m_timer = new QTimer(this);
@@ -107,7 +108,7 @@ QSize KShaderEdit::sizeHint() const
 
 void KShaderEdit::createActions()
 {
-	//m_newAction = KStandardAction::openNew(this, SLOT(newFile()), this);
+	//m_newAction = KStandardAction::openNew(this, SLOT(newFile()), actionCollection());
 	m_newAction = actionCollection()->addAction(KStandardAction::New, "file_new", this, SLOT(newFile()));
 	m_newAction->setStatusTip(tr("Create a new effect"));
 	
@@ -126,16 +127,8 @@ void KShaderEdit::createActions()
 	m_saveAsAction->setEnabled(false);
 
 	m_recentFiles = KStandardAction::openRecent(this, SLOT(load(const KUrl &)), this);
-//	for (int i = 0; i < MaxRecentFiles; ++i) {
-//		m_recentFileActions[i] = new KAction(QString(""), this);
-//		m_recentFileActions[i]->setVisible(false);
-//		connect(m_recentFileActions[i], SIGNAL(triggered()), this, SLOT(openRecentFile()));
-//	}
+	actionCollection()->addAction(m_recentFiles->objectName(), m_recentFiles);
 	
-//	m_clearRecentAction = new KAction(tr("&Clear Recent"), this);
-//	m_clearRecentAction->setEnabled(false);
-//	connect(m_clearRecentAction, SIGNAL(triggered()), this, SLOT(clearRecentFiles()));
-
 	KStandardAction::quit(kapp, SLOT(quit()), actionCollection());
 
 /*	
@@ -374,7 +367,7 @@ void KShaderEdit::createDockWindows()
 		m_sceneView = new QGLView(format, m_sceneViewDock);
 		
 		if( !m_sceneView->init(m_logViewDock) ) {
-			QMessageBox::critical(this, tr("Error"), tr("OpenGL initialization failed."));
+			KMessageBox::error(this, i18n("OpenGL initialization failed."));
 			m_logViewDock->setVisible(true);
 		}
 		m_sceneViewDock->setWidget(m_sceneView);
@@ -388,40 +381,8 @@ void KShaderEdit::createDockWindows()
 	connect(m_paramViewDock, SIGNAL(parameterChanged()), this, SLOT(setModified()));
 }
 
-bool KShaderEdit::closeEffect()
+void KShaderEdit::closeEffect()
 {
-	if (m_effect == NULL) {
-		Q_ASSERT(m_file == NULL);
-		// No effect open.
-		return true;
-	}
-	
-	if( m_effectFactory != NULL && m_modified ) {
-		QString fileName;
-		if( m_file != NULL ) {
-			fileName = strippedName(*m_file);
-		}
-		else {
-			QString extension = m_effectFactory->extension();
-			fileName = tr("untitled") + "." + extension;
-		}
-
-		while(true) {
-			int answer = QMessageBox::question(this, tr("Save modified files"), tr("Do you want to save '%1' before closing?").arg(fileName), QMessageBox::Yes, QMessageBox::No, QMessageBox::Cancel);
-			if( answer == QMessageBox::Yes ) {
-				if( save() ) {
-					break;
-				}
-			}
-			else if( answer == QMessageBox::Cancel ) {
-				return false;
-			}
-			else {
-				break;
-			}
-		}
-	}
-
 	// Delete effect.
 	m_sceneView->resetEffect();
 
@@ -436,8 +397,6 @@ bool KShaderEdit::closeEffect()
 	// Delete effect file.
 	delete m_file;
 	m_file = NULL;
-	
-	return true;
 }
 
 void KShaderEdit::updateWindowTitle()
@@ -617,18 +576,45 @@ void KShaderEdit::selectScene()
 }
 
 
-void KShaderEdit::closeEvent(QCloseEvent * event)
+bool KShaderEdit::queryClose()
 {
-	Q_ASSERT(event != NULL);
+	if (m_effect == NULL) {
+		Q_ASSERT(m_file == NULL);
+		// No effect open.
+		writeConfig();
+		return true;
+	}
 	
-	if (closeEffect()) {
-		event->accept();
-		saveSettings();
+	if( m_effectFactory != NULL && m_modified ) {
+		QString fileName;
+		if( m_file != NULL ) {
+			fileName = strippedName(*m_file);
+		}
+		else {
+			QString extension = m_effectFactory->extension();
+			fileName = tr("untitled") + "." + extension;
+		}
+
+		while(true) {
+			int answer = KMessageBox::warningYesNoCancel(this, i18n("Save changes to document '%1'?", fileName));
+			if( answer == KMessageBox::Yes ) {
+				if( save() ) {
+					break;
+				}
+			}
+			else if( answer == KMessageBox::Cancel ) {
+				return false;
+			}
+			else {
+				break;
+			}
+		}
 	}
-	else {
-		event->ignore();
-	}
+
+	writeConfig();
+	return true;
 }
+
 
 void KShaderEdit::keyPressEvent(QKeyEvent * event)
 {
@@ -662,9 +648,8 @@ void KShaderEdit::newEffect(const EffectFactory * effectFactory)
 	Q_ASSERT(effectFactory != NULL);
 	Q_ASSERT(m_sceneView != NULL);
 
-	if (!closeEffect())
-		return;
-
+	closeEffect();
+	
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
 	m_effectFactory = effectFactory;
@@ -685,6 +670,9 @@ void KShaderEdit::newEffect(const EffectFactory * effectFactory)
 
 void KShaderEdit::newFile(bool startup)
 {
+	if (!queryClose())
+		return;
+
 	// Count effect file types.
 	const QList<const EffectFactory *> & effectFactoryList = EffectFactory::factoryList();
 
@@ -698,7 +686,7 @@ void KShaderEdit::newFile(bool startup)
 	const EffectFactory * effectFactory = NULL;
 	if(count == 0) {
 		// Display error.
-		QMessageBox::critical(this, tr("Error"), tr("No effect files supported"), QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
+		KMessageBox::error(this, i18n("No effect files supported"));
 	}
 	else if(count == 1) {
 		// Use the first supported effect type.
@@ -737,6 +725,9 @@ void KShaderEdit::newFile(bool startup)
 
 void KShaderEdit::open()
 {
+	if (!queryClose())
+		return;
+	
 	// Find supported effect types.
 	QStringList effectTypes;
 	QStringList effectExtensions;
@@ -751,7 +742,7 @@ void KShaderEdit::open()
 	}
 
 	if(effectTypes.isEmpty()) {
-		QMessageBox::critical(this, tr("Error"), tr("No effect files supported"), QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
+		KMessageBox::error(this, i18n("No effect files supported"));
 		return;
 	}
 
@@ -800,9 +791,8 @@ bool KShaderEdit::load(const QString & fileName)
 {
 	Q_ASSERT(m_sceneView != NULL);
 	
-	if (!closeEffect())
-		return false;
-
+	closeEffect();
+	
 	m_file = new QFile(fileName);
 	if (!m_file->open(QIODevice::ReadOnly)) {
 		delete m_file;
@@ -908,64 +898,14 @@ void KShaderEdit::saveAs()
 	setCurrentFile(fileName);
 }
 
-void KShaderEdit::setCurrentFile(const QString &fileName)
+void KShaderEdit::setCurrentFile(const QString & fileName)
 {
-//	QSettings settings( "Castano Inc", "KShaderEdit" );
-//	QStringList files = settings.value("recentFileList").toStringList();
-//	files.removeAll(fileName);
-//	files.prepend(fileName);
-//	while (files.size() > MaxRecentFiles)
-//		files.removeLast();
-//	settings.setValue("recentFileList", files);
-	
 	m_recentFiles->addUrl(fileName);
-
-	/*foreach (QWidget *widget, QApplication::topLevelWidgets()) {
-		MainWindow *mainWin = qobject_cast<MainWindow *>(widget);
-		if (mainWin)
-			mainWin->updateRecentFileActions();
-	}*/
-	
-	// Only a single main window.
-//	updateRecentFileActions();
 }
-/*
-void KShaderEdit::updateRecentFileActions()
-{
-	QSettings settings( "Castano Inc", "KShaderEdit" );
-	QStringList files = settings.value("recentFileList").toStringList();
 
-	int numRecentFiles = qMin(files.count(), (int)MaxRecentFiles);
-
-	for (int i = 0; i < numRecentFiles; ++i) {
-		
-		QString text = tr("&%1 %2").arg(i + 1).arg(strippedName(files[i]));
-		m_recentFileActions[i]->setText(text);
-		m_recentFileActions[i]->setData(files[i]);
-		m_recentFileActions[i]->setVisible(true);
-		
-		// Disable entry if file type not supported...
-		int idx = files[i].lastIndexOf('.');
-		QString fileExtension = files[i].mid(idx+1);
-
-		const EffectFactory * factory = EffectFactory::factoryForExtension(fileExtension);
-		if (factory == NULL || !factory->isSupported()) {
-			m_recentFileActions[i]->setEnabled(false);
-		}
-	}
-
-	for (int i = numRecentFiles; i < MaxRecentFiles; ++i) {
-		m_recentFileActions[i]->setVisible(false);
-	}
-	
-	m_recentFileSeparator->setVisible(numRecentFiles > 0);
-	m_clearRecentAction->setEnabled(numRecentFiles > 0);
-}
-*/
 void KShaderEdit::about()
 {
-	QMessageBox::about(this, tr("About KShaderEdit"),
-			tr("<b>KShaderEdit</b> is a simple shader editor"));
+	KMessageBox::about(this, i18n("About KShaderEdit"), i18n("<b>KShaderEdit</b> is a simple shader editor"));
 }
 
 void KShaderEdit::setAutoCompile(bool enable)
@@ -1099,6 +1039,38 @@ void KShaderEdit::setModified()
 	m_sceneView->updateGL();
 }
 
+void KShaderEdit::saveGlobalProperties(KConfig * config)
+{
+	config->writeEntry("autoCompile", m_autoCompile);
+	config->writeEntry("lastEffect", m_lastEffect);
+	config->writeEntry("lastScene", SceneFactory::lastFile());
+	config->writeEntry("lastParameterPath", ParameterPanel::lastPath());
+}
+
+void KShaderEdit::readConfig()
+{
+	readConfig(KGlobal::config());
+}
+
+void KShaderEdit::writeConfig()
+{
+	writeConfig(KGlobal::config());
+}
+
+void KShaderEdit::readConfig(KSharedConfigPtr config)
+{
+	m_recentFiles->loadEntries(config->group("Recent Files"));
+}
+
+void KShaderEdit::writeConfig(KSharedConfigPtr config)
+{
+	m_recentFiles->saveEntries(KConfigGroup(config, "Recent Files"));
+	
+	config->sync();
+}
+
+
+/*
 void KShaderEdit::loadSettings()
 {
 	QSettings pref( "Castano Inc", "KShaderEdit" );
@@ -1137,6 +1109,7 @@ void KShaderEdit::saveSettings()
 	pref.setValue("lastScene", SceneFactory::lastFile());
 	pref.setValue("lastParameterPath", ParameterPanel::lastPath());
 }
+*/
 
 void KShaderEdit::updateEffectInputs()
 {

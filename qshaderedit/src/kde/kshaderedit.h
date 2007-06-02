@@ -1,14 +1,13 @@
 #ifndef KSHADEREDIT_H
 #define KSHADEREDIT_H
 
-#include <kmainwindow.h>
-#include <kurl.h>
+#include <KXmlGuiWindow>
+#include <KUrl>
+
+#include <KConfig>
 
 class QTabWidget;
 class QGLView;
-class MessagePanel;
-class ParameterPanel;
-class Editor;
 class QTimer;
 class QFile;
 class QComboBox;
@@ -17,10 +16,19 @@ class QToolBar;
 class KUrl;
 class QAction;
 class KRecentFilesAction;
+class KConfig;
+
+class MessagePanel;
+class ParameterPanel;
+class Editor;
+
 struct Effect;
 struct EffectFactory;
 
-class KShaderEdit : public KMainWindow
+class Document;
+
+
+class KShaderEdit : public KXmlGuiWindow
 {
 	Q_OBJECT
 public:
@@ -68,7 +76,7 @@ protected:
 	void createStatusbar();
 	void createDockWindows();
 	
-	bool closeEffect();
+	void closeEffect();
 	
 	void updateWindowTitle();
 	void updateActions();
@@ -79,18 +87,23 @@ protected:
 	void setModified(bool modified);
 
 	void setCurrentFile(const QString &fileName);
-//	void updateRecentFileActions();
 	
 	// Events
-	virtual void closeEvent(QCloseEvent * event);
 	virtual void keyPressEvent(QKeyEvent * event);
 	virtual void dropEvent(QDropEvent * event);
 	
+	virtual bool queryClose();
+	virtual void saveGlobalProperties(KConfig * config);
+	
+	void readConfig();
+	void readConfig(KSharedConfigPtr config);
+	
+	void writeConfig();
+	void writeConfig(KSharedConfigPtr config);
+	
 private:
 
-    void loadSettings();
-    void saveSettings();
-
+	
 	void updateEffectInputs();
 
 	static QString strippedName(const QString & fileName);
@@ -135,7 +148,7 @@ private:
 	QTimer * m_timer;	// compilation timer.
 	QTimer * m_animationTimer;
 	
-	// State.	
+	// Document.
 	QFile * m_file;
 	const EffectFactory * m_effectFactory;
 	Effect * m_effect;
