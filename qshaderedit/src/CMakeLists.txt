@@ -53,6 +53,7 @@ SET(MOC_SRCS
 	messagepanel.h
 	parameterpanel.h
 	parameterdelegate.h
+	parametermodel.h
 	qglview.h
 	newdialog.h
 	finddialog.h

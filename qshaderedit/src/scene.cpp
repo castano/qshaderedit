@@ -170,7 +170,7 @@ public:
 REGISTER_SCENE_FACTORY(QuadSceneFactory);
 
 // Experimental scenes for tessellation
-#if 1
+#if 0
 
 class EvenQuadScene : public DisplayListScene
 {

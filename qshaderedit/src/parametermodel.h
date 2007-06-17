@@ -1,4 +1,3 @@
- 
 #ifndef PARAMETERMODEL_H
 #define PARAMETERMODEL_H
 
@@ -10,6 +9,7 @@ class Parameter;
 
 class ParameterModel: public QAbstractItemModel
 {
+	Q_OBJECT
 public:
 	ParameterModel(QObject *parent = 0) :
 		QAbstractItemModel(parent), m_effect(NULL) {}
@@ -39,4 +39,4 @@ private:
 	Effect* m_effect;
 };
 
-#endif
+#endif // PARAMETERMODEL_H
