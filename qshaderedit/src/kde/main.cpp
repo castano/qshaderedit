@@ -7,26 +7,29 @@
 #include <klocale.h>
 #include <kurl.h>
 
-static const char description[] = I18N_NOOP("A simple shader editor");
-
-static const char version[] = "%{VERSION}";
-
-static KCmdLineOptions options[] =
-{
-	{ "+[URL]", I18N_NOOP( "Document to open" ), 0 },
-    KCmdLineLastOption
-};
-
 
 int main(int argc, char **argv)
 {
-	KAboutData about("kshaderedit", I18N_NOOP("KShaderEdit"), version, description,
-		KAboutData::License_GPL, "(C) 2006 Ignacio Castano", 0, 0, "castano-stuff-qshaderedit@lists.sourceforge.net");
-	about.addAuthor("Ignacio Castano", 0, "castanyo@yahoo.es");
-	about.addAuthor("Lars Uebernickel", 0, "larsuebernickel@gmx.de");
-	about.addCredit("Karl Robillard", 0, "krobillard@san.rr.com");
+	KAboutData about("kshaderedit",
+		0,
+		ki18n("KShaderEdit"),
+		"1.0",
+		ki18n("A simple shader editor"),
+		KAboutData::License_GPL,
+		ki18n("(C) 2006 Ignacio Castano"),
+		KLocalizedString(),
+		0,	// homepage!
+		"castano-stuff-qshaderedit@lists.sourceforge.net");
+
+	about.addAuthor(ki18n("Ignacio Castano"), KLocalizedString(), 0, "castanyo@yahoo.es");
+	about.addAuthor(ki18n("Lars Uebernickel"), KLocalizedString(), 0, "larsuebernickel@gmx.de");
+	about.addCredit(ki18n("Karl Robillard"), KLocalizedString(), 0, "krobillard@san.rr.com");
 
 	KCmdLineArgs::init(argc, argv, &about);
+
+	KCmdLineOptions options;
+	options.add("+[URL]", ki18n("Document to open"));
+
 	KCmdLineArgs::addCmdLineOptions(options);
 
 	KApplication app;
