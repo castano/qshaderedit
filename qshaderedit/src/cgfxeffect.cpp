@@ -19,8 +19,15 @@
 #include <QtOpenGL/QGLContext>
 #include <QtOpenGL/QGLPixelBuffer>
 
+//#if HAVE_CG
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
+#if CG_VERSION_NUM < 1400
+#	error "Cg 1.4 required"
+#endif
+//#else
+//#include "cgdyn.h"
+//#endif
 
 namespace {
 
@@ -855,23 +862,32 @@ class CgFxEffectFactory : public EffectFactory
 			return false;
 		}
 		
-		typedef const char * (* GetString)(CGenum sname);
-		
+		// @@ Do this only once!!
 #if defined(Q_OS_DARWIN)
 		QLibrary cgLibrary("/System/Library/Frameworks/Cg.framework/Cg");
+		QLibrary cgGlLibrary("/System/Library/Frameworks/Cg.framework/CgGL");
 #else
 		QLibrary cgLibrary("Cg");
+		QLibrary cgGlLibrary("CgGL");
 #endif
 		
-		if( !cgLibrary.load() )
+		if (!cgLibrary.load())
 		{
 			qDebug("Cg library not found.");
 			return false;
 		}
+		if (!cgGlLibrary.load())
+		{
+			qDebug("CgGL library not found.");
+			return false;
+		}
+		
+		//loadCgFunctions(cgLibrary, cgGlLibrary);
 
+		typedef const char * (* GetString)(CGenum sname);			
 		GetString cgGetString = (GetString) cgLibrary.resolve("cgGetString");
 
-		if(cgGetString != NULL)
+		if (cgGetString != NULL)
 		{
 			QRegExp rx("^(\\d)\\.(\\d).*");
 			QString version = cgGetString(CG_VERSION);
@@ -891,7 +907,7 @@ class CgFxEffectFactory : public EffectFactory
 				qDebug("cg version string not recognized.");
 			}
 		}
-
+		
 		return false;
 	}
 

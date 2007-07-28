@@ -136,13 +136,7 @@ void QShaderEdit::createActions()
 	m_clearRecentAction = new QAction(tr("&Clear Recent"), this);
 	m_clearRecentAction->setEnabled(false);
 	connect(m_clearRecentAction, SIGNAL(triggered()), this, SLOT(clearRecentFiles()));
-	
-	m_compileAction = new QAction(tr("&Compile"), this);
-	m_compileAction->setCheckable(true);
-	m_compileAction->setChecked(true);
-	m_compileAction->setShortcut(tr("F7"));
-	connect(m_compileAction, SIGNAL(toggled(bool)), this, SLOT(compileChecked(bool)));
-	
+
 	m_findAction = new QAction(tr("&Find"), this);
 	m_findAction->setEnabled(false);
 	m_findAction->setShortcut(tr("Ctrl+F"));
@@ -174,6 +168,27 @@ void QShaderEdit::createActions()
 	m_gotoAction->setShortcut(tr("Ctrl+G"));
 #endif
 	connect(m_gotoAction, SIGNAL(triggered()), m_editor, SLOT(gotoDialog()));
+
+	
+	// Add hidden actions.
+	QAction * action = NULL;
+
+	action = new QAction(tr("&Next Tab"), this);
+	action->setShortcut(tr("Alt+Right"));
+	connect(action, SIGNAL(triggered()), m_editor, SLOT(nextTab()));
+	this->addAction(action);
+	
+	action = new QAction(tr("&Previous Tab"), this);
+	action->setShortcut(tr("Alt+Left"));
+	connect(action, SIGNAL(triggered()), m_editor, SLOT(previousTab()));
+	this->addAction(action);
+	
+	m_compileAction = new QAction(tr("&Compile"), this);
+	m_compileAction->setCheckable(true);
+	m_compileAction->setChecked(true);
+	m_compileAction->setShortcut(tr("F7"));
+	connect(m_compileAction, SIGNAL(toggled(bool)), this, SLOT(compileChecked(bool)));
+	this->addAction(m_compileAction);
 }
 
 void QShaderEdit::createMenus()
@@ -301,16 +316,6 @@ void QShaderEdit::createMenus()
 	helpMenu->addAction(action);
 	
 	
-	// @@ This should be in createActions instead!
-	action = new QAction(tr("&Next Tab"), this);
-	action->setShortcut(tr("Alt+Right"));
-	connect(action, SIGNAL(triggered()), m_editor, SLOT(nextTab()));
-	this->addAction(action);
-	
-	action = new QAction(tr("&Previous Tab"), this);
-	action->setShortcut(tr("Alt+Left"));
-	connect(action, SIGNAL(triggered()), m_editor, SLOT(previousTab()));
-	this->addAction(action);
 }
 
 void QShaderEdit::createToolbars()
@@ -322,7 +327,6 @@ void QShaderEdit::createToolbars()
 	m_fileToolBar->addAction(m_newAction);
 	m_fileToolBar->addAction(m_openAction);
 	m_fileToolBar->addAction(m_saveAction);
-	m_fileToolBar->addAction(m_compileAction);
 
 	m_techniqueToolBar = new QToolBar(tr("Technique Toolbar"), this);
 	m_techniqueToolBar->setObjectName("TechniqueToolBar");

@@ -36,7 +36,8 @@ SET(SRCS
 	glutils.h
 	glutils.cpp
 	imageplugin.h
-	imageplugin.cpp)
+	imageplugin.cpp
+	cgdyn.h)
 
 IF(FOUND_CG)
 	SET(SRCS ${SRCS} cgfxeffect.cpp)
