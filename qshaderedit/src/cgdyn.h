@@ -286,60 +286,66 @@ typedef enum
 extern "C" {
 #endif
 
-typedef const char * (* _cgGetParameterName)(CGparameter param);
-typedef CGtype (* _cgGetParameterType)(CGparameter param);
-typedef CGtype (* _cgGetParameterBaseType)(CGparameter param);
-typedef CGparameterclass (* _cgGetParameterClass)(CGparameter param);
-typedef int (* _cgGetParameterRows)(CGparameter param);
-typedef int (* _cgGetParameterColumns)(CGparameter param);
-typedef const char * (* _cgGetParameterSemantic)(CGparameter param);
-typedef CGenum (* _cgGetParameterVariability)(CGparameter param);
-typedef CGbool (* _cgIsParameterReferenced)(CGparameter param);
-typedef CGbool (* _cgIsParameterUsed)(CGparameter param, CGhandle handle);
-typedef const char * (* _cgGetStringParameterValue)(CGparameter param);
-typedef CGannotation (* _cgGetNamedParameterAnnotation)(CGparameter, const char *);
-typedef CGstateassignment (* _cgGetNamedSamplerStateAssignment)(CGparameter, const char *);
-typedef CGparameter (* _cgGetTextureStateAssignmentValue)(CGstateassignment);
-typedef CGparameter (* _cgGetSamplerStateAssignmentValue)(CGstateassignment);
-typedef const float * (* _cgGetFloatAnnotationValues)(CGannotation, int *nvalues);
-typedef const int * (* _cgGetIntAnnotationValues)(CGannotation, int *nvalues);
-typedef const char * (* _cgGetStringAnnotationValue)(CGannotation);
-typedef const CGbool * (* _cgGetBoolAnnotationValues)(CGannotation, int *nvalues);
-typedef const char * (* _cgGetAnnotationName)(CGannotation);
-typedef CGtype (* _cgGetAnnotationType)(CGannotation);
-typedef const double * (* _cgGetParameterValues)(CGparameter param, CGenum value_type, int *nvalues);
-typedef CGannotation (* _cgGetFirstParameterAnnotation)(CGparameter);
-typedef CGannotation (* _cgGetNextAnnotation)(CGannotation);
-typedef CGcontext (* _cgCreateContext)(void);
-typedef void (* _cgDestroyContext)(CGcontext ctx); 
-typedef CGeffect (* _cgCreateEffect)(CGcontext, const char *code, const char **args);
-typedef void (* _cgDestroyEffect)(CGeffect);
-typedef const char * (* _cgGetLastListing)(CGcontext ctx);
-typedef CGtechnique (* _cgGetFirstTechnique)(CGeffect);
-typedef CGtechnique (* _cgGetNextTechnique)(CGtechnique);
-typedef CGbool (* _cgValidateTechnique)(CGtechnique);
-typedef const char * (* _cgGetTechniqueName)(CGtechnique);
-typedef CGpass (* _cgGetFirstPass)(CGtechnique);
-typedef CGpass (* _cgGetNextPass)(CGpass);
-typedef CGerror (* _cgGetError)(void);
-typedef const char * (* _cgGetErrorString)(CGerror error);
-typedef const char * (* _cgGetString)(CGenum sname);
-typedef CGparameter (* _cgGetFirstLeafEffectParameter)(CGeffect);
-typedef CGparameter (* _cgGetNextLeafParameter)(CGparameter current);
-typedef void (* _cgSetParameter1f)(CGparameter param, float x);
-typedef void (* _cgSetParameter2f)(CGparameter param, float x, float y);
-typedef void (* _cgSetParameter1i)(CGparameter param, int x);
-typedef void (* _cgSetParameter1d)(CGparameter param, double x);
-typedef void (* _cgSetParameter2d)(CGparameter param, double x, double y);
-typedef void (* _cgSetParameter3d)(CGparameter param, double x, double y, double z);
-typedef void (* _cgSetParameter4d)(CGparameter param, double x, double y, double z, double w);
-typedef void (* _cgSetPassState)(CGpass);
-typedef void (* _cgResetPassState)(CGpass);
+#if WIN32
+#define CGAPI __stdcall
+#else
+#define CGAPI
+#endif
+	
+typedef const char * (CGAPI * _cgGetParameterName)(CGparameter param);
+typedef CGtype (CGAPI * _cgGetParameterType)(CGparameter param);
+typedef CGtype (CGAPI * _cgGetParameterBaseType)(CGparameter param);
+typedef CGparameterclass (CGAPI * _cgGetParameterClass)(CGparameter param);
+typedef int (CGAPI * _cgGetParameterRows)(CGparameter param);
+typedef int (CGAPI * _cgGetParameterColumns)(CGparameter param);
+typedef const char * (CGAPI * _cgGetParameterSemantic)(CGparameter param);
+typedef CGenum (CGAPI * _cgGetParameterVariability)(CGparameter param);
+typedef CGbool (CGAPI * _cgIsParameterReferenced)(CGparameter param);
+typedef CGbool (CGAPI * _cgIsParameterUsed)(CGparameter param, CGhandle handle);
+typedef const char * (CGAPI * _cgGetStringParameterValue)(CGparameter param);
+typedef CGannotation (CGAPI * _cgGetNamedParameterAnnotation)(CGparameter, const char *);
+typedef CGstateassignment (CGAPI * _cgGetNamedSamplerStateAssignment)(CGparameter, const char *);
+typedef CGparameter (CGAPI * _cgGetTextureStateAssignmentValue)(CGstateassignment);
+typedef CGparameter (CGAPI * _cgGetSamplerStateAssignmentValue)(CGstateassignment);
+typedef const float * (CGAPI * _cgGetFloatAnnotationValues)(CGannotation, int *nvalues);
+typedef const int * (CGAPI * _cgGetIntAnnotationValues)(CGannotation, int *nvalues);
+typedef const char * (CGAPI * _cgGetStringAnnotationValue)(CGannotation);
+typedef const CGbool * (CGAPI * _cgGetBoolAnnotationValues)(CGannotation, int *nvalues);
+typedef const char * (CGAPI * _cgGetAnnotationName)(CGannotation);
+typedef CGtype (CGAPI * _cgGetAnnotationType)(CGannotation);
+typedef const double * (CGAPI * _cgGetParameterValues)(CGparameter param, CGenum value_type, int *nvalues);
+typedef CGannotation (CGAPI * _cgGetFirstParameterAnnotation)(CGparameter);
+typedef CGannotation (CGAPI * _cgGetNextAnnotation)(CGannotation);
+typedef CGcontext (CGAPI * _cgCreateContext)(void);
+typedef void (CGAPI * _cgDestroyContext)(CGcontext ctx); 
+typedef CGeffect (CGAPI * _cgCreateEffect)(CGcontext, const char *code, const char **args);
+typedef void (CGAPI * _cgDestroyEffect)(CGeffect);
+typedef const char * (CGAPI * _cgGetLastListing)(CGcontext ctx);
+typedef CGtechnique (CGAPI * _cgGetFirstTechnique)(CGeffect);
+typedef CGtechnique (CGAPI * _cgGetNextTechnique)(CGtechnique);
+typedef CGbool (CGAPI * _cgValidateTechnique)(CGtechnique);
+typedef const char * (CGAPI * _cgGetTechniqueName)(CGtechnique);
+typedef CGpass (CGAPI * _cgGetFirstPass)(CGtechnique);
+typedef CGpass (CGAPI * _cgGetNextPass)(CGpass);
+typedef CGerror (CGAPI * _cgGetError)(void);
+typedef const char * (CGAPI * _cgGetErrorString)(CGerror error);
+typedef const char * (CGAPI * _cgGetString)(CGenum sname);
+typedef CGparameter (CGAPI * _cgGetFirstLeafEffectParameter)(CGeffect);
+typedef CGparameter (CGAPI * _cgGetNextLeafParameter)(CGparameter current);
+typedef void (CGAPI * _cgSetParameter1f)(CGparameter param, float x);
+typedef void (CGAPI * _cgSetParameter2f)(CGparameter param, float x, float y);
+typedef void (CGAPI * _cgSetParameter1i)(CGparameter param, int x);
+typedef void (CGAPI * _cgSetParameter1d)(CGparameter param, double x);
+typedef void (CGAPI * _cgSetParameter2d)(CGparameter param, double x, double y);
+typedef void (CGAPI * _cgSetParameter3d)(CGparameter param, double x, double y, double z);
+typedef void (CGAPI * _cgSetParameter4d)(CGparameter param, double x, double y, double z, double w);
+typedef void (CGAPI * _cgSetPassState)(CGpass);
+typedef void (CGAPI * _cgResetPassState)(CGpass);
 
-typedef void (* _cgGLSetStateMatrixParameter)(CGparameter param, CGGLenum matrix, CGGLenum transform);
-typedef void (* _cgGLSetupSampler)(CGparameter param, GLuint texobj);
-typedef void (* _cgGLRegisterStates)(CGcontext);
-typedef void (* _cgGLSetManageTextureParameters)(CGcontext ctx, CGbool flag);
+typedef void (CGAPI * _cgGLSetStateMatrixParameter)(CGparameter param, CGGLenum matrix, CGGLenum transform);
+typedef void (CGAPI * _cgGLSetupSampler)(CGparameter param, GLuint texobj);
+typedef void (CGAPI * _cgGLRegisterStates)(CGcontext);
+typedef void (CGAPI * _cgGLSetManageTextureParameters)(CGcontext ctx, CGbool flag);
 
 
 _cgGetParameterName cgGetParameterName = NULL;
@@ -405,7 +411,9 @@ inline void loadCgFunctions(QLibrary & cgLibrary, QLibrary & cgGlLibrary)
 	{
 		return;
 	}
-	
+
+	cgCreateContext = (_cgCreateContext) cgLibrary.resolve("cgCreateContext");
+	cgDestroyContext = (_cgDestroyContext) cgLibrary.resolve("cgDestroyContext");
 	cgGetParameterName = (_cgGetParameterName) cgLibrary.resolve("cgGetParameterName");
 	cgGetParameterType = (_cgGetParameterType) cgLibrary.resolve("cgGetParameterType");
 	cgGetParameterBaseType = (_cgGetParameterBaseType) cgLibrary.resolve("cgGetParameterBaseType");
@@ -430,8 +438,6 @@ inline void loadCgFunctions(QLibrary & cgLibrary, QLibrary & cgGlLibrary)
 	cgGetParameterValues = (_cgGetParameterValues) cgLibrary.resolve("cgGetParameterValues");
 	cgGetFirstParameterAnnotation = (_cgGetFirstParameterAnnotation) cgLibrary.resolve("cgGetFirstParameterAnnotation");
 	cgGetNextAnnotation = (_cgGetNextAnnotation) cgLibrary.resolve("cgGetNextAnnotation");
-	cgCreateContext = (_cgCreateContext) cgLibrary.resolve("cgCreateContext");
-	cgDestroyContext = (_cgDestroyContext) cgLibrary.resolve("cgDestroyContext");
 	cgCreateEffect = (_cgCreateEffect) cgLibrary.resolve("cgCreateEffect");
 	cgDestroyEffect = (_cgDestroyEffect) cgLibrary.resolve("cgDestroyEffect");
 	cgGetLastListing = (_cgGetLastListing) cgLibrary.resolve("cgGetLastListing");
