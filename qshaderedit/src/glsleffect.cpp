@@ -298,14 +298,17 @@ private:
 	class BuilderThread : public GLThread
 	{
 		GLSLEffect * m_effect;
+		
 	public:
-		BuilderThread(GLSLEffect * effect, QGLWidget * widget) : GLThread(widget), m_effect(effect)
+		BuilderThread(QGLWidget * widget, GLSLEffect * effect) : GLThread(widget), m_effect(effect)
 		{
 		}
 		void run() 
 		{
-			makeCurrent();
-			m_effect->threadedBuild();
+			this->makeCurrent();
+			bool succeed = m_effect->threadedBuild();
+			this->doneCurrent();
+			emit m_effect->built(succeed);
 		}
 	};
 	friend class BuilderThread;
@@ -324,10 +327,9 @@ public:
 		m_fragmentShaderText(s_fragmentShaderText),
 		m_timeUniform(-1),
 		m_outputParser(0),
-		m_thread(this, widget), 
+		m_thread(widget, this), 
 		m_widget(widget)
 	{
-		connect(&m_thread, SIGNAL(finished()), this, SIGNAL(built()));		
 		widget->makeCurrent();
 		
 		const char* vendor = (const char*)glGetString(GL_VENDOR);
@@ -476,82 +478,102 @@ public:
 		}
 	}
 
-	void threadedBuild()
+	bool threadedBuild()
 	{
-		// Delete previous effect.
-		deleteProgram();
+		GLhandleARB vertexShader;
+		GLhandleARB fragmentShader;
+		GLhandleARB program;
 		
-		Q_ASSERT( m_vertexShader == 0 );
-		m_vertexShader = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
-
-		Q_ASSERT( m_fragmentShader == 0 );
-		m_fragmentShader = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
-
+		
+		vertexShader = glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
+		
 		emit infoMessage(tr("Compiling vertex shader..."));
 		const char * vertexStrings[] = { m_vertexShaderText.data() };
-		glShaderSourceARB(m_vertexShader, 1, vertexStrings, NULL);
-		glCompileShaderARB(m_vertexShader);
-
+		glShaderSourceARB(vertexShader, 1, vertexStrings, NULL);
+		glCompileShaderARB(vertexShader);
+		
 		// Get error log.
 		QByteArray infoLog;
 		GLint charsWritten, infoLogLength;
-		glGetObjectParameterivARB(m_vertexShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
+		glGetObjectParameterivARB(vertexShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
 		infoLog.resize(infoLogLength);
-		glGetInfoLogARB(m_vertexShader, infoLogLength, &charsWritten, infoLog.data());
+		glGetInfoLogARB(vertexShader, infoLogLength, &charsWritten, infoLog.data());
 		emit buildMessage(infoLog, 0, m_outputParser);
-
+		
+		fragmentShader = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
+		
 		emit infoMessage(tr("Compiling fragment shader..."));
 		const char * fragmentStrings[] = { m_fragmentShaderText.data() };
-		glShaderSourceARB(m_fragmentShader, 1, fragmentStrings, NULL);
-		glCompileShaderARB(m_fragmentShader);
-
+		glShaderSourceARB(fragmentShader, 1, fragmentStrings, NULL);
+		glCompileShaderARB(fragmentShader);
+		
 		// Get error log.
 		infoLog.clear();
-		glGetObjectParameterivARB(m_fragmentShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
+		glGetObjectParameterivARB(fragmentShader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
 		infoLog.resize(infoLogLength);
-		glGetInfoLogARB(m_fragmentShader, infoLogLength, &charsWritten, infoLog.data());
+		glGetInfoLogARB(fragmentShader, infoLogLength, &charsWritten, infoLog.data());
 		emit buildMessage(infoLog, 1, m_outputParser);
-
+		
 		// Check compilation.
 		GLint vertexCompileSucceed = GL_FALSE;
-		glGetObjectParameterivARB(m_vertexShader, GL_OBJECT_COMPILE_STATUS_ARB, &vertexCompileSucceed);
-		if( vertexCompileSucceed == GL_FALSE ) {
-			deleteProgram();
-			return;
+		glGetObjectParameterivARB(vertexShader, GL_OBJECT_COMPILE_STATUS_ARB, &vertexCompileSucceed);
+		if( vertexCompileSucceed == GL_FALSE )
+		{
+			glDeleteObjectARB(vertexShader);
+			return false;
 		}
-
+		
 		GLint fragmentCompileSucceed = GL_FALSE;
-		glGetObjectParameterivARB(m_fragmentShader, GL_OBJECT_COMPILE_STATUS_ARB, &fragmentCompileSucceed);
-		if( fragmentCompileSucceed == GL_FALSE ) {
-			deleteProgram();
-			return;
+		glGetObjectParameterivARB(fragmentShader, GL_OBJECT_COMPILE_STATUS_ARB, &fragmentCompileSucceed);
+		if( fragmentCompileSucceed == GL_FALSE )
+		{
+			glDeleteObjectARB(vertexShader);
+			glDeleteObjectARB(fragmentShader);
+			return false;
 		}
-
-		Q_ASSERT( m_program == 0 );
-		m_program = glCreateProgramObjectARB();
+		
+		program = glCreateProgramObjectARB();
 		
 		// Link the program.
 		emit infoMessage(tr("Linking..."));
-		glAttachObjectARB(m_program, m_vertexShader);
-		glAttachObjectARB(m_program, m_fragmentShader);
-		glLinkProgramARB(m_program);
-
+		glAttachObjectARB(program, vertexShader);
+		glAttachObjectARB(program, fragmentShader);
+		glLinkProgramARB(program);
+		
 		// Get error log.
 		infoLog.clear();
-		glGetObjectParameterivARB(m_program, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
+		glGetObjectParameterivARB(program, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infoLogLength);
 		infoLog.resize(infoLogLength);
-		glGetInfoLogARB(m_program, infoLogLength, &charsWritten, infoLog.data());
+		glGetInfoLogARB(program, infoLogLength, &charsWritten, infoLog.data());
 		emit buildMessage(infoLog, -1, m_outputParser);
-
+		
 		// Test linker result.
 		GLint linkSucceed = GL_FALSE;
-		glGetObjectParameterivARB(m_program, GL_OBJECT_LINK_STATUS_ARB, &linkSucceed);
-		if( linkSucceed == GL_FALSE ) {
-			deleteProgram();
-			return;
+		glGetObjectParameterivARB(program, GL_OBJECT_LINK_STATUS_ARB, &linkSucceed);
+		if( linkSucceed == GL_FALSE )
+		{
+			glDetachObjectARB(m_program, m_vertexShader);
+			glDetachObjectARB(m_program, m_fragmentShader);
+			glDeleteObjectARB(m_program);
+			glDeleteObjectARB(m_vertexShader);
+			glDeleteObjectARB(m_fragmentShader);
+			return false;
 		}
-
+		
+		// Delete previous effect.
+		deleteProgram();
+		
+		Q_ASSERT( m_vertexShader == 0 && vertexShader != 0 );
+		Q_ASSERT( m_fragmentShader == 0 && fragmentShader != 0 );
+		Q_ASSERT( m_program == 0 && program != 0 );
+		
+		m_vertexShader = vertexShader;
+		m_fragmentShader = fragmentShader;
+		m_program = program;
+		
 		initParameters();
+		
+		return true;
 	}
 	
 	virtual void build(bool threaded)
@@ -564,8 +586,8 @@ public:
 			m_thread.start();
 		}
 		else {
-			threadedBuild();
-			emit built();
+			bool succeed = threadedBuild();
+			emit built(succeed);
 		}
 	}
 	
@@ -1213,6 +1235,11 @@ class GLSLEffectFactory : public EffectFactory
 		return QIcon();
 	}
 
+	virtual bool savesParameters() const
+	{
+		return true;
+	}
+	
 	virtual Effect * createEffect(QGLWidget * widget) const
 	{
 		Q_ASSERT(isSupported());

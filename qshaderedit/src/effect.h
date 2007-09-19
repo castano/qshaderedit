@@ -81,8 +81,8 @@ signals:
 	void infoMessage(QString msg);
 	void errorMessage(QString msg);
 	void buildMessage(QString msg, int input, OutputParser * parser);
-	void built();
 	
+	void built(bool succeed);
 	
 private:
 	EffectFactory const * const m_factory;
@@ -98,6 +98,7 @@ public:
 	virtual QString extension() const = 0;
 	virtual QIcon icon() const = 0;
 	virtual Effect * createEffect(QGLWidget * widget) const = 0;
+	virtual bool savesParameters() const = 0;
 	
 	virtual QList<Highlighter::Rule> highlightingRules() const = 0;
 	virtual QString multiLineCommentStart() const = 0;

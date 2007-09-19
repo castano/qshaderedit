@@ -292,6 +292,8 @@ extern "C" {
 #define CGAPI
 #endif
 	
+typedef CGcontext (CGAPI * _cgCreateContext)(void);
+typedef void (CGAPI * _cgDestroyContext)(CGcontext ctx); 
 typedef const char * (CGAPI * _cgGetParameterName)(CGparameter param);
 typedef CGtype (CGAPI * _cgGetParameterType)(CGparameter param);
 typedef CGtype (CGAPI * _cgGetParameterBaseType)(CGparameter param);
@@ -316,8 +318,6 @@ typedef CGtype (CGAPI * _cgGetAnnotationType)(CGannotation);
 typedef const double * (CGAPI * _cgGetParameterValues)(CGparameter param, CGenum value_type, int *nvalues);
 typedef CGannotation (CGAPI * _cgGetFirstParameterAnnotation)(CGparameter);
 typedef CGannotation (CGAPI * _cgGetNextAnnotation)(CGannotation);
-typedef CGcontext (CGAPI * _cgCreateContext)(void);
-typedef void (CGAPI * _cgDestroyContext)(CGcontext ctx); 
 typedef CGeffect (CGAPI * _cgCreateEffect)(CGcontext, const char *code, const char **args);
 typedef void (CGAPI * _cgDestroyEffect)(CGeffect);
 typedef const char * (CGAPI * _cgGetLastListing)(CGcontext ctx);
@@ -348,66 +348,66 @@ typedef void (CGAPI * _cgGLRegisterStates)(CGcontext);
 typedef void (CGAPI * _cgGLSetManageTextureParameters)(CGcontext ctx, CGbool flag);
 
 
-_cgGetParameterName cgGetParameterName = NULL;
-_cgGetParameterType cgGetParameterType = NULL;
-_cgGetParameterBaseType cgGetParameterBaseType = NULL;
-_cgGetParameterClass cgGetParameterClass = NULL;
-_cgGetParameterRows cgGetParameterRows = NULL;
-_cgGetParameterColumns cgGetParameterColumns = NULL;
-_cgGetParameterSemantic cgGetParameterSemantic = NULL;
-_cgGetParameterVariability cgGetParameterVariability = NULL;
-_cgIsParameterReferenced cgIsParameterReferenced = NULL;
-_cgIsParameterUsed cgIsParameterUsed = NULL;
-_cgGetStringParameterValue cgGetStringParameterValue;
-_cgGetNamedParameterAnnotation cgGetNamedParameterAnnotation;
-_cgGetNamedSamplerStateAssignment cgGetNamedSamplerStateAssignment;
-_cgGetTextureStateAssignmentValue cgGetTextureStateAssignmentValue;
-_cgGetSamplerStateAssignmentValue cgGetSamplerStateAssignmentValue;
-_cgGetFloatAnnotationValues cgGetFloatAnnotationValues;
-_cgGetIntAnnotationValues cgGetIntAnnotationValues;
-_cgGetStringAnnotationValue cgGetStringAnnotationValue;
-_cgGetBoolAnnotationValues cgGetBoolAnnotationValues;
-_cgGetAnnotationName cgGetAnnotationName;
-_cgGetAnnotationType cgGetAnnotationType;
-_cgGetParameterValues cgGetParameterValues;
-_cgGetFirstParameterAnnotation cgGetFirstParameterAnnotation;
-_cgGetNextAnnotation cgGetNextAnnotation;
-_cgCreateContext cgCreateContext;
-_cgDestroyContext cgDestroyContext;
-_cgCreateEffect cgCreateEffect;
-_cgDestroyEffect cgDestroyEffect;
-_cgGetLastListing cgGetLastListing;
-_cgGetFirstTechnique cgGetFirstTechnique;
-_cgGetNextTechnique cgGetNextTechnique;
-_cgValidateTechnique cgValidateTechnique;
-_cgGetTechniqueName cgGetTechniqueName;
-_cgGetFirstPass cgGetFirstPass;
-_cgGetNextPass cgGetNextPass;
-_cgGetError cgGetError;
-_cgGetErrorString cgGetErrorString;
-_cgGetString cgGetString;
-_cgGetFirstLeafEffectParameter cgGetFirstLeafEffectParameter;
-_cgGetNextLeafParameter cgGetNextLeafParameter;
-_cgSetParameter1f cgSetParameter1f;
-_cgSetParameter2f cgSetParameter2f;
-_cgSetParameter1i cgSetParameter1i;
-_cgSetParameter1d cgSetParameter1d;
-_cgSetParameter2d cgSetParameter2d;
-_cgSetParameter3d cgSetParameter3d;
-_cgSetParameter4d cgSetParameter4d;
-_cgSetPassState cgSetPassState;
-_cgResetPassState cgResetPassState;
+static _cgCreateContext cgCreateContext = NULL;
+static _cgDestroyContext cgDestroyContext = NULL;
+static _cgGetParameterName cgGetParameterName = NULL;
+static _cgGetParameterType cgGetParameterType = NULL;
+static _cgGetParameterBaseType cgGetParameterBaseType = NULL;
+static _cgGetParameterClass cgGetParameterClass = NULL;
+static _cgGetParameterRows cgGetParameterRows = NULL;
+static _cgGetParameterColumns cgGetParameterColumns = NULL;
+static _cgGetParameterSemantic cgGetParameterSemantic = NULL;
+static _cgGetParameterVariability cgGetParameterVariability = NULL;
+static _cgIsParameterReferenced cgIsParameterReferenced = NULL;
+static _cgIsParameterUsed cgIsParameterUsed = NULL;
+static _cgGetStringParameterValue cgGetStringParameterValue = NULL;
+static _cgGetNamedParameterAnnotation cgGetNamedParameterAnnotation = NULL;
+static _cgGetNamedSamplerStateAssignment cgGetNamedSamplerStateAssignment = NULL;
+static _cgGetTextureStateAssignmentValue cgGetTextureStateAssignmentValue = NULL;
+static _cgGetSamplerStateAssignmentValue cgGetSamplerStateAssignmentValue = NULL;
+static _cgGetFloatAnnotationValues cgGetFloatAnnotationValues = NULL;
+static _cgGetIntAnnotationValues cgGetIntAnnotationValues = NULL;
+static _cgGetStringAnnotationValue cgGetStringAnnotationValue = NULL;
+static _cgGetBoolAnnotationValues cgGetBoolAnnotationValues = NULL;
+static _cgGetAnnotationName cgGetAnnotationName = NULL;
+static _cgGetAnnotationType cgGetAnnotationType = NULL;
+static _cgGetParameterValues cgGetParameterValues = NULL;
+static _cgGetFirstParameterAnnotation cgGetFirstParameterAnnotation = NULL;
+static _cgGetNextAnnotation cgGetNextAnnotation = NULL;
+static _cgCreateEffect cgCreateEffect = NULL;
+static _cgDestroyEffect cgDestroyEffect = NULL;
+static _cgGetLastListing cgGetLastListing = NULL;
+static _cgGetFirstTechnique cgGetFirstTechnique = NULL;
+static _cgGetNextTechnique cgGetNextTechnique = NULL;
+static _cgValidateTechnique cgValidateTechnique = NULL;
+static _cgGetTechniqueName cgGetTechniqueName = NULL;
+static _cgGetFirstPass cgGetFirstPass = NULL;
+static _cgGetNextPass cgGetNextPass = NULL;
+static _cgGetError cgGetError = NULL;
+static _cgGetErrorString cgGetErrorString = NULL;
+static _cgGetString cgGetString = NULL;
+static _cgGetFirstLeafEffectParameter cgGetFirstLeafEffectParameter = NULL;
+static _cgGetNextLeafParameter cgGetNextLeafParameter = NULL;
+static _cgSetParameter1f cgSetParameter1f = NULL;
+static _cgSetParameter2f cgSetParameter2f = NULL;
+static _cgSetParameter1i cgSetParameter1i = NULL;
+static _cgSetParameter1d cgSetParameter1d = NULL;
+static _cgSetParameter2d cgSetParameter2d = NULL;
+static _cgSetParameter3d cgSetParameter3d = NULL;
+static _cgSetParameter4d cgSetParameter4d = NULL;
+static _cgSetPassState cgSetPassState = NULL;
+static _cgResetPassState cgResetPassState = NULL;
 
-_cgGLSetStateMatrixParameter cgGLSetStateMatrixParameter;
-_cgGLSetupSampler cgGLSetupSampler;
-_cgGLRegisterStates cgGLRegisterStates;
-_cgGLSetManageTextureParameters cgGLSetManageTextureParameters;
+static _cgGLSetStateMatrixParameter cgGLSetStateMatrixParameter = NULL;
+static _cgGLSetupSampler cgGLSetupSampler = NULL;
+static _cgGLRegisterStates cgGLRegisterStates = NULL;
+static _cgGLSetManageTextureParameters cgGLSetManageTextureParameters = NULL;
 
 
 // Link Cg API dynamically so that it can compiled on systems that do not have Cg installed.
 inline void loadCgFunctions(QLibrary & cgLibrary, QLibrary & cgGlLibrary)
 {
-	if (cgGetParameterName != NULL)
+	if (cgCreateContext != NULL)
 	{
 		return;
 	}
@@ -466,6 +466,7 @@ inline void loadCgFunctions(QLibrary & cgLibrary, QLibrary & cgGlLibrary)
 	cgGLSetupSampler = (_cgGLSetupSampler) cgGlLibrary.resolve("cgGLSetupSampler");
 	cgGLRegisterStates = (_cgGLRegisterStates) cgGlLibrary.resolve("cgGLRegisterStates");
 	cgGLSetManageTextureParameters = (_cgGLSetManageTextureParameters) cgGlLibrary.resolve("cgGLSetManageTextureParameters");
+	
 }
 
 #ifdef __cplusplus

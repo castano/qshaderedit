@@ -4,6 +4,8 @@
 	Add texture and scene paths to settings.
 	Obj mesh scene plugin and mtl support.
 	New improved parameter panel.
+	Move document handling to its own class.
+	Fix double compilation bug.
 
 0.1.2
 	Improved syntax highlighting by Lars Uebernickel <larsuebernickel@gmx.de>.

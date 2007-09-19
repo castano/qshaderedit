@@ -60,25 +60,25 @@ void ParameterPanel::initWidget()
 	setWidget(m_view);
 }
 
-void ParameterPanel::clear()
-{
-	m_model->clear();
-}
-
 void ParameterPanel::setEffect(Effect * effect)
 {
-	m_model->setEffect(effect);
-	m_view->resizeColumnToContents(0);
+	if (effect != NULL)
+	{
+		m_model->setEffect(effect);
+		m_view->resizeColumnToContents(0);
+	}
+	else
+	{
+		m_model->clear();
+	}
 }
 
-//static
-const QString & ParameterPanel::lastPath()
+/*static*/ const QString & ParameterPanel::lastPath()
 {
 	return ParameterDelegate::lastPath();
 }
 
-//static
-void ParameterPanel::setLastPath(const QString & lastPath)
+/*static*/ void ParameterPanel::setLastPath(const QString & lastPath)
 {
 	ParameterDelegate::setLastPath(lastPath);
 }

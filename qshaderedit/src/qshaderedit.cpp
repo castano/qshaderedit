@@ -1,12 +1,17 @@
 
+// Include GLEW before anything else.
+#include <GL/glew.h>
+
 #include "qshaderedit.h"
-#include "qglview.h"
 #include "effect.h"
 #include "messagepanel.h"
 #include "parameterpanel.h"
+#include "scenepanel.h"
 #include "editor.h"
 #include "newdialog.h"
 #include "scene.h"
+#include "document.h"
+#include "glutils.h"
 
 #include <QtCore/QFile>
 #include <QtCore/QTimer>
@@ -36,67 +41,46 @@ namespace {
 #endif
 }
 
-/// Ctor.
-QShaderEdit::QShaderEdit(const QString& filename) :
-	m_editor(NULL),
-	m_fileToolBar(NULL),
-	m_techniqueToolBar(NULL),
-	m_techniqueCombo(NULL),
-	m_sceneViewDock(NULL),
-	m_paramViewDock(NULL),
-	m_logViewDock(NULL),
-	m_sceneView(NULL),
-	m_positionLabel(NULL),
-	m_openAction(NULL),
-	m_saveAction(NULL),
-	m_recentFileSeparator(NULL),
-	m_clearRecentAction(NULL),
-	m_timer(NULL),
-	m_animationTimer(NULL),
-	m_file(NULL),
-	m_effectFactory(NULL),
-	m_effect(NULL),
-	m_modified(false),
-	m_autoCompile(true)
-{
-	// @@ Should we use this attrib?
-	//setAttribute(Qt::WA_DeleteOnClose);
-	
-	// Create central widget.
-	m_editor = new Editor(this);
-	setCentralWidget(m_editor);
-	m_editor->setFocus();
-	connect(m_editor, SIGNAL(textChanged()), this, SLOT(shaderTextChanged()));
-	connect(m_editor, SIGNAL(cursorPositionChanged()), this, SLOT(cursorPositionChanged()));
+// @@ Find a better name!
+#define ORGANIZATION	"Castano Inc"
 
+
+QShaderEdit::QShaderEdit(const QString& fileName) :
+	m_document(NULL)
+{
+	setAcceptDrops(true);
+	
+	initGL();
+	
+	createDocument();
+	
+	createEditor();
 	createActions();
 	createToolbars();
 	createDockWindows();
 	createMenus();
 	createStatusbar();
-
-    loadSettings();
-
-	// Start timers.
-	m_timer = new QTimer(this);
-	connect(m_timer, SIGNAL(timeout()), this, SLOT(keyTimeout()));
-
-	m_animationTimer = new QTimer(this);
-	connect(m_animationTimer, SIGNAL(timeout()), m_sceneView, SLOT(updateGL()));
-
+	
+	loadSettings();
+	
 	show();
 
 	// Make sure the main window is shown before the new file dialog.
 	QApplication::processEvents();
-
-	if (filename.isEmpty() || !load(filename)) {
-		newFile(true);
+	
+	// Open document, or show new file dialog.
+	if (fileName.isEmpty() || !m_document->loadFile(fileName))
+	{
+		m_document->reset(true);
 	}
 }
 
 QShaderEdit::~QShaderEdit()
 {
-	closeEffect();
+	delete m_glWidget;
+	
+	// @@ Not necessary, I believe.
+	delete m_document;
 }
 
 QSize QShaderEdit::sizeHint() const
@@ -104,39 +88,277 @@ QSize QShaderEdit::sizeHint() const
 	return QSize(600, 400);
 }
 
-void QShaderEdit::createActions()
+
+
+void QShaderEdit::about()
 {
-	m_newAction = new QAction(QIcon(s_resourcePath + "/filenew.png"), tr("&New"), this);
-	m_newAction->setShortcut(tr("Ctrl+N"));
-	m_newAction->setStatusTip(tr("Create a new effect"));
-	connect(m_newAction, SIGNAL(triggered()), this, SLOT(newFile()));
+	// @@ Write a better about dialog.
+	QMessageBox::about(this, tr("About QShaderEdit"), tr("<b>QShaderEdit</b> is a simple shader editor"));
+}
 
-	m_openAction = new QAction(QIcon(s_resourcePath + "/fileopen.png"), tr("&Open"), this);
-	m_openAction->setShortcut(tr("Ctrl+O"));
-	m_openAction->setStatusTip(tr("Open an existing effect"));
-	connect(m_openAction, SIGNAL(triggered()), this, SLOT(open()));
 
-	m_saveAction = new QAction(QIcon(s_resourcePath + "/filesave.png"), tr("&Save"), this);
-	m_saveAction->setEnabled(false);
-	m_saveAction->setShortcut(tr("Ctrl+S"));
-	m_saveAction->setStatusTip(tr("Save the effect"));
-	connect(m_saveAction, SIGNAL(triggered()), this, SLOT(save()));
+void QShaderEdit::openRecentFile()
+{
+	QAction * action = qobject_cast<QAction *>(sender());
+	if (action) {
+		if (!m_document->close())
+		{
+			// User cancelled the operation.
+			return;
+		}
+		
+		QString fileName = action->data().toString();
+		
+		if (!m_document->loadFile(fileName))
+		{
+			QMessageBox::critical(this, tr("Error"), tr("Cannot load file:\n") + fileName, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
+		}
+	}
+}
 
-	m_saveAsAction = new QAction(tr("Save &As..."), this);
-	m_saveAsAction->setStatusTip(tr("Save the effect under a new name"));
-	m_saveAsAction->setEnabled(false);
-	connect(m_saveAsAction, SIGNAL(triggered()), this, SLOT(saveAs()));
+void QShaderEdit::clearRecentFiles()
+{
+	QSettings settings(ORGANIZATION, "QShaderEdit");
+	settings.setValue("recentFileList", QStringList());
 
-	for (int i = 0; i < MaxRecentFiles; ++i) {
-		m_recentFileActions[i] = new QAction(this);
-		m_recentFileActions[i]->setVisible(false);
-		connect(m_recentFileActions[i], SIGNAL(triggered()), this, SLOT(openRecentFile()));
+	/*foreach (QWidget *widget, QApplication::topLevelWidgets()) {
+		MainWindow *mainWin = qobject_cast<MainWindow *>(widget);
+		if (mainWin)
+			mainWin->updateRecentFileActions();
+	}*/
+	
+	// Only a single main window.
+	updateRecentFileActions();
+}
+
+void QShaderEdit::onCursorPositionChanged()
+{
+	int line = m_editor->line();
+	int column = m_editor->column();
+	m_statusLabel->setText(QString(tr(" Line: %1  Col: %2")).arg(line).arg(column));
+}
+
+void QShaderEdit::onShaderTextChanged()
+{
+	// Compile after 1.5 seconds of inactivity.
+	m_activityTimer->start(1500);
+}
+
+void QShaderEdit::onModifiedChanged(bool changed)
+{
+	if (sender() != m_document)
+	{
+		m_document->setModified(changed);
+	}
+	else if (sender() != m_editor)
+	{
+		m_editor->setModified(changed);
 	}
 	
-	m_clearRecentAction = new QAction(tr("&Clear Recent"), this);
-	m_clearRecentAction->setEnabled(false);
-	connect(m_clearRecentAction, SIGNAL(triggered()), this, SLOT(clearRecentFiles()));
+	updateActions();
+	updateWindowTitle(m_document->title());
+}
 
+void QShaderEdit::onActivityTimeout()
+{
+	Q_ASSERT(m_document->effect() != NULL);
+	
+	// Delay recompilation while editor is active or effect still compiling.
+	if (m_parameterPanel->isEditorActive() || m_document->effect()->isBuilding())
+	{
+		m_activityTimer->start(1500);
+		return;
+	}
+	
+	// Stop the timer.
+	m_activityTimer->stop();
+
+	statusBar()->showMessage(tr("Compiling..."));
+
+	// Compile the effect.
+	m_document->build();
+}
+
+
+void QShaderEdit::onTitleChanged(QString title)
+{
+	updateWindowTitle(title);
+}
+
+void QShaderEdit::onFileNameChanged(QString fileName)
+{
+	addRecentFile(fileName);
+}
+
+void QShaderEdit::onEffectCreated()
+{
+	Effect * effect = m_document->effect();
+	Q_ASSERT(effect != NULL);
+	
+	m_editor->setEffect(effect);
+	
+	// Connect effect signals.
+	connect(effect, SIGNAL(infoMessage(QString)), m_messagePanel, SLOT(info(QString)));
+	connect(effect, SIGNAL(errorMessage(QString)), m_messagePanel, SLOT(error(QString)));
+	connect(effect, SIGNAL(buildMessage(QString,int,OutputParser*)), m_messagePanel, SLOT(log(QString,int,OutputParser*)));
+	
+	updateActions();
+	updateTechniques();
+	
+	// Init scene view.
+	m_scenePanel->setEffect(effect);
+	
+}
+
+void QShaderEdit::onEffectDeleted()
+{
+	m_scenePanel->setEffect(NULL);
+	m_parameterPanel->setEffect(NULL);
+	m_editor->setEffect(NULL);
+	
+	updateTechniques();
+	updateActions();
+}
+
+void QShaderEdit::onEffectBuilding()
+{
+	Effect * effect = m_document->effect();
+	Q_ASSERT(effect != NULL);
+
+	// @@ Why?
+	//m_parameterPanel->clear();
+
+	m_messagePanel->clear();
+	
+	// Stop animation while building.
+	if (effect->isAnimated()) {
+		m_scenePanel->stopAnimation();
+	}
+	m_scenePanel->setViewUpdatesEnabled(false);
+}
+
+void QShaderEdit::onEffectBuilt(bool succeed)
+{
+	Effect * effect = m_document->effect();
+	Q_ASSERT(effect != NULL);
+	
+	if (succeed)
+	{
+		statusBar()->showMessage(tr("Compilation succeed."), 2000);
+		m_messagePanel->info(tr("Compilation succeed.\n"));
+	}
+	else
+	{
+		statusBar()->showMessage(tr("Compilation failed."), 2000);
+		m_messagePanel->setVisible(true);
+		m_messagePanel->error(tr("Compilation failed.\n"));
+	}
+	
+	updateTechniques();
+	m_parameterPanel->setEffect(effect);
+	
+	// @@ Restart animation? 
+	if (effect->isAnimated()) {
+		m_scenePanel->startAnimation();
+	}
+	else {
+		m_scenePanel->stopAnimation();
+	}
+	
+	m_scenePanel->setViewUpdatesEnabled(true);
+	m_scenePanel->refresh();
+}
+
+void QShaderEdit::onParameterChanged()
+{
+	m_scenePanel->refresh();
+}
+
+void QShaderEdit::onTechniqueChanged(int index)
+{
+	if (index >= 0)
+	{
+		Effect * effect = m_document->effect();
+		Q_ASSERT(effect != NULL);
+		
+		effect->selectTechnique(index);
+		
+		m_scenePanel->refresh();
+	}
+}
+
+void QShaderEdit::updateEffectInputs()
+{
+	Effect * effect = m_document->effect();
+	Q_ASSERT(effect);
+	
+	const int inputNum = effect->getInputNum();
+	for (int i = 0; i < inputNum; i++)
+	{
+		const QTextEdit * textEdit = qobject_cast<const QTextEdit *>(m_editor->widget(i));
+		
+		if (textEdit != NULL)
+		{
+			effect->setInput(i, textEdit->toPlainText().toLatin1());
+		}
+	}
+}
+
+
+void QShaderEdit::initGL()
+{
+	if (QGLFormat::hasOpenGL())
+	{
+		QGLFormat format;
+		//format.setRgba(true);
+		//format.setAlpha(false);
+		format.setDepth(true);
+		//format.setStencil(false);	// not for now...
+		format.setDoubleBuffer(true);
+		
+		m_glWidget = new QGLWidget(format, this);
+		m_glWidget->makeCurrent();
+		
+		GLenum err = glewInit();
+		if (GLEW_OK != err)
+		{
+			// Problem: glewInit failed, something is seriously wrong.
+			qDebug("Error: %s\n", glewGetErrorString(err));
+			
+			delete m_glWidget;
+			m_glWidget = NULL;
+		}
+	}
+}
+
+void QShaderEdit::createDocument()
+{
+	m_document = new Document(m_glWidget, this);
+	connect(m_document, SIGNAL(modifiedChanged(bool)), this, SLOT(onModifiedChanged(bool)));
+	connect(m_document, SIGNAL(titleChanged(QString)), this, SLOT(onTitleChanged(QString)));
+	connect(m_document, SIGNAL(fileNameChanged(QString)), this, SLOT(onFileNameChanged(QString)));
+	connect(m_document, SIGNAL(effectCreated()), this, SLOT(onEffectCreated()));
+	connect(m_document, SIGNAL(effectDeleted()), this, SLOT(onEffectDeleted()));
+	connect(m_document, SIGNAL(effectBuilding()), this, SLOT(onEffectBuilding()));
+	connect(m_document, SIGNAL(effectBuilt(bool)), this, SLOT(onEffectBuilt(bool)));
+	connect(m_document, SIGNAL(synchronizeEditors()), this, SLOT(updateEffectInputs()));
+	
+	m_activityTimer = new QTimer(this);
+	connect(m_activityTimer, SIGNAL(timeout()), this, SLOT(onActivityTimeout()));
+}
+
+void QShaderEdit::createEditor()
+{
+	// Create editor.
+	m_editor = new Editor(this);
+	setCentralWidget(m_editor);
+	m_editor->setFocus();
+	connect(m_editor, SIGNAL(cursorPositionChanged()), this, SLOT(onCursorPositionChanged()));
+	connect(m_editor, SIGNAL(textChanged()), this, SLOT(onShaderTextChanged()));
+	connect(m_editor, SIGNAL(modifiedChanged(bool)), this, SLOT(onModifiedChanged(bool)));
+
+	
+	// Create editor actions.
 	m_findAction = new QAction(tr("&Find"), this);
 	m_findAction->setEnabled(false);
 	m_findAction->setShortcut(tr("Ctrl+F"));
@@ -182,13 +404,64 @@ void QShaderEdit::createActions()
 	action->setShortcut(tr("Alt+Left"));
 	connect(action, SIGNAL(triggered()), m_editor, SLOT(previousTab()));
 	this->addAction(action);
+}
+
+void QShaderEdit::createDockWindows()
+{
+	m_messagePanel = new MessagePanel(tr("Messages"), this);
+	m_messagePanel->setObjectName("MessagesDock");
+	m_messagePanel->setAllowedAreas(Qt::BottomDockWidgetArea);
+	m_messagePanel->setVisible(false);
+	addDockWidget(Qt::BottomDockWidgetArea, m_messagePanel);
+	connect(m_messagePanel, SIGNAL(messageClicked(int, int, int)), m_editor, SLOT(gotoLine(int, int, int)));
+
+	m_scenePanel = new ScenePanel(tr("Scene"), this);
+	m_scenePanel->setObjectName("SceneDock");
+	m_scenePanel->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+	addDockWidget(Qt::RightDockWidgetArea, m_scenePanel);
 	
-	m_compileAction = new QAction(tr("&Compile"), this);
-	m_compileAction->setCheckable(true);
-	m_compileAction->setChecked(true);
-	m_compileAction->setShortcut(tr("F7"));
-	connect(m_compileAction, SIGNAL(toggled(bool)), this, SLOT(compileChecked(bool)));
-	this->addAction(m_compileAction);
+	m_parameterPanel = new ParameterPanel(tr("Parameters"), this);
+	m_parameterPanel->setObjectName("ParameterDock");
+	m_parameterPanel->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+	addDockWidget(Qt::RightDockWidgetArea, m_parameterPanel);
+	connect(m_parameterPanel, SIGNAL(parameterChanged()), m_document, SLOT(onParameterChanged()));
+	connect(m_parameterPanel, SIGNAL(parameterChanged()), this, SLOT(onParameterChanged()));
+}
+
+
+void QShaderEdit::createActions()
+{
+	m_newAction = new QAction(QIcon(s_resourcePath + "/filenew.png"), tr("&New"), this);
+	m_newAction->setShortcut(tr("Ctrl+N"));
+	m_newAction->setStatusTip(tr("Create a new effect"));
+	connect(m_newAction, SIGNAL(triggered()), m_document, SLOT(reset()));
+
+	m_openAction = new QAction(QIcon(s_resourcePath + "/fileopen.png"), tr("&Open"), this);
+	m_openAction->setShortcut(tr("Ctrl+O"));
+	m_openAction->setStatusTip(tr("Open an existing effect"));
+	connect(m_openAction, SIGNAL(triggered()), m_document, SLOT(open()));
+
+	m_saveAction = new QAction(QIcon(s_resourcePath + "/filesave.png"), tr("&Save"), this);
+	m_saveAction->setEnabled(false);
+	m_saveAction->setShortcut(tr("Ctrl+S"));
+	m_saveAction->setStatusTip(tr("Save this effect"));
+	connect(m_saveAction, SIGNAL(triggered()), m_document, SLOT(save()));
+
+	m_saveAsAction = new QAction(tr("Save &As..."), this);
+	m_saveAsAction->setStatusTip(tr("Save this effect under a new name"));
+	m_saveAsAction->setEnabled(false);
+	connect(m_saveAsAction, SIGNAL(triggered()), m_document, SLOT(saveAs()));
+
+	for (int i = 0; i < MaxRecentFiles; ++i)
+	{
+		m_recentFileActions[i] = new QAction(this);
+		m_recentFileActions[i]->setVisible(false);
+		connect(m_recentFileActions[i], SIGNAL(triggered()), this, SLOT(openRecentFile()));
+	}
+	
+	m_clearRecentAction = new QAction(tr("&Clear Recent"), this);
+	m_clearRecentAction->setEnabled(false);
+	connect(m_clearRecentAction, SIGNAL(triggered()), this, SLOT(clearRecentFiles()));
 }
 
 void QShaderEdit::createMenus()
@@ -211,10 +484,6 @@ void QShaderEdit::createMenus()
 	fileMenu->addAction(m_saveAction);
 	fileMenu->addAction(m_saveAsAction);
 
-//	fileMenu->addSeparator();
-
-//	fileMenu->addAction(m_compile);
-	
 	fileMenu->addSeparator();
 	
 	action = new QAction(tr("E&xit"), this);
@@ -270,38 +539,24 @@ void QShaderEdit::createMenus()
 	editMenu->addAction(m_gotoAction);
 	
 	QMenu * viewMenu = menuBar()->addMenu(tr("&View"));
-	
-	// Should this be under the "Panels" menu? 
-	viewMenu->addAction(m_sceneViewDock->toggleViewAction());
-	viewMenu->addAction(m_paramViewDock->toggleViewAction());
-	viewMenu->addAction(m_logViewDock->toggleViewAction());
+
+	viewMenu->addAction(m_scenePanel->toggleViewAction());
+	viewMenu->addAction(m_parameterPanel->toggleViewAction());
+	viewMenu->addAction(m_messagePanel->toggleViewAction());
 	
 	viewMenu->addSeparator();
 	
+	viewMenu->addAction(m_fileToolBar->toggleViewAction());
+	viewMenu->addAction(m_techniqueToolBar->toggleViewAction());
+	
 	// On KDE this should be under the "Preferences" menu.
-	QMenu * toolbarMenu = viewMenu->addMenu(tr("&Toolbars"));
-	toolbarMenu->addAction(m_fileToolBar->toggleViewAction());
-	toolbarMenu->addAction(m_techniqueToolBar->toggleViewAction());
-
-	if( m_sceneView != NULL ) {	
-		QMenu * sceneMenu = menuBar()->addMenu(tr("&Scene"));
-		QMenu * sceneSelectionMenu = sceneMenu->addMenu(tr("&Select"));
+	//QMenu * toolbarMenu = viewMenu->addMenu(tr("&Toolbars"));
+	//toolbarMenu->addAction(m_fileToolBar->toggleViewAction());
+	//toolbarMenu->addAction(m_techniqueToolBar->toggleViewAction());
 	
-		// Use scene plugins to create menus.
-		const int count = SceneFactory::factoryList().count();
-		for(int i = 0; i < count; i++) {
-			const SceneFactory * factory = SceneFactory::factoryList().at(i);
-			Q_ASSERT(factory != NULL);
-			
-			action = new QAction(QString("&%1 %2").arg(i+1).arg(factory->name()), this);
-			action->setData(factory->name());
-			connect(action, SIGNAL(triggered()), this, SLOT(selectScene()));
-			sceneSelectionMenu->addAction(action);
-		}
+	Q_ASSERT( m_scenePanel != NULL );
+	menuBar()->addMenu(m_scenePanel->menu());
 	
-		m_renderMenu = sceneMenu->addMenu(tr("Render Options"));
-		m_sceneView->populateMenu(m_renderMenu);
-	}
 	
 	QMenu * helpMenu = menuBar()->addMenu(tr("&Help"));
 
@@ -327,7 +582,7 @@ void QShaderEdit::createToolbars()
 	m_fileToolBar->addAction(m_newAction);
 	m_fileToolBar->addAction(m_openAction);
 	m_fileToolBar->addAction(m_saveAction);
-
+	
 	m_techniqueToolBar = new QToolBar(tr("Technique Toolbar"), this);
 	m_techniqueToolBar->setObjectName("TechniqueToolBar");
 	this->addToolBar(m_techniqueToolBar);
@@ -337,7 +592,7 @@ void QShaderEdit::createToolbars()
 	m_techniqueCombo->setInsertPolicy(QComboBox::InsertAtBottom);
 	m_techniqueCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
 	m_techniqueCombo->setEnabled(false);
-	connect(m_techniqueCombo, SIGNAL(activated(int)), this, SLOT(techniqueChanged(int)));
+	connect(m_techniqueCombo, SIGNAL(activated(int)), this, SLOT(onTechniqueChanged(int)));
 
 	QLabel * techniqueLabel = new QLabel(tr("Technique: "), m_techniqueToolBar);
 	techniqueLabel->setBuddy(m_techniqueCombo);
@@ -348,131 +603,14 @@ void QShaderEdit::createToolbars()
 void QShaderEdit::createStatusbar()
 {
 	statusBar()->showMessage(tr("Ready"));
-	m_positionLabel = new QLabel(statusBar());
-	statusBar()->addPermanentWidget(m_positionLabel);
-}
-
-void QShaderEdit::createDockWindows()
-{
-	m_logViewDock = new MessagePanel(tr("Messages"), this);
-	m_logViewDock->setObjectName("MessagesDock");
-	m_logViewDock->setAllowedAreas(Qt::BottomDockWidgetArea);
-	m_logViewDock->setVisible(false);
-	addDockWidget(Qt::BottomDockWidgetArea, m_logViewDock);
-	connect(m_logViewDock, SIGNAL(messageClicked(int, int, int)), m_editor, SLOT(gotoLine(int, int, int)));
-
-	m_sceneViewDock = new QDockWidget(tr("Scene"), this);
-	m_sceneViewDock->setObjectName("SceneDock");
-	m_sceneViewDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-
-	if( QGLFormat::hasOpenGL() ) {
-		QGLFormat format;
-		//format.setRgba(true);
-		//format.setAlpha(false);
-		format.setDepth(true);
-		//format.setStencil(false);	// not for now...
-		format.setDoubleBuffer(true);
-		m_sceneView = new QGLView(format, m_sceneViewDock);
-		
-		if( !m_sceneView->init(m_logViewDock) ) {
-			QMessageBox::critical(this, tr("Error"), tr("OpenGL initialization failed."));
-			m_logViewDock->setVisible(true);
-		}
-		m_sceneViewDock->setWidget(m_sceneView);
-	}
-	addDockWidget(Qt::RightDockWidgetArea, m_sceneViewDock);
-
-	m_paramViewDock = new ParameterPanel(tr("Parameters"), this);
-	m_paramViewDock->setObjectName("ParameterDock");
-	m_paramViewDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-	addDockWidget(Qt::RightDockWidgetArea, m_paramViewDock);
-	connect(m_paramViewDock, SIGNAL(parameterChanged()), this, SLOT(setModified()));
-}
-
-bool QShaderEdit::closeEffect()
-{
-	if (m_effect == NULL) {
-		Q_ASSERT(m_file == NULL);
-		// No effect open.
-		return true;
-	}
-	
-	if( m_effectFactory != NULL && m_modified ) {
-		QString fileName;
-		if( m_file != NULL ) {
-			fileName = strippedName(*m_file);
-		}
-		else {
-			QString extension = m_effectFactory->extension();
-			fileName = tr("untitled") + "." + extension;
-		}
-
-		while(true) {
-			int answer = QMessageBox::question(this, tr("Save modified files"), tr("Do you want to save '%1' before closing?").arg(fileName), QMessageBox::Yes, QMessageBox::No, QMessageBox::Cancel);
-			if( answer == QMessageBox::Yes ) {
-				if( save() ) {
-					break;
-				}
-			}
-			else if( answer == QMessageBox::Cancel ) {
-				return false;
-			}
-			else {
-				break;
-			}
-		}
-	}
-
-	// Delete effect.
-	m_sceneView->resetEffect();
-
-	delete m_effect;
-	m_effect = NULL;
-
-	m_paramViewDock->clear();
-
-	updateEditor();
-	updateTechniques();
-
-	// Delete effect file.
-	delete m_file;
-	m_file = NULL;
-	
-	return true;
-}
-
-void QShaderEdit::updateWindowTitle()
-{
-	QString title;
-
-	if( m_file == NULL ) {
-		title = tr("Untitled");
-	}
-	else {
-		title = strippedName(*m_file);
-	}
-
-	if( m_modified ) {
-		title.append(" ");
-		title.append(tr("[modified]"));
-	}
-
-	title.append(" - ");
-
-	title.append("QShaderEditor"); //QApplication::instance()->applicationName();
-
-
-	this->setWindowTitle(title);
+	m_statusLabel = new QLabel(statusBar());
+	m_statusLabel->setText(tr(" Line: 0  Col: 0"));
+	statusBar()->addPermanentWidget(m_statusLabel);
 }
 
 void QShaderEdit::updateActions()
 {
-	if(m_effectFactory == NULL) {
-		return;
-	}
-
-	//m_saveAction->setVisible(m_file != NULL);
-	m_saveAction->setEnabled(m_modified);
+	m_saveAction->setEnabled(m_document->isModified() || m_document->file() == NULL);
 	m_saveAsAction->setEnabled(true);
 	
 	m_findAction->setEnabled(true);
@@ -480,436 +618,98 @@ void QShaderEdit::updateActions()
 	m_findPreviousAction->setEnabled(true);
 	m_gotoAction->setEnabled(true);
 
-	QString fileName;
-	if( m_file == NULL ) {
-		QString extension = m_effectFactory->extension();
-		fileName = tr("untitled") + "." + extension;
-	}
-	else {
-		fileName = strippedName(*m_file);
-	}
-
-	m_saveAction->setText(tr("Save %1").arg(fileName));
-}
-
-void QShaderEdit::updateEditor()
-{
-	if( m_effect == NULL ) {
-		// Remove all the tabs from the editor.
-		while(m_editor->count() > 0) {
-			m_editor->removeTab(0);
-		}
-	}
-	else {
-		// Open all the inputs in tabs.
-		int inputNum = m_effect->getInputNum();
-		for(int i = 0; i < inputNum; i++) {
-			QTextEdit * textEdit = m_editor->addEditor(m_effect->getInputName(i));
-
-			Highlighter * hl = new Highlighter(textEdit->document());
-			hl->setRules(m_effect->factory()->highlightingRules());
-			hl->setMultiLineCommentStart(m_effect->factory()->multiLineCommentStart());
-			hl->setMultiLineCommentEnd(m_effect->factory()->multiLineCommentEnd());
-
-			textEdit->setPlainText(m_effect->getInput(i));
-			textEdit->document()->setModified(false);
-		}
-	}
-
-	// @@ This is not enough, the highligher modifies the document and triggers the textChanged event!
-	// Stop the timer, that was triggered by setPlainText.
-	m_timer->stop();
-
-	m_modified = false;
+	/*QString fileName;
+	fileName = m_document->fileName();
+	m_saveAction->setText(tr("Save %1").arg(fileName));*/
 }
 
 void QShaderEdit::updateTechniques()
 {
 	QString lastText = m_techniqueCombo->currentText();
 	
+	Effect * effect = m_document->effect();
+	
 	int count = 0;
-	if( m_effect != NULL ) {
-		count = m_effect->getTechniqueNum();
+	if (effect != NULL)
+	{
+		count = effect->getTechniqueNum();
 	}
 	
-	if( count == 0 ) {
+	if (count == 0)
+	{
 		m_techniqueCombo->setEnabled(false);
 	}
-	else {
+	else
+	{
 		m_techniqueCombo->setEnabled(true);
 		m_techniqueCombo->clear();
 		
 		for(int i = 0; i < count; i++) {
-			m_techniqueCombo->addItem(m_effect->getTechniqueName(i));
+			m_techniqueCombo->addItem(effect->getTechniqueName(i));
 		}
 		m_techniqueCombo->setEnabled(count > 1);
 		
 		int idx = m_techniqueCombo->findText(lastText);
 		if( idx != -1 ) {
 			m_techniqueCombo->setCurrentIndex(idx);
-			m_effect->selectTechnique(idx);
+			effect->selectTechnique(idx);
 		}
 	}
 }
 
-bool QShaderEdit::isModified()
+void QShaderEdit::updateWindowTitle(QString title)
 {
-	Q_ASSERT(m_effect != NULL);
-	Q_ASSERT(m_editor != NULL);
+	title.append(" - ");
 
-	bool modified = false;
+	title.append("QShaderEditor"); //QApplication::instance()->applicationName();
 
-	const int num = m_editor->count();
-	for(int i = 0; i < num; i++) {
-		QTextEdit * editor = qobject_cast<QTextEdit *>(m_editor->widget(i));
-
-		if( editor != NULL && editor->document()->isModified() ) {
-			modified = true;
-		}
-	}
-
-	return modified;
+	this->setWindowTitle(title);
 }
 
-void QShaderEdit::setModified(bool modified)
+void QShaderEdit::updateRecentFileActions()
 {
-	Q_ASSERT(m_effect != NULL);
-	Q_ASSERT(m_editor != NULL);
+	QSettings settings(ORGANIZATION, "QShaderEdit");
+	QStringList files = settings.value("recentFileList").toStringList();
 
-	const int num = m_editor->count();
-	for(int i = 0; i < num; i++) {
-		QTextEdit * editor = qobject_cast<QTextEdit *>(m_editor->widget(i));
+	int numRecentFiles = qMin(files.count(), (int)MaxRecentFiles);
 
-		if( editor != NULL  ) {
-			editor->document()->setModified(modified);
-		}
-	}
-
-	m_modified = modified;
-}
-
-void QShaderEdit::techniqueChanged(int index)
-{
-	if( index >= 0 ) {
-		Q_ASSERT(m_effect != NULL);
-		m_effect->selectTechnique(index);
-		m_sceneView->updateGL();
-	}
-}
-
-void QShaderEdit::cursorPositionChanged()
-{
-	int line = m_editor->line();
-	int column = m_editor->column();
-	m_positionLabel->setText(QString(tr(" Line: %1  Col: %2")).arg(line).arg(column));
-}
-
-void QShaderEdit::selectScene()
-{
-	QAction * action = qobject_cast<QAction *>(sender());
-	if( action != NULL ) {
-		const SceneFactory * factory = SceneFactory::findFactory(action->data().toString());
-		Q_ASSERT(factory != NULL);
-		m_sceneView->setScene(factory->createScene());
-		
-		m_renderMenu->clear();
-		m_sceneView->populateMenu(m_renderMenu);
-	}
-}
-
-
-void QShaderEdit::closeEvent(QCloseEvent * event)
-{
-	Q_ASSERT(event != NULL);
-	
-	if (closeEffect()) {
-		event->accept();
-		saveSettings();
-	}
-	else {
-		event->ignore();
-	}
-}
-
-void QShaderEdit::keyPressEvent(QKeyEvent * event)
-{
-	if( event->key() == Qt::Key_Escape ) {
-		m_logViewDock->close();
-		if( m_editor->currentWidget() ) {
-			m_editor->currentWidget()->setFocus();
-		}
-		event->accept();
-	}
-	else {
-		event->ignore();
-	}
-}
-
-void QShaderEdit::dropEvent(QDropEvent *event)
-{
-    QList<QUrl> urls = event->mimeData()->urls();
-	
-	// @@ Make sure the file is a supported effect.
-    event->acceptProposedAction();
-	
-	if( urls.size() ) {
-        load(urls[0].toLocalFile());
-	}
-}
-
-
-void QShaderEdit::newEffect(const EffectFactory * effectFactory)
-{
-	Q_ASSERT(effectFactory != NULL);
-	Q_ASSERT(m_sceneView != NULL);
-
-	if (!closeEffect())
-		return;
-
-	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-
-	m_effectFactory = effectFactory;
-	m_effect = m_effectFactory->createEffect(m_sceneView);
-	Q_ASSERT(m_effect != NULL);
-
-	updateEditor();
-	updateWindowTitle();
-	updateActions();
-	updateTechniques();
-
-	// Init scene view.
-	m_sceneView->setEffect(m_effect);
-	build(true);
-
-	QApplication::restoreOverrideCursor();
-}
-
-void QShaderEdit::newFile(bool startup)
-{
-	// Count effect file types.
-	const QList<const EffectFactory *> & effectFactoryList = EffectFactory::factoryList();
-
-	int count = 0;
-	foreach(const EffectFactory * ef, effectFactoryList) {
-		if(ef->isSupported()) {
-			++count;
-		}
-	}
-
-	const EffectFactory * effectFactory = NULL;
-	if(count == 0) {
-		// Display error.
-		QMessageBox::critical(this, tr("Error"), tr("No effect files supported"), QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
-	}
-	else if(count == 1) {
-		// Use the first supported effect type.
-		foreach(const EffectFactory * ef, effectFactoryList) {
-			if(ef->isSupported()) {
-				effectFactory = ef;
-				break;
-			}
-		}
-	}
-	else {
-		// Let the user choose the effect type.
-		NewDialog newDialog(this, startup);
-
-		int result = newDialog.exec();
-		if( result == QDialog::Accepted ) {
-			QString selection = newDialog.shaderType();
-
-			foreach(const EffectFactory * ef, effectFactoryList) {
-				if(ef->isSupported() && ef->name() == selection) {
-					effectFactory = ef;
-					break;
-				}
-			}
-		}
-		else if (result == NewDialog::OpenEffect) {
-			open();
-			return;
-		}
-	}
-
-	if( effectFactory != NULL ) {
-		newEffect(effectFactory);
-	}
-}
-
-void QShaderEdit::open()
-{
-	// Find supported effect types.
-	QStringList effectTypes;
-	QStringList effectExtensions;
-	foreach(const EffectFactory * factory, EffectFactory::factoryList()) {
-		if( factory->isSupported() ) {
-			QString effectType = QString("%1 (*.%2)").arg(factory->namePlural()).arg(factory->extension());
-			effectTypes.append(effectType);
-
-			QString effectExtension = factory->extension();
-			effectExtensions.append("*." + effectExtension);
-		}
-	}
-
-	if(effectTypes.isEmpty()) {
-		QMessageBox::critical(this, tr("Error"), tr("No effect files supported"), QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
-		return;
-	}
-
-	//QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), tr("."), effectTypes.join(";"));
-	QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
-            m_lastEffect, QString(tr("Effect Files (%1)")).arg(effectExtensions.join(" ")));
-
-	if( !fileName.isEmpty() ) {
-        m_lastEffect = fileName;
-        load( fileName );
-	}
-}
-
-void QShaderEdit::openRecentFile()
-{
-	QAction * action = qobject_cast<QAction *>(sender());
-	if (action) {
-		load(action->data().toString());
-	}
-}
-
-void QShaderEdit::clearRecentFiles()
-{
-	// @@ TBD
- 	QSettings settings( "Castano Inc", "QShaderEdit" );
-	settings.setValue("recentFileList", QStringList());
-
-	/*foreach (QWidget *widget, QApplication::topLevelWidgets()) {
-		MainWindow *mainWin = qobject_cast<MainWindow *>(widget);
-		if (mainWin)
-			mainWin->updateRecentFileActions();
-	}*/
-	
-	// Only a single main window.
-	updateRecentFileActions();	
-}
-
-bool QShaderEdit::load( const QString& fileName )
-{
-	Q_ASSERT(m_sceneView != NULL);
-		
-	if (!closeEffect())
-		return false;
-
-	m_file = new QFile(fileName);
-	if (!m_file->open(QIODevice::ReadOnly)) {
-		delete m_file;
-		m_file = NULL;
-		return false;
-	}
-
-	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-
-	int idx = fileName.lastIndexOf('.');
-	QString fileExtension = fileName.mid(idx+1);
-
-	m_effectFactory = EffectFactory::factoryForExtension(fileExtension);
-	if( m_effectFactory ) {
-		Q_ASSERT(m_effectFactory->isSupported());
-		m_effect = m_effectFactory->createEffect(m_sceneView);
-		m_effect->load(m_file);
-	}
-
-	m_file->close();
-
-	updateEditor();
-	updateWindowTitle();
-	updateActions();
-	updateTechniques();
-	setCurrentFile(fileName);
-
-	// Init scene view.
-	if( m_effect ) {
-		m_sceneView->setEffect(m_effect);
-		build(false);
-	}
-	else
+	for (int i = 0; i < numRecentFiles; ++i)
 	{
-		m_sceneView->resetEffect();
-	}
-
-	QApplication::restoreOverrideCursor();
-	return true;
-}
-
-bool QShaderEdit::save()
-{
-	if( m_file == NULL ) {
-		// Choose file dialog.
-		QString fileExtension = m_effectFactory->extension();
-		QString effectType = QString("%1 (*.%2)").arg(m_effectFactory->namePlural()).arg(fileExtension);
-		QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), tr("untitled") + "." + fileExtension, effectType);
-
-		if( fileName.isEmpty() ) {
-			return false;
+		QString text = tr("&%1 %2").arg(i + 1).arg(QFileInfo(files[i]).fileName());
+		m_recentFileActions[i]->setText(text);
+		m_recentFileActions[i]->setData(files[i]);
+		m_recentFileActions[i]->setVisible(true);
+		
+		// Disable entry if file type not supported...
+		int idx = files[i].lastIndexOf('.');
+		QString fileExtension = files[i].mid(idx+1);
+		
+		const EffectFactory * factory = EffectFactory::factoryForExtension(fileExtension);
+		if (factory == NULL || !factory->isSupported())
+		{
+			m_recentFileActions[i]->setEnabled(false);
 		}
-
-		m_file = new QFile(fileName);
 	}
 
-	m_file->open(QIODevice::WriteOnly);
-	updateEffectInputs();
-	m_effect->save(m_file);
-	m_file->close();
-
-	setModified(false);
-
-	updateWindowTitle();
-	updateActions();
-
-	return true;
+	for (int i = numRecentFiles; i < MaxRecentFiles; ++i)
+	{
+		m_recentFileActions[i]->setVisible(false);
+	}
+	
+	m_recentFileSeparator->setVisible(numRecentFiles > 0);
+	m_clearRecentAction->setEnabled(numRecentFiles > 0);
 }
 
-void QShaderEdit::saveAs()
+void QShaderEdit::addRecentFile(QString fileName)
 {
-	Q_ASSERT(m_effectFactory != NULL);
-
-	QString fileExtension = m_effectFactory->extension();
-	QString effectType = QString("%1 (*.%2)").arg(m_effectFactory->namePlural()).arg(fileExtension);
-
-	QString fileName;
-	if( m_file != NULL ) {
-		fileName = strippedName(*m_file);
-	}
-	else {
-		fileName = tr("untitled") + "." + fileExtension;
-	}
-
-	// Choose file dialog.
-	fileName = QFileDialog::getSaveFileName(this, tr("Save File"), fileName, effectType);
-
-	if( fileName.isEmpty() ) {
-		return;
-	}
-
-	m_file = new QFile(fileName);
-
-	m_file->open(QIODevice::WriteOnly);
-	updateEffectInputs();
-	m_effect->save(m_file);
-	m_file->close();
-
-	setModified(false);
-
-	updateWindowTitle();
-	updateActions();
-	setCurrentFile(fileName);
-}
-
-void QShaderEdit::setCurrentFile(const QString &fileName)
-{
- 	QSettings settings( "Castano Inc", "QShaderEdit" );
+ 	QSettings settings(ORGANIZATION, "QShaderEdit");
 	QStringList files = settings.value("recentFileList").toStringList();
 	files.removeAll(fileName);
 	files.prepend(fileName);
 	while (files.size() > MaxRecentFiles)
+	{
 		files.removeLast();
+	}
 
 	settings.setValue("recentFileList", files);
 
@@ -923,178 +723,78 @@ void QShaderEdit::setCurrentFile(const QString &fileName)
 	updateRecentFileActions();
 }
 
-void QShaderEdit::updateRecentFileActions()
+
+/*virtual*/ void QShaderEdit::closeEvent(QCloseEvent * event)
 {
-	QSettings settings( "Castano Inc", "QShaderEdit" );
-	QStringList files = settings.value("recentFileList").toStringList();
+	Q_ASSERT(event != NULL);
+	
+	if (m_document->close())
+	{
+		event->accept();
+		saveSettings();
+	}
+	else
+	{
+		event->ignore();
+	}
+}
 
-	int numRecentFiles = qMin(files.count(), (int)MaxRecentFiles);
+/*virtual*/ void QShaderEdit::keyPressEvent(QKeyEvent * event)
+{
+	if (event->key() == Qt::Key_Escape)
+	{
+		m_messagePanel->close();
+		if (m_editor->currentWidget())
+		{
+			m_editor->currentWidget()->setFocus();
+		}
+		event->accept();
+	}
+	else
+	{
+		event->ignore();
+	}
+}
 
-	for (int i = 0; i < numRecentFiles; ++i) {
+/*virtual*/ void QShaderEdit::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (event->mimeData()->hasFormat("text/uri-list"))
+    {
+	    QList<QUrl> urls = event->mimeData()->urls();
+		if (urls.size())
+		{
+			QString fileName = urls[0].toLocalFile();
+	    	
+			if (m_document->canLoadFile(fileName))
+			{
+				event->acceptProposedAction();
+			}
+		}   
+    }
+}
+
+/*virtual*/ void QShaderEdit::dropEvent(QDropEvent *event)
+{
+    QList<QUrl> urls = event->mimeData()->urls();
+	
+	if (urls.size())
+	{
+		QString fileName = urls[0].toLocalFile();
 		
-		QString text = tr("&%1 %2").arg(i + 1).arg(strippedName(files[i]));
-		m_recentFileActions[i]->setText(text);
-		m_recentFileActions[i]->setData(files[i]);
-		m_recentFileActions[i]->setVisible(true);
-		
-		// Disable entry if file type not supported...
-		int idx = files[i].lastIndexOf('.');
-		QString fileExtension = files[i].mid(idx+1);
-
-		const EffectFactory * factory = EffectFactory::factoryForExtension(fileExtension);
-		if (factory == NULL || !factory->isSupported()) {
-			m_recentFileActions[i]->setEnabled(false);
+		Q_ASSERT(m_document != NULL);
+		if (m_document->canLoadFile(fileName))
+		{
+			event->acceptProposedAction();
+			
+			m_document->loadFile(urls[0].toLocalFile());
 		}
 	}
-
-	for (int i = numRecentFiles; i < MaxRecentFiles; ++i) {
-		m_recentFileActions[i]->setVisible(false);
-	}
-	
-	m_recentFileSeparator->setVisible(numRecentFiles > 0);
-	m_clearRecentAction->setEnabled(numRecentFiles > 0);
 }
 
-void QShaderEdit::about()
-{
-	QMessageBox::about(this, tr("About QShaderEdit"),
-			tr("<b>QShaderEdit</b> is a simple shader editor"));
-}
-
-void QShaderEdit::setAutoCompile(bool enable)
-{
-	m_autoCompile = enable;
-	if( m_autoCompile ) {
-		m_timer->stop();
-	}
-}
-
-void QShaderEdit::shaderTextChanged()
-{
-	bool modified = isModified();
-
-	// if modified changed.
-	if( m_modified != modified ) {
-		m_modified = modified;
-		updateWindowTitle();
-		updateActions();
-	}
-
-	if( m_autoCompile )
-	{
-		// Compile after 1.5 seconds of inactivity.
-		m_timer->start(1500);
-	}
-}
-
-void QShaderEdit::keyTimeout()
-{
-	// Delay recompilation while editor is active or while compiling.
-	if(m_paramViewDock->isEditorActive() || m_effect->isBuilding()) {
-		m_timer->start(1500);
-		return;
-	}
-	
-	// Stop the timer.
-	m_timer->stop();
-
-	// @@ Set status bar message!
-	statusBar()->showMessage(tr("Compiling..."));
-
-//	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-	
-	updateEffectInputs();
-
-	// Compile the effect.
-	build(false);
-
-//	QApplication::restoreOverrideCursor();
-}
-
-void QShaderEdit::compileChecked(bool checked)
-{
-	setAutoCompile(checked);
-	
-	if(checked == true)
-	{
-		// If checked, trigger compilation.
-		keyTimeout();
-	}
-}
-
-void QShaderEdit::build(bool silent)
-{
-	Q_ASSERT(m_effect != NULL);
-
-	m_paramViewDock->clear();
-
-	connect(m_effect, SIGNAL(built()), this, SLOT(built()));	
-	
-	if( silent ) {
-		m_effect->build(false);
-	}
-	else {
-		// clear messages.
-		m_logViewDock->clear();
-		
-		// Connect effect signals.
-		connect(m_effect, SIGNAL(infoMessage(QString)), m_logViewDock, SLOT(info(QString)));
-		connect(m_effect, SIGNAL(errorMessage(QString)), m_logViewDock, SLOT(error(QString)));
-		connect(m_effect, SIGNAL(buildMessage(QString,int,OutputParser*)), m_logViewDock, SLOT(log(QString,int,OutputParser*)));
-		
-		// Stop animation while building.
-		if( m_effect->isAnimated() ) {
-			m_animationTimer->stop();
-		}
-		
-		// Start builder thread.
-		m_effect->build(true);
-	}
-}
-
-void QShaderEdit::built()
-{
-	qDebug() << "Built!";
-	
-	disconnect(m_effect, SIGNAL(built()), this, SLOT(built()));	
-	disconnect(m_effect, SIGNAL(infoMessage(QString)), m_logViewDock, SLOT(info(QString)));
-	disconnect(m_effect, SIGNAL(errorMessage(QString)), m_logViewDock, SLOT(error(QString)));
-	disconnect(m_effect, SIGNAL(buildMessage(QString,int,OutputParser*)), m_logViewDock, SLOT(log(QString,int,OutputParser*)));
-	
-	if( m_effect->isValid() ) {
-		statusBar()->showMessage(tr("Compilation succeed."), 2000);
-		m_logViewDock->info(tr("Compilation succeed."));
-	}
-	else {
-		statusBar()->showMessage(tr("Compilation failed."), 2000);
-		m_logViewDock->setVisible(true);
-		m_logViewDock->error(tr("Compilation failed."));
-	}
-	
-	updateTechniques();
-	m_paramViewDock->setEffect(m_effect);
-
-	if( m_effect->isAnimated() ) {
-		m_animationTimer->start(30);
-	}
-	else {
-		m_animationTimer->stop();
-	}
-
-	m_sceneView->updateGL();
-}
-
-void QShaderEdit::setModified()
-{
-	m_modified = true;
-	updateActions();
-	updateWindowTitle();
-	m_sceneView->updateGL();
-}
 
 void QShaderEdit::loadSettings()
 {
-	QSettings pref( "Castano Inc", "QShaderEdit" );
+	QSettings pref( ORGANIZATION, "QShaderEdit" );
 
 	pref.beginGroup("MainWindow");
 
@@ -1108,8 +808,9 @@ void QShaderEdit::loadSettings()
 
 	pref.endGroup();
 
-	m_autoCompile = pref.value("autoCompile", true).toBool();
-	m_lastEffect = pref.value("lastEffect", ".").toString();
+	//	m_autoCompile = pref.value("autoCompile", true).toBool();
+	//m_lastEffect = pref.value("lastEffect", ".").toString();
+	Document::setLastEffect(pref.value("lastEffect", ".").toString());
 	SceneFactory::setLastFile(pref.value("lastScene", ".").toString());
 	ParameterPanel::setLastPath(pref.value("lastParameterPath", ".").toString());
 
@@ -1120,7 +821,7 @@ void QShaderEdit::loadSettings()
 
 void QShaderEdit::saveSettings()
 {
-	QSettings pref( "Castano Inc", "QShaderEdit" );
+	QSettings pref( ORGANIZATION, "QShaderEdit" );
 
 	pref.beginGroup("MainWindow");
 	pref.setValue("maximized", isMaximized());
@@ -1132,32 +833,10 @@ void QShaderEdit::saveSettings()
 	pref.setValue("state", saveState());
 	pref.endGroup();
 
-	pref.setValue("autoCompile", m_autoCompile);
-	pref.setValue("lastEffect", m_lastEffect);
+	//	pref.setValue("autoCompile", m_autoCompile);
+	//pref.setValue("lastEffect", m_lastEffect);
+	pref.setValue("lastEffect", Document::lastEffect());
 	pref.setValue("lastScene", SceneFactory::lastFile());
 	pref.setValue("lastParameterPath", ParameterPanel::lastPath());
 }
 
-void QShaderEdit::updateEffectInputs()
-{
-	Q_ASSERT(m_effect);
-	int inputNum = m_effect->getInputNum();
-	for(int i = 0; i < inputNum; i++) {
-		QTextEdit * textEdit = qobject_cast<QTextEdit *>(m_editor->widget(i));
-		if( textEdit != NULL ) {
-			m_effect->setInput(i, textEdit->toPlainText().toLatin1());
-		}
-	}
-}
-
-// static
-QString QShaderEdit::strippedName(const QString & fileName)
-{
-	return QFileInfo(fileName).fileName();
-}
-
-// static
-QString QShaderEdit::strippedName(const QFile & file)
-{
-	return QFileInfo(file).fileName();
-}

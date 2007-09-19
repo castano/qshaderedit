@@ -7,6 +7,8 @@
 
 class QTextEdit;
 
+class Effect;
+
 class Editor : public QTabWidget
 {
 	Q_OBJECT
@@ -14,11 +16,16 @@ public:
 	
 	Editor(QWidget * parent = 0);
 	
-	QTextEdit * addEditor(const QString & name);
+	void setEffect(Effect * effect);
+	
+	QTextEdit * addEditor(const QString & name, const Effect * effect, int i);
 	QTextEdit * currentTextEdit() const;
 
 	int line() const;
 	int column() const;
+	
+	bool isModified() const;
+	void setModified(bool b);
 	
 public slots:
 	void undo();
@@ -44,6 +51,8 @@ signals:
 	void redoAvailable(bool available);
 	void textChanged();
 
+	void modifiedChanged(bool modified);
+	
 protected:
 	virtual void tabInserted(int index);
 	virtual void tabRemoved(int index);

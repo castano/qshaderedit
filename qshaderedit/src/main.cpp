@@ -5,14 +5,15 @@
 #include <QtGui/QPlastiqueStyle>
 
 #if defined(Q_WS_X11)
-//#include <X11/Xlib.h>
+#include <X11/Xlib.h>
 #endif
+
 
 int main(int argc, char **argv)
 {
 #if defined(Q_WS_X11)
-	// Apparently this is done inside QApplication already.
-//	XInitThreads();
+	// This causes lockups in the X server.
+	//XInitThreads();
 #endif
 	
     QApplication app(argc, argv);
@@ -27,16 +28,6 @@ int main(int argc, char **argv)
 	}
 
 	QShaderEdit * shaderEdit = new QShaderEdit(filename);
-	
-	/*
-	QStyle * arthurStyle = new ArthurStyle();
-	shaderEdit->setStyle(arthurStyle);
-
-	QList<QWidget *> widgets = qFindChildren<QWidget *>(shaderEdit);
-	foreach(QWidget * w, widgets) {
-		w->setStyle(arthurStyle);
-	}
-	*/
 	
     return app.exec();
 }

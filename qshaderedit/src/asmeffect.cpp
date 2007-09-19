@@ -151,20 +151,20 @@ private:
 	
 	OutputParser* m_outputParser;
 
-	bool m_built;
-	
 public:
 	
 	// Ctor.
-	ArbEffect(const EffectFactory * factory) : Effect(factory),
+	ArbEffect(const EffectFactory * factory, QGLWidget * widget) : Effect(factory),
 		m_vertexProgramText(s_vertexProgramText),
 		m_fragmentProgramText(s_fragmentProgramText),
-		m_outputParser(NULL),
-		m_built(false)
+		m_outputParser(NULL)
 	{
+		widget->makeCurrent();
 		m_time.start();
 
 		const char* vendor = (const char*)glGetString(GL_VENDOR);
+		Q_ASSERT(vendor != NULL);
+		
 		if (strcmp(vendor, "ATI Technologies Inc.") == 0)
 			m_outputParser = new AtiAsmOutputParser;
 		else if (strcmp(vendor, "NVIDIA Corporation") == 0)
@@ -314,42 +314,41 @@ public:
 	virtual void build(bool threaded)
 	{
 		Q_UNUSED(threaded);
-
-		deletePrograms();
-		resetParameters();
 		
-		m_built = false;
 		bool succeed = true;
 		
+		GLuint vertexProgram;
+		GLuint fragmentProgram;
+		
 		emit infoMessage(tr("Compiling vertex program..."));
-		glGenProgramsARB( 1, &m_vp );
-		glBindProgramARB( GL_VERTEX_PROGRAM_ARB, m_vp );
+		glGenProgramsARB( 1, &vertexProgram );
+		glBindProgramARB( GL_VERTEX_PROGRAM_ARB, vertexProgram );
 		glProgramStringARB( GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, m_vertexProgramText.length(), m_vertexProgramText );
 		if( checkProgramError(0) ) {
 			succeed = false;
 		}
-		else {
-			parseProgram(m_vertexProgramText, Stage_Vertex);
-		}
 		glDisable( GL_VERTEX_PROGRAM_ARB );
 		
 		emit infoMessage(tr("Compiling fragment program..."));
-		glGenProgramsARB( 1, &m_fp );
-		glBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, m_fp );
+		glGenProgramsARB( 1, &fragmentProgram );
+		glBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, fragmentProgram );
 		glProgramStringARB( GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, m_fragmentProgramText.length(), m_fragmentProgramText );
 		if( checkProgramError(1) ) {
 			succeed = false;
 		}
-		else {
-			parseProgram(m_fragmentProgramText, Stage_Fragment);
-		}
 		glDisable( GL_FRAGMENT_PROGRAM_ARB );
 		
-		if( succeed ) {
-			m_built = true;
+		if( succeed )
+		{
+			deletePrograms();
+			m_vp = vertexProgram;
+			m_fp = fragmentProgram;
+			resetParameters();
+			parseProgram(m_vertexProgramText, Stage_Vertex);
+			parseProgram(m_fragmentProgramText, Stage_Fragment);
 		}
 		
-		emit built();
+		emit built(succeed);
 	}	
 	
 	virtual bool isBuilding() const 
@@ -377,7 +376,7 @@ public:
 
 	virtual bool isValid() const
 	{
-		return m_built;
+		return m_vp != 0 && m_fp != 0;
 	}
 	
 	virtual bool isAnimated() const
@@ -410,8 +409,6 @@ public:
 	// Rendering.
 	virtual void begin()
 	{
-	//	Q_ASSERT(m_program != 0);
-		
 		glEnable (GL_CULL_FACE);
 		glEnable (GL_DEPTH_TEST);
 		glDepthFunc(GL_LEQUAL);
@@ -447,7 +444,9 @@ private:
 	void deletePrograms()
 	{
 		glDeleteProgramsARB( 1, &m_vp );
+		m_vp = 0;
 		glDeleteProgramsARB( 1, &m_fp );
+		m_fp = 0;
 	}
 	
 	bool checkProgramError(int inputNumber = -1)
@@ -481,11 +480,14 @@ private:
 		int start = 0;
 		int end = qMin(code.indexOf(';'), code.indexOf('\n'));
 		
-		while( end != -1 ) {
+		while( end != -1 )
+		{
 			QString statement = code.mid(start, end-start);
 			
-			if(!commentRegExp.exactMatch(statement)) {
-				if(paramRegExp.exactMatch(statement)) {
+			if (!commentRegExp.exactMatch(statement))
+			{
+				if (paramRegExp.exactMatch(statement))
+				{
 					QString name = paramRegExp.cap(1);
 					QString size = paramRegExp.cap(2);
 					QString value = paramRegExp.cap(3);
@@ -547,10 +549,12 @@ private:
 	
 	void setParameters()
 	{
-		foreach(const ArbParameter * p, m_parameterArray) {
+		foreach(const ArbParameter * p, m_parameterArray)
+		{
 			GLenum stage = p->stage() == Stage_Vertex ? GL_VERTEX_PROGRAM_ARB : GL_FRAGMENT_PROGRAM_ARB;
 			
-			if (p->type() == QVariant::List) {
+			if (p->type() == QVariant::List)
+			{
 				QVariantList list = p->value().toList();
 				Q_ASSERT(list.count() == 4);
 				
@@ -593,11 +597,16 @@ class ArbEffectFactory : public EffectFactory
 		return QIcon();
 	}
 	
+	virtual bool savesParameters() const
+	{
+		// @@ Add support for parameter serialization!
+		return false;
+	}
+	
 	virtual Effect * createEffect(QGLWidget * widget) const
 	{
 		Q_ASSERT(isSupported());
-		Q_UNUSED(widget);
- 		return new ArbEffect(this);
+ 		return new ArbEffect(this, widget);
 	}
 
 	virtual QList<Highlighter::Rule> highlightingRules() const

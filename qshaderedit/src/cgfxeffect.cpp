@@ -13,28 +13,27 @@
 #include <QtCore/QTime>
 #include <QtCore/QVariant>
 #include <QtCore/QHash>
-#include <QtCore/QLibrary>
 #include <QtCore/QThread>
 #include <QtCore/QFileInfo>
 #include <QtOpenGL/QGLContext>
 #include <QtOpenGL/QGLPixelBuffer>
 
-//#if HAVE_CG
+#if HAVE_CG
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
 #if CG_VERSION_NUM < 1400
 #	error "Cg 1.4 required"
 #endif
-//#else
-//#include "cgdyn.h"
-//#endif
+#else
+#include "cgexplicit.h"
+#endif
 
 namespace {
 
 	// Default vertex shader.
 	static const char * s_effectText =
-		"float3 color : DIFFUSE < string SasUiLabel = \"Base Color\"; > = {1.0f, 0.0f, 0.0f};\n"
-		"float amb < string SasUiLabel = \"Ambient\"; float SasUiMin = 0; float SasUiMax = 1; > = 0.1f;\n\n"
+		"float3 color : DIFFUSE < string UILabel = \"Base Color\"; > = {1.0f, 0.0f, 0.0f};\n"
+		"float amb < string UILabel = \"Ambient\"; float UIMin = 0; float UIMax = 1; > = 0.1f;\n\n"
 		"float4x4 mvp : ModelViewProjection;\n"
 		"float3x3 normalMatrix : ModelViewInverseTranspose;\n\n"
 		"struct VertexInput {\n"
@@ -121,7 +120,7 @@ namespace {
 		{
 			Q_ASSERT(h != NULL);
 			
-			m_internalName = cgGetParameterName(m_handle);
+			m_internalName = qcgGetParameterName(m_handle);
 			setName(m_internalName);
 			
 			if (value.isValid()) setValue(value);
@@ -144,9 +143,9 @@ namespace {
 		
 		virtual int rows() const
 		{
-			int num = cgGetParameterColumns(m_handle);
+			int num = qcgGetParameterColumns(m_handle);
 			
-			CGparameterclass parameterClass = cgGetParameterClass(m_handle);
+			CGparameterclass parameterClass = qcgGetParameterClass(m_handle);
 			if( parameterClass == CG_PARAMETERCLASS_VECTOR ) {
 				return num;
 			}
@@ -159,9 +158,9 @@ namespace {
 
 		virtual int columns() const
 		{
-			int num = cgGetParameterRows(m_handle);
+			int num = qcgGetParameterRows(m_handle);
 			
-			CGparameterclass parameterClass = cgGetParameterClass(m_handle);
+			CGparameterclass parameterClass = qcgGetParameterClass(m_handle);
 			if( parameterClass == CG_PARAMETERCLASS_VECTOR ) {
 				return 1;
 			}
@@ -186,58 +185,58 @@ namespace {
 
 		void readAnnotations()
 		{
-			CGannotation annotation = cgGetFirstParameterAnnotation(m_handle);
+			CGannotation annotation = qcgGetFirstParameterAnnotation(m_handle);
 			
 			QVariant min, max;
 			
-			while(annotation != NULL) {
-				
-				const char * name = cgGetAnnotationName(annotation);
+			while (annotation != NULL)
+			{
+				const char * name = qcgGetAnnotationName(annotation);
 				
 				// Override UI name.
-				if( qstricmp(name, "UIHelp") == 0 || qstricmp(name, "UIName") == 0 ||
-					qstricmp(name, "SasUiLabel") == 0) 
+				if (qstricmp(name, "UIHelp") == 0 || qstricmp(name, "UIName") == 0 ||
+					qstricmp(name, "UILabel") == 0 || qstricmp(name, "SasUiLabel") == 0)
 				{
-					setName(cgGetStringAnnotationValue(annotation));
+					setName(qcgGetStringAnnotationValue(annotation));
 				}
 				
 				// Get description.
-				if( qstricmp(name, "UIDescription") == 0 || qstricmp(name, "SasUiDescription") == 0) {
-					setDescription(cgGetStringAnnotationValue(annotation));
+				if (qstricmp(name, "UIDescription") == 0 || qstricmp(name, "SasUiDescription") == 0) {
+					setDescription(qcgGetStringAnnotationValue(annotation));
 				}
 				
 				// UI widget.
-				else if( qstricmp(name, "UIWidget") == 0 || qstricmp(name, "SasUiControl") == 0) {
-					const char * annotationValue = cgGetStringAnnotationValue(annotation);
-					if(qstricmp("None", annotationValue) == 0) {
+				else if (qstricmp(name, "UIWidget") == 0 || qstricmp(name, "SasUiControl") == 0) {
+					const char * annotationValue = qcgGetStringAnnotationValue(annotation);
+					if (qstricmp("None", annotationValue) == 0) {
 						m_visible = false;
 					}
-					else if(qstricmp("ColorPicker", annotationValue) == 0 || qstricmp("Color", annotationValue) == 0) {
+					else if (qstricmp("ColorPicker", annotationValue) == 0 || qstricmp("Color", annotationValue) == 0) {
 						setWidget( Widget_Color);
 					}
 				}
 				
 				// Range
-				else if( qstricmp(name, "UIMin") == 0 || qstricmp(name, "SasUiMin") == 0) {
+				else if (qstricmp(name, "UIMin") == 0 || qstricmp(name, "SasUiMin") == 0) {
 					min = getAnnotationValue(annotation);
 				}
-				else if( qstricmp(name, "UIMax") == 0 || qstricmp(name, "SasUiMax") == 0) {
+				else if (qstricmp(name, "UIMax") == 0 || qstricmp(name, "SasUiMax") == 0) {
 					max = getAnnotationValue(annotation);
 				}
 				
-				else if( qstricmp(name, "SasUiVisible") == 0 ) {
+				else if (qstricmp(name, "UIVisible") == 0 || qstricmp(name, "SasUiVisible") == 0) {
 					int num;
-					const CGbool * values = cgGetBoolAnnotationValues(annotation, &num);
+					const CGbool * values = qcgGetBoolAnnotationValues(annotation, &num);
 					Q_ASSERT(num > 0);
 					m_visible = (values[0] != 0); 
 				}
 				
 				// ResourceName
-				else if( qstricmp(name, "ResourceName") ) {
+				else if (qstricmp(name, "ResourceName")) {
 					// This is already handled in getParameterValue.
 				}
 				
-				annotation = cgGetNextAnnotation(annotation);
+				annotation = qcgGetNextAnnotation(annotation);
 			}
 			
 			if( min.isValid() && max.isValid() ) {
@@ -247,7 +246,7 @@ namespace {
 		
 		void readSemantic()
 		{
-			const char * semantic = cgGetParameterSemantic(m_handle);
+			const char * semantic = qcgGetParameterSemantic(m_handle);
 			if(semantic == NULL) return;
 			
 			QString key = QString(semantic).toLower();
@@ -256,7 +255,7 @@ namespace {
 				m_standard = true;
 			}
 			else if( qstricmp("diffuse", semantic) == 0 || qstricmp("specular", semantic) == 0 ) {
-				if( cgGetParameterClass(m_handle) == CG_PARAMETERCLASS_VECTOR ) {
+				if( qcgGetParameterClass(m_handle) == CG_PARAMETERCLASS_VECTOR ) {
 					setWidget(Widget_Color);
 				}
  			}
@@ -264,7 +263,7 @@ namespace {
 		
 		void setVisibility()
 		{
-			CGparameterclass parameterClass = cgGetParameterClass(m_handle);
+			CGparameterclass parameterClass = qcgGetParameterClass(m_handle);
 			
 			Q_ASSERT(parameterClass != CG_PARAMETERCLASS_STRUCT);
 			Q_ASSERT(parameterClass != CG_PARAMETERCLASS_ARRAY);
@@ -275,7 +274,7 @@ namespace {
 				m_visible = false;
 			}
 			else {
-				CGenum variability = cgGetParameterVariability(m_handle);
+				CGenum variability = qcgGetParameterVariability(m_handle);
 			
 				if( variability != CG_UNIFORM ) {
 					// Hide const, literal and varying parameters.
@@ -286,15 +285,15 @@ namespace {
 
 		static QVariant getParameterValue(CGparameter parameter)
 		{
-			CGtype parameterBaseType = cgGetParameterBaseType(parameter);
-			CGparameterclass parameterClass = cgGetParameterClass(parameter);
+			CGtype parameterBaseType = qcgGetParameterBaseType(parameter);
+			CGparameterclass parameterClass = qcgGetParameterClass(parameter);
 
 			Q_ASSERT(parameterClass != CG_PARAMETERCLASS_STRUCT);
 			Q_ASSERT(parameterClass != CG_PARAMETERCLASS_ARRAY);
 
 			if(parameterClass == CG_PARAMETERCLASS_OBJECT) {
 				if(parameterBaseType == CG_STRING) {
-					return cgGetStringParameterValue(parameter);
+					return qcgGetStringParameterValue(parameter);
 				}
 				else if(parameterBaseType == CG_TEXTURE) {
 					// Ignore textures.
@@ -302,14 +301,14 @@ namespace {
 			}
 			else if(parameterClass == CG_PARAMETERCLASS_SAMPLER) {
 				// Get ResourceName annotation.
-				CGannotation annotation = cgGetNamedParameterAnnotation(parameter, "ResourceName");
+				CGannotation annotation = qcgGetNamedParameterAnnotation(parameter, "ResourceName");
 				if(annotation == 0) {
 					// @@ Hack! state assignment name must be lowercase!
-					CGstateassignment sa = cgGetNamedSamplerStateAssignment(parameter, "texture");
+					CGstateassignment sa = qcgGetNamedSamplerStateAssignment(parameter, "texture");
 					if(sa != 0) {
-						CGparameter p = cgGetTextureStateAssignmentValue(sa);
+						CGparameter p = qcgGetTextureStateAssignmentValue(sa);
 						if(p != 0) {
-							annotation = cgGetNamedParameterAnnotation(p, "ResourceName");
+							annotation = qcgGetNamedParameterAnnotation(p, "ResourceName");
 						}
 					}
 				}
@@ -319,12 +318,12 @@ namespace {
 					return qVariantFromValue(GLTexture());
 				}
 				else {
-					return qVariantFromValue(GLTexture::open(cgGetStringAnnotationValue(annotation)));
+					return qVariantFromValue(GLTexture::open(qcgGetStringAnnotationValue(annotation)));
 				}
 			}
 			else if(parameterClass == CG_PARAMETERCLASS_SCALAR) {
 				int num;
-				const double * values = cgGetParameterValues(parameter, CG_DEFAULT, &num);
+				const double * values = qcgGetParameterValues(parameter, CG_DEFAULT, &num);
 				Q_ASSERT(num == 1);
 
 				if(parameterBaseType == CG_FLOAT || parameterBaseType == CG_HALF || parameterBaseType == CG_FIXED) {
@@ -339,7 +338,7 @@ namespace {
 			}
 			else if(parameterClass == CG_PARAMETERCLASS_VECTOR || parameterClass == CG_PARAMETERCLASS_MATRIX) {
 				int num;
-				const double * values = cgGetParameterValues(parameter, CG_DEFAULT, &num);
+				const double * values = qcgGetParameterValues(parameter, CG_DEFAULT, &num);
 				Q_ASSERT(num > 0);
 
 				QVariantList list;
@@ -365,23 +364,23 @@ namespace {
 
 		static QVariant getAnnotationValue(CGannotation annotation)
 		{
-			CGtype annotationType = cgGetAnnotationType(annotation);
+			CGtype annotationType = qcgGetAnnotationType(annotation);
 			
 			int num;
 			
 			// For now we only support scalars.
 			if(annotationType == CG_FLOAT || annotationType == CG_HALF || annotationType == CG_FIXED) {
-				const float * values = cgGetFloatAnnotationValues(annotation, &num);
+				const float * values = qcgGetFloatAnnotationValues(annotation, &num);
 				Q_ASSERT(num == 1);
 				return values[0];
 			}
 			else if(annotationType == CG_INT) {
-				const int * values = cgGetIntAnnotationValues(annotation, &num);
+				const int * values = qcgGetIntAnnotationValues(annotation, &num);
 				Q_ASSERT(num == 1);
 				return values[0];
 			}
 			else if(annotationType == CG_BOOL) {
-				const CGbool * values = cgGetBoolAnnotationValues(annotation, &num);
+				const CGbool * values = qcgGetBoolAnnotationValues(annotation, &num);
 				Q_ASSERT(num == 1);
 				return values[0];
 			}
@@ -389,6 +388,18 @@ namespace {
 			return QVariant();
 		}
 	};
+
+	static void errorCallback()
+	{
+		fprintf(stderr, "Cg error: %s\n", qcgGetErrorString(qcgGetError()));
+		fflush(stderr);
+	}
+	
+	static void errorHandler(CGcontext ctx, CGerror err, void *data)
+	{
+		fprintf(stderr, "Cg error: %s\n", qcgGetErrorString(err));
+		fflush(stderr);
+	}
 
 } // namespace
 
@@ -427,8 +438,10 @@ private:
 		}
 		void run() 
 		{
-			makeCurrent();
-			m_effect->threadedBuild();
+			this->makeCurrent();
+			bool succeed = m_effect->threadedBuild();
+			this->doneCurrent();
+			emit m_effect->built(succeed);
 		}
 	};
 	friend class BuilderThread;
@@ -445,13 +458,15 @@ public:
 		m_animated(false),
 		m_thread(this, widget)
 	{
-		connect(&m_thread, SIGNAL(finished()), this, SIGNAL(built()));
 		widget->makeCurrent();
 
-		m_context = cgCreateContext();
+		m_context = qcgCreateContext();
 
-		cgGLSetManageTextureParameters(m_context, true);
-		cgGLRegisterStates(m_context);
+		qcgSetErrorCallback(errorCallback);
+		qcgSetErrorHandler(errorHandler, NULL);
+
+		qcgGLSetManageTextureParameters(m_context, true);
+		qcgGLRegisterStates(m_context);
 
 		if( s_semanticMap.empty() ) {
 			// Cg is broken and transposes all the matrices.
@@ -494,7 +509,7 @@ public:
 
 	virtual ~CgFxEffect()
 	{
-		cgDestroyContext(m_context);
+		qcgDestroyContext(m_context);
 		delete m_outputParser;
 		qDeleteAll(m_parameterArray);
 	}
@@ -544,56 +559,57 @@ public:
 	}
 
 	
-	void threadedBuild()
+	bool threadedBuild()
 	{
-		freeEffect();
-
 		emit infoMessage(tr("Compiling cg effect..."));
 		
 		QString includeOption = "-I" + m_effectPath;
 		const char * options[] = { includeOption.toAscii(), NULL };
 		
-		m_effect = cgCreateEffect(m_context, m_effectText.data(), options);
+		CGeffect effect = qcgCreateEffect(m_context, m_effectText.data(), options);
 		
 		// Output compilation errors.
-		emit buildMessage(cgGetLastListing(m_context), 0, m_outputParser);
+		emit buildMessage(qcgGetLastListing(m_context), 0, m_outputParser);
 
-		if (m_effect == NULL)
+		if (effect == NULL)
 		{
-			freeEffect();
-			return;
+			return false;
 		}
+		
+		QList<CGtechnique> techniqueList;
 		
 		// Read and validate techniques.
-		CGtechnique technique = cgGetFirstTechnique(m_effect);
+		CGtechnique technique = qcgGetFirstTechnique(effect);
 		while(technique != NULL)
 		{
-			if (cgValidateTechnique(technique))
+			if (qcgValidateTechnique(technique))
 			{
-				const char * name = cgGetTechniqueName(technique);
+				const char * name = qcgGetTechniqueName(technique);
 				emit infoMessage(tr("Validated technique '%1'").arg(name));
-				m_techniqueList.append(technique);
+				techniqueList.append(technique);
 			}
-
+			
 			// Output validation errors.
-			emit buildMessage(cgGetLastListing(m_context), 0, m_outputParser);
-
-			technique = cgGetNextTechnique(technique);
+			emit buildMessage(qcgGetLastListing(m_context), 0, m_outputParser);
+			
+			technique = qcgGetNextTechnique(technique);
 		}
 		
-		if (m_techniqueList.count() == 0)
+		if (techniqueList.count() == 0)
 		{
-			freeEffect();
-			return;
+			qcgDestroyEffect(effect);
+			return false;
 		}
+		
+		freeEffect();
+		m_effect = effect;
+		m_techniqueList = techniqueList;
+		
 		selectTechnique(0);
-
-	//	error = cgGetError();
-	//	if( error != CG_NO_ERROR ) {
-	//		printf("%s\n", cgGetErrorString(error));
-	//	}
-
+		
 		initParameters();
+		
+		return true;
 	}
 	
 	// Compilation.
@@ -607,8 +623,8 @@ public:
 			m_thread.start();
 		}
 		else {
-			threadedBuild();
-			emit built();
+			bool succeed = threadedBuild();
+			emit built(succeed);
 		}
 	}
 	
@@ -654,7 +670,7 @@ public:
 	virtual QString getTechniqueName(int t) const
 	{
 		Q_ASSERT(t <  getTechniqueNum());
-		return cgGetTechniqueName(m_techniqueList.at(t));
+		return qcgGetTechniqueName(m_techniqueList.at(t));
 	}
 	virtual void selectTechnique(int t)
 	{
@@ -663,11 +679,11 @@ public:
 
 		m_passList.clear();
 
-		CGpass pass = cgGetFirstPass(m_technique);
+		CGpass pass = qcgGetFirstPass(m_technique);
 		while(pass != NULL)
 		{
 			m_passList.append(pass);
-			pass = cgGetNextPass(pass);
+			pass = qcgGetNextPass(pass);
 		}
 	}
 
@@ -685,32 +701,32 @@ public:
 		Q_ASSERT(m_pass == NULL);
 
 		// Set standard parameter values.
-		CGparameter parameter = cgGetFirstLeafEffectParameter(m_effect);
+		CGparameter parameter = qcgGetFirstLeafEffectParameter(m_effect);
 		while(parameter != NULL) {
-			if(cgIsParameterUsed(parameter, m_effect)) {
-				QString semantic = cgGetParameterSemantic(parameter);
+			if(qcgIsParameterUsed(parameter, m_effect)) {
+				QString semantic = qcgGetParameterSemantic(parameter);
 				semantic = semantic.toLower();
 
 				if( semantic != NULL && s_semanticMap.contains(semantic) ) {
 					const CgSemantic & std = s_semanticMap[semantic];
 
 					if( std.m_type == CgSemantic::Type_GLMatrix ) {
-						cgGLSetStateMatrixParameter(parameter, std.m_matrix, std.m_op);
+						qcgGLSetStateMatrixParameter(parameter, std.m_matrix, std.m_op);
 					}
 					else if( std.m_type == CgSemantic::Type_IdentityMatrix ) {
 						// @@ ???
 					}
 					else if( std.m_type == CgSemantic::Type_Time ) {
-						cgSetParameter1f(parameter, 0.001f * m_time.elapsed());
+						qcgSetParameter1f(parameter, 0.001f * m_time.elapsed());
 					}
 					else if( std.m_type == CgSemantic::Type_ViewportSize ) {
 						GLfloat v[4];
 						glGetFloatv(GL_VIEWPORT, v);
-						cgSetParameter2f(parameter, v[2], v[3]);
+						qcgSetParameter2f(parameter, v[2], v[3]);
 					}
 				}
 			}
-			parameter = cgGetNextLeafParameter(parameter);
+			parameter = qcgGetNextLeafParameter(parameter);
 		}
 
 		// Set user parameters.
@@ -719,40 +735,40 @@ public:
 			QVariant value = p->value();
 
 			// Set cg parameter.
-			CGparameterclass parameterClass = cgGetParameterClass(parameter);
-		//	CGtype parameterType = cgGetParameterType(parameter);
-		//	CGtype parameterBaseType = cgGetParameterBaseType(parameter);
+			CGparameterclass parameterClass = qcgGetParameterClass(parameter);
+		//	CGtype parameterType = qcgGetParameterType(parameter);
+		//	CGtype parameterBaseType = qcgGetParameterBaseType(parameter);
 
 			if( parameterClass == CG_PARAMETERCLASS_SCALAR ) {
 				if( value.type() == QVariant::Double ) {
-					cgSetParameter1d(parameter, value.toDouble());
+					qcgSetParameter1d(parameter, value.toDouble());
 				}
 				else if( value.type() == QVariant::Int ) {
-					cgSetParameter1i(parameter, value.toInt());
+					qcgSetParameter1i(parameter, value.toInt());
 				}
 				else if( value.type() == QVariant::Bool ) {
-					cgSetParameter1i(parameter, value.toBool());
+					qcgSetParameter1i(parameter, value.toBool());
 				}
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_VECTOR ) {
 				if (value.type() == QVariant::List) {
 					QVariantList list = value.toList();
 					
-					int size = cgGetParameterColumns(parameter);	// Cg assumes row vectors!
+					int size = qcgGetParameterColumns(parameter);	// Cg assumes row vectors!
 					Q_ASSERT(list.count() == size);
 					
 					switch(size) {
 						case 1:
-							cgSetParameter1d(parameter, list.at(0).toDouble());
+							qcgSetParameter1d(parameter, list.at(0).toDouble());
 							break;
 						case 2:
-							cgSetParameter2d(parameter, list.at(0).toDouble(), list.at(1).toDouble());
+							qcgSetParameter2d(parameter, list.at(0).toDouble(), list.at(1).toDouble());
 							break;
 						case 3:
-							cgSetParameter3d(parameter, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble());
+							qcgSetParameter3d(parameter, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble());
 							break;
 						case 4:
-							cgSetParameter4d(parameter, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
+							qcgSetParameter4d(parameter, list.at(0).toDouble(), list.at(1).toDouble(), list.at(2).toDouble(), list.at(3).toDouble());
 							break;
 					}
 				}
@@ -761,8 +777,8 @@ public:
 				// @@ TBD
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_SAMPLER ) {
-				//cgGLSetTextureParameter(parameter, value.value<GLTexture>().object());
-				cgGLSetupSampler(parameter, value.value<GLTexture>().object());
+				//qcgGLSetTextureParameter(parameter, value.value<GLTexture>().object());
+				qcgGLSetupSampler(parameter, value.value<GLTexture>().object());
 			}
 			else if( parameterClass == CG_PARAMETERCLASS_OBJECT ) {
 				// Ignore textures and strings.
@@ -773,11 +789,11 @@ public:
 	{
 		Q_ASSERT(p <  getPassNum());
 		m_pass = m_passList.at(p);
-		cgSetPassState(m_pass);
+		qcgSetPassState(m_pass);
 	}
 	virtual void endPass()
 	{
-		cgResetPassState(m_pass);
+		qcgResetPassState(m_pass);
 		m_pass = NULL;
 	}
 	virtual void end()
@@ -793,15 +809,15 @@ private:
 		QVector<CgParameter *> newParameterArray;
 		
 		// Read parameters.
-		CGparameter parameter = cgGetFirstLeafEffectParameter(m_effect);
+		CGparameter parameter = qcgGetFirstLeafEffectParameter(m_effect);
 		while(parameter != NULL)
 		{
-			if(cgIsParameterUsed(parameter, m_effect))
+			if(qcgIsParameterUsed(parameter, m_effect))
 			{
 				// Try to get the old value.
 				QVariant value;
 				foreach(const CgParameter * p, m_parameterArray) {
-					if( p->internalName() == cgGetParameterName(parameter) ) {
+					if( p->internalName() == qcgGetParameterName(parameter) ) {
 						value = p->value();
 					}
 				}
@@ -815,7 +831,7 @@ private:
 				
 				// Process semantics of standard parameters.
 				if( cgParameter->isStandard() ) {
-					QString semantic = cgGetParameterSemantic(parameter);
+					QString semantic = qcgGetParameterSemantic(parameter);
 					semantic = semantic.toLower();
 					
 					if( s_semanticMap.contains(semantic) ) {
@@ -826,7 +842,7 @@ private:
 					}
 				}
 			}
-			parameter = cgGetNextLeafParameter(parameter);
+			parameter = qcgGetNextLeafParameter(parameter);
 		}
 
 		qDeleteAll(m_parameterArray);
@@ -836,7 +852,7 @@ private:
 	void freeEffect()
 	{
 		if(m_effect != NULL) {
-			cgDestroyEffect(m_effect);
+			qcgDestroyEffect(m_effect);
 			m_effect = NULL;
 		}
 		
@@ -852,9 +868,14 @@ private:
 };
 
 
-
 class CgFxEffectFactory : public EffectFactory
 {
+	mutable bool m_libraryLoaded;
+	
+public:
+	
+	CgFxEffectFactory() : m_libraryLoaded(false) {}
+	
 	virtual bool isSupported() const
 	{
 		// At least OpenGL 1.1 required.
@@ -862,50 +883,33 @@ class CgFxEffectFactory : public EffectFactory
 			return false;
 		}
 		
-		// @@ Do this only once!!
-#if defined(Q_OS_DARWIN)
-		QLibrary cgLibrary("/System/Library/Frameworks/Cg.framework/Cg");
-		QLibrary cgGlLibrary("/System/Library/Frameworks/Cg.framework/CgGL");
-#else
-		QLibrary cgLibrary("Cg");
-		QLibrary cgGlLibrary("CgGL");
-#endif
-		
-		if (!cgLibrary.load())
+		if (!m_libraryLoaded)
 		{
-			qDebug("Cg library not found.");
-			return false;
-		}
-		if (!cgGlLibrary.load())
-		{
-			qDebug("CgGL library not found.");
-			return false;
+			if (!cgLoadLibrary()) {
+				return false;
+			}
+			if (!cgGLLoadLibrary()) {
+				return false;
+			}
+			m_libraryLoaded = true;
 		}
 		
-		//loadCgFunctions(cgLibrary, cgGlLibrary);
-
-		typedef const char * (* GetString)(CGenum sname);			
-		GetString cgGetString = (GetString) cgLibrary.resolve("cgGetString");
-
-		if (cgGetString != NULL)
+		QRegExp rx("^(\\d)\\.(\\d).*");
+		QString version = qcgGetString(CG_VERSION);
+		
+		if(rx.exactMatch(version))
 		{
-			QRegExp rx("^(\\d)\\.(\\d).*");
-			QString version = cgGetString(CG_VERSION);
-
-			if(rx.exactMatch(version))
+			int major = rx.cap(1).toInt();
+			int minor = rx.cap(2).toInt();
+			
+			if((major == 1 && minor >= 4) || major > 1)
 			{
-				int major = rx.cap(1).toInt();
-				int minor = rx.cap(2).toInt();
-
-				if((major == 1 && minor >= 4) || major > 1)
-				{
-					return true;
-				}
+				return true;
 			}
-			else
-			{
-				qDebug("cg version string not recognized.");
-			}
+		}
+		else
+		{
+			qDebug("cg version string not recognized.");
 		}
 		
 		return false;
@@ -931,9 +935,13 @@ class CgFxEffectFactory : public EffectFactory
 		return QIcon();
 	}
 
+	virtual bool savesParameters() const
+	{
+		return false;
+	}
+	
 	virtual Effect * createEffect(QGLWidget * widget) const
 	{
-		Q_ASSERT(isSupported());
 		return new CgFxEffect(this, widget);
 	}
 

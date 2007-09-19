@@ -2,6 +2,8 @@
 #include "editor.h"
 #include "finddialog.h"
 #include "gotodialog.h"
+#include "highlighter.h"
+#include "effect.h"
 
 #include <QtCore/QDebug>
 #include <QtGui/QTabBar>
@@ -128,6 +130,36 @@ int Editor::column() const
 	return currentTextEdit()->textCursor().columnNumber() + 1;
 }
 
+bool Editor::isModified() const
+{
+	bool modified = false;
+
+	const int num = this->count();
+	for (int i = 0; i < num; i++)
+	{
+		QTextEdit * editor = qobject_cast<QTextEdit *>(this->widget(i));
+		
+		if (editor != NULL && editor->document()->isModified()) {
+			modified = true;
+		}
+	}
+
+	return modified;	
+}
+
+void Editor::setModified(bool b)
+{
+	const int num = this->count();
+	for (int i = 0; i < num; i++)
+	{
+		QTextEdit * editor = qobject_cast<QTextEdit *>(this->widget(i));
+		
+		if (editor != NULL) {
+			editor->document()->setModified(b);
+		}
+	}
+}
+
 // slots.
 void Editor::undo()
 {
@@ -155,9 +187,9 @@ void Editor::gotoLine(int tab, int line, int column)
 	setCurrentIndex(tab);
 	QTextCursor cursor(currentTextEdit()->textCursor());
 	cursor.movePosition(QTextCursor::Start);
-	cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, line -1);
-	if (column >= 0)
-		cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, column);
+	cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, line - 1);
+	if (column >= 1)
+		cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, column - 1);
 	currentTextEdit()->setTextCursor(cursor);
 	currentWidget()->setFocus();
 }
@@ -295,19 +327,50 @@ void Editor::onRedoAvailable(bool available)
 	emit redoAvailable(available);
 }
 
-QTextEdit * Editor::addEditor(const QString & name)
+void Editor::setEffect(Effect * effect)
 {
-	SourceEdit * textEdit = new SourceEdit();
+	if (effect == NULL)
+	{
+		// Remove all tabs.
+		while (this->count() > 0)
+		{
+			this->removeTab(0);
+		}
+	}
+	else
+	{
+		int inputNum = effect->getInputNum();
+		for (int i = 0; i < inputNum; i++)
+		{
+			this->addEditor(effect->getInputName(i), effect, i);
+		}
+	}
+}
+
+QTextEdit * Editor::addEditor(const QString & name, const Effect * effect, int i)
+{
+	SourceEdit * textEdit = new SourceEdit(this);
 	this->addTab(textEdit, name);
 	textEdit->setFont(m_font);
 	textEdit->setLineWrapMode(QTextEdit::NoWrap);
 	textEdit->setTabStopWidth(28);
 	textEdit->setAcceptRichText(false);
-
+	
+	QTextDocument * textDocument = textEdit->document();
+	
+	Highlighter * hl = new Highlighter(textDocument);
+	hl->setRules(effect->factory()->highlightingRules());
+	hl->setMultiLineCommentStart(effect->factory()->multiLineCommentStart());
+	hl->setMultiLineCommentEnd(effect->factory()->multiLineCommentEnd());
+	
+	textEdit->setPlainText(effect->getInput(i));
+	textDocument->setModified(false);
+	
 	connect(textEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
 	connect(textEdit, SIGNAL(cursorPositionChanged()), this, SIGNAL(cursorPositionChanged()));
-
-	if( count() == 1 ) {
+	connect(textDocument, SIGNAL(modificationChanged(bool)), this, SIGNAL(modifiedChanged(bool)));
+	
+	if (count() == 1) {
 		emit onCurrentChanged(currentIndex());
 	}
 	

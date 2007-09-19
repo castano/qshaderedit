@@ -9,60 +9,34 @@
 #include <QtCore/QUrl>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QWheelEvent>
-#include <QtGui/QMenu>
-#include <QtGui/QAction>
 
 
-QGLView::QGLView(const QGLFormat & format, QWidget *parent) : QGLWidget(format, parent),
-	m_effect(NULL), m_scene(NULL)
+SceneView::SceneView(QWidget * parent, QGLWidget * shareWidget) : QGLWidget(parent, shareWidget),
+	m_effect(NULL), 
+	m_scene(NULL), 
+	m_wireframe(false), 
+	m_ortho(false)
 {
-    setAcceptDrops(true);
-	
-	m_wireframeAction = new QAction(tr("Wireframe"), this);
-	m_wireframeAction->setCheckable(true);
-	m_wireframeAction->setChecked(false);
-	connect(m_wireframeAction, SIGNAL(toggled(bool)), this, SLOT(settingsChanged()));
-	
-	m_orthoAction = new QAction(tr("Ortho"), this);
-	m_orthoAction->setCheckable(true);
-	m_orthoAction->setChecked(false);
-	connect(m_orthoAction, SIGNAL(toggled(bool)), this, SLOT(settingsChanged()));
+	setAutoBufferSwap(false);
 }
 
 
-QGLView::~QGLView()
+SceneView::~SceneView()
 {
-	delete m_wireframeAction;
-	delete m_orthoAction;
 }
 
 
-void QGLView::dragEnterEvent(QDragEnterEvent *event)
-{
-    if (event->mimeData()->hasFormat("text/uri-list"))
-        event->acceptProposedAction();
-}
-
-void QGLView::dropEvent(QDropEvent *event)
-{
-    QList<QUrl> urls = event->mimeData()->urls();
-    event->acceptProposedAction();
-	if( urls.size() ) {
-        emit fileDropped( urls[0].toLocalFile() );
-	}
-}
-
-QSize QGLView::sizeHint() const
+QSize SceneView::sizeHint() const
 {
 	return QSize(200, 200);
 }
-QSize QGLView::minimumSizeHint() const
+QSize SceneView::minimumSizeHint() const
 {
 	return QSize(100, 100);
 }
 
 
-void QGLView::setEffect(Effect * effect)
+void SceneView::setEffect(Effect * effect)
 {
 	m_effect = effect;
 	if( m_effect != NULL ) {
@@ -70,50 +44,24 @@ void QGLView::setEffect(Effect * effect)
 	}
 }
 
-void QGLView::resetEffect()
-{
-	m_effect = NULL;
-}
-
-void QGLView::setScene(Scene * scene)
+void SceneView::setScene(Scene * scene)
 {
 	if( m_scene != NULL ) {
 		delete m_scene;
 	}
 	m_scene = scene;
 	resetTransform();
-	updateGL();
-}
-
-void QGLView::populateMenu(QMenu * menu)
-{
-	Q_ASSERT(menu != NULL);
-	
-	// Add common actions.
-	menu->addAction(m_wireframeAction);
-	menu->addAction(m_orthoAction);
-		
-	if( m_scene != NULL ) {
-		// @@ Add scene actions.
-	}
+	emit updateGL();
 }
 
 
-bool QGLView::init(MessagePanel * output)
+/* @@ Move to system info dialog.
+void SceneView::init(MessagePanel * output)
 {
 	Q_ASSERT(output != NULL);
 	
 	makeCurrent();
 	setAutoBufferSwap(false);
-	
-	// @@ Move to initializeGL
-	GLenum err = glewInit();
-	if (GLEW_OK != err)
-	{
-		/* Problem: glewInit failed, something is seriously wrong. */
-		//fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
-		return false;
-	}
 	
 	const char * vendor = (const char *)glGetString(GL_VENDOR);
 	output->info(QString("OpenGL vendor: ").append(vendor));
@@ -142,16 +90,10 @@ bool QGLView::init(MessagePanel * output)
 		const char * glsl_version = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
 		output->info(QString("GLSL version: ").append(glsl_version));
 	}
-	
-	// Set special settings for mesa.
-	if( qstrcmp(vendor, "Brian Paul") == 0 ) {
-		glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST );
-	}
-
-	return true;
 }
+*/
 
-void QGLView::initializeGL()
+void SceneView::initializeGL()
 {
 	glClearColor (0.0, 0.0, 0.0, 0.0);
 	glEnable(GL_DEPTH_TEST);
@@ -163,38 +105,48 @@ void QGLView::initializeGL()
 	m_z = 5.0f;	
 
 	m_scene = SceneFactory::defaultScene();
+	
+	/*
+	// Set special settings for mesa.
+	const char * vendor = (const char *)glGetString(GL_VENDOR);
+	
+	if( qstrcmp(vendor, "Brian Paul") == 0 ) {
+		glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST );
+	}
+	*/
 }
 
-void QGLView::resetGL()
+void SceneView::resetGL()
 {
 	delete m_scene;
 }
 
 
-void QGLView::resizeGL(int w, int h)
+void SceneView::resizeGL(int w, int h)
 {
 	glViewport(0, 0, (GLsizei) w, (GLsizei) h);
 	updateMatrices();
 }
 
-void QGLView::paintGL()
+void SceneView::paintGL()
 {
-	if( !isVisible() ) {
+	if( !isVisible() )
+	{
 		// @@ updateGL should not be called when the window is hidden!
 		return;
 	}
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	
-	if( m_scene != NULL ) {
-	
-		if( m_effect != NULL && m_effect->isValid() && !m_effect->isBuilding() ) {
-		
+	if( m_scene != NULL )
+	{
+		if (m_effect != NULL && !m_effect->isBuilding())
+		{
 			// Setup ligh parameters @@ Move this to scene->setup() or begin()
 			float light_vector[4] = {1.2f/sqrt(3.08f), 1.0f/sqrt(3.08f), 0.8f/sqrt(3.08f), 0.0f};
 			glLightfv( GL_LIGHT0, GL_POSITION, light_vector );
 			
-			if( m_wireframeAction->isChecked() ) {
+			if (m_wireframe) {
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			}
 			else {
@@ -203,7 +155,8 @@ void QGLView::paintGL()
 			
 			m_effect->begin();
 			
-			for(int i = 0; i < m_effect->getPassNum(); i++) {
+			for(int i = 0; i < m_effect->getPassNum(); i++)
+			{
 				m_effect->beginPass(i);
 				
 				m_scene->draw(m_effect);
@@ -213,7 +166,8 @@ void QGLView::paintGL()
 			
 			m_effect->end();
 		}
-		else {
+		else
+		{
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			m_scene->draw(NULL);
 		}
@@ -225,7 +179,7 @@ void QGLView::paintGL()
 }
 
 
-void QGLView::updateMatrices()
+void SceneView::updateMatrices()
 {
 	makeCurrent();
 	glMatrixMode(GL_PROJECTION);
@@ -233,12 +187,12 @@ void QGLView::updateMatrices()
 	
 	float aspect = float(width())/float(height());
 	
-	if( !m_orthoAction->isChecked() ) {
-		perspective(30, aspect, 0.3, 50);
-	}
-	else {
+	if( m_ortho ) {
 		glOrtho(-aspect,aspect, -1,1, -30,30);
 		glScalef(m_z/5, m_z/5, m_z/5);
+	}
+	else {
+		perspective(30, aspect, 0.3, 50);
 	}
 	
 	glMatrixMode(GL_MODELVIEW);
@@ -254,13 +208,13 @@ void QGLView::updateMatrices()
 }
 
 
-void QGLView::mousePressEvent(QMouseEvent *event)
+void SceneView::mousePressEvent(QMouseEvent *event)
 {
 	m_pos = event->pos();
 	m_button = event->button();
 }
 
-void QGLView::mouseMoveEvent(QMouseEvent *event)
+void SceneView::mouseMoveEvent(QMouseEvent *event)
 {
 	QPoint pos = event->pos();
 
@@ -286,23 +240,23 @@ void QGLView::mouseMoveEvent(QMouseEvent *event)
 	m_pos = pos;
 
 	updateMatrices();
-	updateGL();
+	emit updateGL();
 }
 
-void QGLView::mouseReleaseEvent(QMouseEvent *event)
+void SceneView::mouseReleaseEvent(QMouseEvent *event)
 {
 	QPoint pos = event->pos();
 	m_button = Qt::NoButton;
 }
 
-void QGLView::wheelEvent(QWheelEvent *e)
+void SceneView::wheelEvent(QWheelEvent *e)
 {
 	m_z += (m_z * e->delta()/120.0)/20.0;
 	updateMatrices();
-	updateGL();
+	emit updateGL();
 }
 
-void QGLView::resetTransform()
+void SceneView::resetTransform()
 {
 	m_alpha = 0.0f;
 	m_beta = 0.0f;
@@ -312,8 +266,25 @@ void QGLView::resetTransform()
 	updateMatrices();	
 }
 
-void QGLView::settingsChanged()
+bool SceneView::isWireframe() const
 {
+	return m_wireframe;
+}
+
+void SceneView::setWireframe(bool b)
+{
+	m_wireframe = b;
+	emit updateGL();
+}
+
+bool SceneView::isOrtho() const
+{
+	return m_ortho;
+}
+
+void SceneView::setOrtho(bool b)
+{
+	m_ortho = b;
 	updateMatrices();
 	emit updateGL();
 }

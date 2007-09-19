@@ -1,5 +1,5 @@
-#ifndef MESSAGEWIDGET_H
-#define MESSAGEWIDGET_H
+#ifndef MESSAGEPANEL_H
+#define MESSAGEPANEL_H
 
 #include <QtGui/QDockWidget>
 
@@ -55,4 +55,4 @@ private:
 
 
 
-#endif // MESSAGEWIDGET_H
+#endif // MESSAGEPANEL_H

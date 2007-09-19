@@ -18,6 +18,8 @@ SET(SRCS
 	parametermodel.cpp
 	parameterdelegate.h
 	parameterdelegate.cpp
+	scenepanel.h
+	scenepanel.cpp
 	qglview.h
 	qglview.cpp
 	teapot.cpp
@@ -37,7 +39,10 @@ SET(SRCS
 	glutils.cpp
 	imageplugin.h
 	imageplugin.cpp
-	cgdyn.h)
+	cgexplicit.h
+	cgexplicit.cpp
+	document.h
+	document.cpp)
 
 IF(FOUND_CG)
 	SET(SRCS ${SRCS} cgfxeffect.cpp)
@@ -55,11 +60,13 @@ SET(MOC_SRCS
 	parameterpanel.h
 	parameterdelegate.h
 	parametermodel.h
+	scenepanel.h
 	qglview.h
 	newdialog.h
 	finddialog.h
 	gotodialog.h
-	effect.h)
+	effect.h
+	document.h)
 
 SET(QT_MOC_SRCS qshaderedit.h)
 
@@ -86,7 +93,7 @@ TARGET_LINK_LIBRARIES(qshaderedit ${LIBS})
 INSTALL(TARGETS qshaderedit DESTINATION bin)
 
 # KDE4 target
-FIND_PACKAGE(KDE4)
+#FIND_PACKAGE(KDE4)
 
 IF(KDE4_FOUND)
 

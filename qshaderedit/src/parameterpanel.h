@@ -29,7 +29,6 @@ signals:
 	void parameterChanged();
 
 public slots:
-	void clear();
 	void setEffect(Effect * effect);
 
 private:

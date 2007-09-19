@@ -13,29 +13,29 @@ class QMouseEvent;
 class Effect;
 class MessagePanel;
 class Scene;
-class QMenu;
-class QAction;
 
-class QGLView : public QGLWidget
+class SceneView : public QGLWidget
 {
 	Q_OBJECT
 public:
-	QGLView(const QGLFormat & format, QWidget *parent );
-	virtual ~QGLView();
+	SceneView(QWidget * parent, QGLWidget * shareWidget);
+	virtual ~SceneView();
 	
 	virtual QSize sizeHint() const;
 	virtual QSize minimumSizeHint() const;
 
-	bool init(MessagePanel * output);
 	void setEffect(Effect * effect);
-	void resetEffect();
 	
 	void setScene(Scene * scene);
-	void populateMenu(QMenu * menu);
 
-signals:
-
-    void fileDropped( const QString& );
+	bool isWireframe() const;
+	bool isOrtho() const;
+	
+public slots:
+	
+	void setWireframe(bool b);	
+	void setOrtho(bool b);
+	
 
 protected:
 	void initializeGL();
@@ -46,9 +46,6 @@ protected:
 	
 	void updateMatrices();
 	
-    void dragEnterEvent(QDragEnterEvent *event);
-    void dropEvent(QDropEvent *event);
-
 	// Mouse events
 	virtual void mousePressEvent(QMouseEvent *event);
 	virtual void mouseMoveEvent(QMouseEvent *event);
@@ -56,10 +53,6 @@ protected:
 	virtual void wheelEvent(QWheelEvent *e);
 
 	void resetTransform();
-	
-protected slots:
-	
-	void settingsChanged();
 	
 private:
 	
@@ -74,9 +67,8 @@ private:
 	
 	Scene * m_scene;
 	
-	QAction * m_wireframeAction;
-	QAction * m_orthoAction;
-	
+	bool m_wireframe;
+	bool m_ortho;
 };
 
 #endif // QGLVIEW_H

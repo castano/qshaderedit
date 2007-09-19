@@ -3,16 +3,18 @@
 
 #include <QtGui/QMainWindow>
 
-class QTabWidget;
-class QGLView;
-class MessagePanel;
-class ParameterPanel;
-class Editor;
 class QTimer;
-class QFile;
 class QComboBox;
 class QLabel;
 class QToolBar;
+
+class QGLWidget;
+
+class MessagePanel;
+class ParameterPanel;
+class ScenePanel;
+class Editor;
+class Document;
 struct Effect;
 struct EffectFactory;
 
@@ -25,73 +27,81 @@ public:
 
 	virtual QSize sizeHint() const;
 
-public slots:
-	void newFile(bool startup=false);
-	
 protected slots:
-	bool load( const QString& fileName );
-	
-	void open();
-	void openRecentFile();
-	void clearRecentFiles();
-	bool save();
-	void saveAs();
 	
 	void about();
 	
-	void setAutoCompile(bool enable);
-	void shaderTextChanged();
-	void keyTimeout();
-	void compileChecked(bool checked);
-	
-	void build(bool silent);
-	void built();
-	
-	void setModified();
+	void openRecentFile();
+	void clearRecentFiles();
 
-	void techniqueChanged(int index);
-	void cursorPositionChanged();
-	void selectScene();
+	void onCursorPositionChanged();	
+	void onShaderTextChanged();
+	void onModifiedChanged(bool modified);
+	
+	void onActivityTimeout();
+	
+	void onTitleChanged(QString title);
+	void onFileNameChanged(QString fileName);
+	void onEffectCreated();
+	void onEffectDeleted();
+	void onEffectBuilding();
+	void onEffectBuilt(bool succeed);
+	void onParameterChanged();
+	void onTechniqueChanged(int index);
+	
+	void updateEffectInputs();	
 	
 protected:
 	
-	void newEffect(const EffectFactory * effectFactory);
+	void initGL();
+	
+	void createDocument();
+	
+	void createEditor();
 	
 	void createActions();
 	void createMenus();
 	void createToolbars();
 	void createStatusbar();
 	void createDockWindows();
-	
-	bool closeEffect();
-	
-	void updateWindowTitle();
-	void updateActions();
-	void updateEditor();	// @@ This should be closeEditor/initEditor
-	void updateTechniques();
-	
-	bool isModified();
-	void setModified(bool modified);
 
-	void setCurrentFile(const QString &fileName);
-	void updateRecentFileActions();
 	
+	void updateActions();
+	void updateTechniques();
+	void updateWindowTitle(QString title);
+	void updateRecentFileActions();
+	void addRecentFile(QString filename);
+	
+
 	// Events
 	virtual void closeEvent(QCloseEvent * event);
 	virtual void keyPressEvent(QKeyEvent * event);
+	virtual void dragEnterEvent(QDragEnterEvent *event);
 	virtual void dropEvent(QDropEvent * event);
 	
-private:
-
     void loadSettings();
     void saveSettings();
-
-	void updateEffectInputs();
-
-	static QString strippedName(const QString & fileName);
-	static QString strippedName(const QFile & file);
-
-
+	
+	
+	/*
+	void techniqueChanged(int index);
+	void cursorPositionChanged();
+	void selectScene();
+	*/
+	
+	/*
+	QAction * m_compileAction;
+	*/
+	
+	/*
+	// settings.
+	bool m_autoCompile;
+	QString m_lastEffect;
+	*/
+	
+	QGLWidget * m_glWidget;
+	Document * m_document;	
+	
 	// Central widget.
 	Editor * m_editor;
 	
@@ -100,17 +110,13 @@ private:
 	QToolBar * m_techniqueToolBar;
 	QComboBox * m_techniqueCombo;
 	
+	// Status bar.
+	QLabel * m_statusLabel;
+	
 	// Panels.
-	QDockWidget * m_sceneViewDock;
-	ParameterPanel * m_paramViewDock;
-	MessagePanel * m_logViewDock;
-	QGLView * m_sceneView;
-
-	// Status widgets.
-	QLabel * m_positionLabel;
-
-	// Menus.
-	QMenu * m_renderMenu;
+	MessagePanel * m_messagePanel;
+	ParameterPanel * m_parameterPanel;
+	ScenePanel * m_scenePanel;
 	
 	// Actions.
 	QAction * m_newAction;
@@ -131,19 +137,8 @@ private:
 	QAction * m_findPreviousAction;
 	QAction * m_gotoAction;
 	
-	// Timers.
-	QTimer * m_timer;	// compilation timer.
-	QTimer * m_animationTimer;
-	
-	// State.	
-	QFile * m_file;
-	const EffectFactory * m_effectFactory;
-	Effect * m_effect;
-	bool m_modified;
-	
-	// settings.
-	bool m_autoCompile;
-	QString m_lastEffect;
+	// Timer.
+	QTimer * m_activityTimer;
 };
 
 
