@@ -79,7 +79,7 @@ void Parameter::setValue(const QVariant& value)
 	else if (m_value.userType() == qMetaTypeId<GLTexture>()) {
 		// convert strings to GLTexture
 		if (value.type() == QVariant::String) {
-			m_value = qVariantFromValue(GLTexture::open(value.toString()));
+			m_value.setValue(GLTexture::open(value.toString()));
 		}
 		else if(value.userType() == qMetaTypeId<GLTexture>()) {
 			m_value = value;
