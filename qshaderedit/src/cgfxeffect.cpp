@@ -5,6 +5,7 @@
 #include "texmanager.h"
 #include "parameter.h"
 #include "glutils.h"
+#include "cgexplicit.h"
 
 #include <QtCore/QDebug> //
 #include <QtCore/QCoreApplication>
@@ -18,15 +19,6 @@
 #include <QtOpenGL/QGLContext>
 #include <QtOpenGL/QGLPixelBuffer>
 
-#if HAVE_CG
-#include <Cg/cg.h>
-#include <Cg/cgGL.h>
-#if CG_VERSION_NUM < 1400
-#	error "Cg 1.4 required"
-#endif
-#else
-#include "cgexplicit.h"
-#endif
 
 namespace {
 

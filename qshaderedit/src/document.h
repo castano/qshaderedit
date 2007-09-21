@@ -46,8 +46,7 @@ public slots:
 	void saveAs();
 	bool close();
 	
-	void build(bool silent = false);
-	void silentBuild();
+	void build(bool threaded = true);
 	
 	void onParameterChanged();
 	

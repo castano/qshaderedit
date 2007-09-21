@@ -145,6 +145,8 @@ bool Document::loadFile(const QString & fileName)
 
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
+	m_modified = false;
+
 	int idx = fileName.lastIndexOf('.');
 	QString fileExtension = fileName.mid(idx+1);
 
@@ -161,7 +163,7 @@ bool Document::loadFile(const QString & fileName)
 		
 		emit effectCreated();
 		
-		build();
+		build(false);
 	}
 	else
 	{
@@ -174,21 +176,6 @@ bool Document::loadFile(const QString & fileName)
 	
 	s_lastEffect = fileName;	// @@ Move this somewhere else!
 	emit fileNameChanged(fileName);
-	
-	//updateEditor();			// editor listens to effectCreated?
-	//updateActions();			// qshaderedit listens to effectCreated
-	//updateTechniques();		// qshaderedit listens to effectCreated
-	
-	// Init scene view.
-	/*if (m_effect)
-	{
-		m_sceneView->setEffect(m_effect);	// sceneView listens to effectCreated
-		build(false);
-	}
-	else
-	{
-		m_sceneView->resetEffect();			// sceneView listens to effectCreated
-	}*/
 	
 	QApplication::restoreOverrideCursor();
 	return true;
@@ -383,21 +370,16 @@ bool Document::close()
 }
 
 
-void Document::build(bool silent /*= false*/)
+void Document::build(bool threaded /*= true*/)
 {
 	Q_ASSERT(m_effect != NULL);
 	
 	emit synchronizeEditors();
 	emit effectBuilding();
 	
-	m_effect->build(silent);
+	m_effect->build(threaded);
 }
 
-
-void Document::silentBuild()
-{
-	build(true);
-}
 
 void Document::onParameterChanged()
 {
@@ -433,7 +415,7 @@ void Document::newEffect(const EffectFactory * effectFactory)
 	emit effectCreated();
 	emit titleChanged(title());
 	
-	silentBuild();
+	build(false);
 
 	QApplication::restoreOverrideCursor();
 }
