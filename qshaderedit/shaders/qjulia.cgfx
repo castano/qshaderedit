@@ -343,6 +343,8 @@ int maxIterations <
 
 float2 viewport : ViewportSize;
 
+float4x4 mvi : ModelViewInverse;
+
 struct VertexInput {
 	float4 position : POSITION;
 	float2 tex : TEXCOORD0;
@@ -362,7 +364,7 @@ VertexOutput vp(VertexInput input)
 	output.position = input.position;
 
 	// Compute eye position
-	output.rO = gl_ModelViewMatrixInverse[3].xyz;
+	output.rO = mvi[3].xyz;
 
 	// Compute ray direction
 	float3 dir;
@@ -370,10 +372,10 @@ VertexOutput vp(VertexInput input)
 	dir.xy *= float2(viewport.x / viewport.y, -1);	// flip y axis & adjust aspect ratio
 	dir.z = -4; // focal length
 
-	output.rD = mul(dir, float3x3(gl_ModelViewMatrixInverse));
+	output.rD = mul(dir, float3x3(mvi));
 
 	// Light position
-	output.light = mul(float4(0,1,0,1), float4x3(gl_ModelViewMatrixInverse));
+	output.light = mul(float4(0,1,0,1), float4x3(mvi));
 
 	// Interpolate seeds
 	output.mu = mu;

@@ -59,6 +59,8 @@ float3 OutColorB <
 
 float2 viewport : ViewportSize;
 
+float4x4 mv : ModelView;
+
 /////////////////////////////////////////////////////
 ///////////////////////////////// vertex shader /////
 /////////////////////////////////////////////////////
@@ -77,7 +79,7 @@ VertexOutput vp(VertexInput input)
 {
 	VertexOutput output;
 	output.position = input.position;
-	float3 eye = gl_ModelViewMatrix[3].xyz;
+	float3 eye = mv[3].xyz;
 
 	float2 scale2 = -0.15 * eye.z * scale * float2(viewport.x / viewport.y, 1.0);
 	output.tex = (input.tex - 0.5) * scale2 - center - eye.xy * float2(0.1, -0.1);

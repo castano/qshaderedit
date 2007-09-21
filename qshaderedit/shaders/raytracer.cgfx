@@ -166,7 +166,7 @@ fixed3 Shade(float3 i, float3 n, float3 v, Sphere hitobj)
 	bool shadowed = AnyHit(shadowray);
 
 	// lighting
-	fixed3 diff = hitobj.color * hitobj.Kd;
+	fixed3 diff = hitobj.color * lightColor * hitobj.Kd;
 	if (hitobj.tex) {
 		diff *= tex2D(checkSampler, i.xz).rgb;	// floor texture
 	}
@@ -194,7 +194,7 @@ VertexOutput RayTraceVS(VertexInput input)
 	output.position = input.position;
 
 	// Compute eye position
-	output.rO = gl_ModelViewMatrixInverse[3].xyz;
+	output.rO = view[3].xyz;
 
 	// Compute ray direction
 	float3 dir;
@@ -202,7 +202,7 @@ VertexOutput RayTraceVS(VertexInput input)
 	dir.xy *= float2(viewport.x / viewport.y, -1);	// flip y axis & adjust aspect ratio
 	dir.z = -4; // focal length
 
-	output.rD = mul(dir, float3x3(gl_ModelViewMatrixInverse));
+	output.rD = mul(dir, float3x3(view));
 
 	return output;
 }
