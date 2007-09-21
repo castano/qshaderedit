@@ -4,6 +4,7 @@ SET(SRCS
 	effect.cpp
 	glsleffect.cpp
 	asmeffect.cpp
+	cgfxeffect.cpp
 	editor.h
 	editor.cpp
 	highlighter.h
@@ -43,10 +44,6 @@ SET(SRCS
 	cgexplicit.cpp
 	document.h
 	document.cpp)
-
-IF(FOUND_CG)
-	SET(SRCS ${SRCS} cgfxeffect.cpp)
-ENDIF(FOUND_CG)
 
 SET(QT_SRCS ${SRCS}
 	main.cpp
