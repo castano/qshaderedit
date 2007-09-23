@@ -2,6 +2,14 @@
 
 == Windows ==
 
+First, download the GLEW binaries from:
+
+http://glew.sourceforge.net/
+
+and unzip them at:
+
+`qshaderedit/src/glew/...`
+
 === MinGW ===
 
 *TODO*
@@ -28,3 +36,6 @@ If everything succeeds, now you should have the binary at `./build/src/qshadered
 *TODO*
 
 
+ 
+ 
+ 
