@@ -1,0 +1,282 @@
+// - Based on Simon Green scene_raytrace.fx. 
+// castanyo@yahoo.es
+// - based on Paul Heckbert's code from "An Introduction to Ray Tracing"
+// - it only supports spheres currently
+// sgreen@nvidia.com
+
+float4x4 view : ModelViewInverse;
+float time : Time;
+float2 viewport : ViewportSize;
+
+float3 lightPosition
+<
+	string UIName="Light Position";
+	string Object = "PointLight";
+	string Space = "World";
+> = { 10.0, 10.0, -10.0 };
+
+fixed3 lightColor : Diffuse
+<
+    string UIName = "Light Color";
+    string Object = "PointLight";
+> = { 1.0, 1.0, 1.0 };
+
+float shininess
+<
+	string UIWidget = "slider";
+	float UIMin = 1.0f;
+	float UIStep = 1.0f;
+	float UIMax = 100.0f;
+> = 40.0;
+
+fixed3 backgroundColor : Diffuse
+<
+	string UIName="Background Color";
+	string UIWidget = "color";
+> = { 0.0, 0.0, 0.0 };
+
+sampler2D checkSampler = sampler_state
+{
+	MinFilter = LinearMipmapLinear;
+	MagFilter = Linear;
+};
+
+struct Ray {
+	float3 o;	// origin
+	float3 d;	// direction
+};
+
+struct Sphere {
+	half3 centre;
+	half rad2;	// radius^2
+	fixed3 color;
+	fixed Kd, Ks, Kr;
+	bool tex;
+};
+
+// Object database stored in constants
+#define SQR(N) (N*N)
+#define NOBJECTS 3
+static Sphere objects[NOBJECTS] = {
+	{
+		float3(0.0, 0.0, 0.0),
+		SQR(1.0),
+		float3(0.0, 0.5, 1.0),
+		1.0, 1.0, 0.5, false,
+	},
+	{
+		float3(1.5, -0.5, 0.0),
+		SQR(0.5),
+		float3(0.0, 1.0, 0.0),
+		1.0, 1.0, 0.5, false,
+	},	
+	{
+		float3(0.0, -101.0, 0.0),
+		SQR(100.0),
+//		0.0, 0.0, 1.0, 1.0
+		float3(1.0, 1.0, 1.0),
+		1.0, 1.0, 0.5, true
+	}
+};
+static const float eps = 0.001;	// error epsilon
+
+float SphereIntersect(Sphere s, Ray ray, out bool hit)
+{
+	float3 v = s.centre - ray.o;
+	float b = dot(v, ray.d);
+	float disc = (b*b) - dot(v, v) + s.rad2;
+
+	hit = true;
+	// note - early returns not supported by HLSL compiler currently:
+//	if (disc<=0) return -1.0; // ray misses
+	if (disc<=0) hit = false;
+
+	disc = sqrt(disc);
+	float t2 = b + disc;
+
+//	if (t2<=eps) return -1.0; // behind ray origin
+	if (t2<=eps) hit = false; // behind ray origin
+
+	float t1 = b - disc;
+
+	if ((t1>eps) && (t1<t2))  // return nearest intersection
+		return t1;
+	else
+		return t2;
+}
+
+float3 SphereNormal(Sphere s, float3 i)
+{
+	return normalize(i - s.centre);
+}
+
+// find nearest hit
+// returns intersection point
+float3 NearestHit(Ray ray, out Sphere hitobj, out bool anyhit)
+{
+	float mint = 1e10;
+ 	anyhit = false;
+	for(int i=0; i<NOBJECTS; i++) {
+		bool hit;
+		float t = SphereIntersect(objects[i], ray, hit);
+		if (hit) {
+			if (t < mint) {
+				hitobj = objects[i];
+				mint = t;
+				anyhit = true;
+			}
+		}
+	}
+	return ray.o + ray.d*mint;
+}
+
+// test for any hit (for shadow rays)
+bool AnyHit(Ray ray)
+{
+	bool anyhit = false;
+	for(int i=0; i<NOBJECTS; i++) {
+		bool hit;
+		float t = SphereIntersect(objects[i], ray, hit);
+		if (hit) {
+//			return true;
+			anyhit = true;
+		}
+	}
+	return anyhit;
+}
+
+// Phong lighting model
+fixed3 Phong(float3 n, float3 l, float3 v, float shininess, fixed3 diffuseColor, fixed3 specularColor)
+{
+	fixed ndotl = dot(n, l);
+	fixed diff = saturate(ndotl);
+	float3 r = reflect(l, n);
+	fixed spec = (ndotl > 0.0) ? pow(saturate(dot(v, r)), shininess) : 0.0;
+	return diff * diffuseColor + spec * specularColor;
+}
+
+fixed3 Shade(float3 i, float3 n, float3 v, Sphere hitobj)
+{
+	float3 l = normalize(lightPosition - i);
+
+	// check if shadowed
+	Ray shadowray;
+	shadowray.o = i;
+	shadowray.d = l;
+	bool shadowed = AnyHit(shadowray);
+
+	// lighting
+	fixed3 diff = hitobj.color * lightColor * hitobj.Kd;
+	if (hitobj.tex) {
+		diff *= tex2D(checkSampler, i.xz).rgb;	// floor texture
+	}
+	fixed3 spec = lightColor * hitobj.Ks;
+	fixed shadowFactor = shadowed ? 0.25 : 1.0;
+	
+	return Phong(n, l, v, shininess, diff, spec) * shadowFactor;
+}
+
+// Vertex shader
+struct VertexInput {
+    float4 position : POSITION;
+    float2 tex : TEXCOORD0;
+};
+
+struct VertexOutput {
+    float4 position : POSITION;
+    float3 rO : TEXCOORD0;
+    float3 rD : TEXCOORD1;
+};
+
+VertexOutput RayTraceVS(VertexInput input)
+{
+	VertexOutput output;
+	output.position = input.position;
+
+	// Compute eye position
+	output.rO = view[3].xyz;
+
+	// Compute ray direction
+	float3 dir;
+	dir.xy = 2.0 * input.tex - 1.0;
+	dir.xy *= float2(viewport.x / viewport.y, -1);	// flip y axis & adjust aspect ratio
+	dir.z = -4; // focal length
+
+	output.rD = mul(dir, float3x3(view));
+
+	return output;
+}
+
+void animate_scene(float time)
+{
+	objects[1].centre.x = sin(time) * 1.5;
+	objects[1].centre.z = cos(time) * 1.5;
+}
+
+// Pixel shader
+float4 RayTracePS(VertexOutput IN) : COLOR
+{
+	animate_scene(time);
+	
+	Ray eyeray;
+	eyeray.o = IN.rO;
+	eyeray.d = normalize(IN.rD);
+
+	// find nearest hit
+	Sphere hitobj;
+	bool hit;
+	float3 i = NearestHit(eyeray, hitobj, hit);
+	fixed3 c = backgroundColor;
+	if (hit) {
+		// shade surface
+		float3 n = SphereNormal(hitobj, i);
+		c = Shade(i, n, eyeray.d, hitobj);
+	
+		// shoot reflection ray
+		float3 r = reflect(eyeray.d, n);
+		Ray reflray;
+		reflray.o = i;
+		reflray.d = r;
+		Sphere hitobj2;
+		i = NearestHit(reflray, hitobj2, hit);
+		if (hit) {
+			n = SphereNormal(hitobj2, i);
+			c += Shade(i, n, reflray.d, hitobj2) * hitobj.Kr;
+		} else {
+			c += backgroundColor;
+		}
+	}
+
+	return fixed4(c, 1.0);
+}
+
+technique arbfp1
+{
+	pass p0
+	{
+		VertexProgram = compile arbvp1 RayTraceVS();
+		FragmentProgram = compile arbfp1 RayTracePS();
+	}
+}
+
+technique fp30
+{
+	pass p0
+	{
+		VertexProgram = compile arbvp1 RayTraceVS();
+		FragmentProgram = compile fp30 RayTracePS();
+	}
+}
+
+technique fp40
+{
+	pass p0
+	{
+		VertexProgram = compile arbvp1 RayTraceVS();
+		FragmentProgram = compile fp40 RayTracePS();
+	}
+}
+
+
+
+

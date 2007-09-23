@@ -1,0 +1,5 @@
+Copy glew here if it's not on your system.
+You can download glew from:
+
+http://glew.sourceforge.net/
+

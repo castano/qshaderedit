@@ -1,0 +1,78 @@
+float3 color : DIFFUSE < string SasUiLabel = "Base Color"; > = {1.0f, 0.0f, 0.0f};
+float amb < string SasUiLabel = "Ambient"; > = 0.1f;
+float exponent < string SasUiLabel = "Exponent"; > = 16.0f;
+
+float4x4 mvp : ModelViewProjection;
+float4x4 mv : ModelView;
+float3x3 normalMatrix : ModelViewInverseTranspose;
+
+struct VertexInput {
+	float4 position : POSITION;
+	float3 normal : NORMAL;
+};
+
+struct VertexOutput {
+	float4 position : POSITION;
+	float3 normal : TEXCOORD0;
+	float3 view : TEXCOORD1;
+};
+
+VertexOutput vp(VertexInput input)
+{
+	VertexOutput output;
+	output.position = mul(input.position, mvp);
+	output.normal = mul(input.normal, normalMatrix);
+	output.view = mul(input.position, mv).xyz;
+	return output;
+}
+
+float4 fp_phong(VertexOutput input) : COLOR
+{
+	float3 N = normalize(input.normal);
+	float3 V = normalize(input.view);
+	float3 R = reflect(V, N);
+	float3 L = normalize(gl_LightSource[0].position.xyz);
+
+	float3 ambient = color * amb;
+	float3 diffuse = color * (1.0 - amb) * saturate(dot(L, N));
+	float3 specular = pow(saturate(dot(R, L)), exponent);
+
+	return float4(ambient + diffuse + specular, 1.0);
+}
+
+float4 fp_blinn(VertexOutput input) : COLOR
+{
+	float3 N = normalize(input.normal);
+	float3 L = normalize(gl_LightSource[0].position.xyz);
+	float3 H = normalize(gl_LightSource[0].halfVector.xyz);
+
+	float3 ambient = color * amb;
+	float3 diffuse = color * (1.0 - amb) * saturate(dot(L, N));
+	float3 specular = pow(saturate(dot(H, N)), exponent * 4.0f);
+
+	return float4(ambient + diffuse + specular, 1.0);
+}
+
+
+technique phong
+{
+	pass p0
+	{
+		VertexProgram = compile arbvp1 vp();
+		FragmentProgram = compile arbfp1 fp_phong();
+		DepthTestEnable = true;
+		CullFaceEnable = true;
+	}
+}
+
+
+technique blinn
+{
+	pass p0
+	{
+		VertexProgram = compile arbvp1 vp();
+		FragmentProgram = compile arbfp1 fp_blinn();
+		DepthTestEnable = true;
+		CullFaceEnable = true;
+	}
+}

@@ -1,0 +1,55 @@
+
+Misc:
+- double compilation still happens on osx and windows...
+
+Parameter panel:
+- Matrix editor.
+- Adjust double slider steps correctly, maintain original range, allow custom steps.
+- Add integer sliders.
+- Add intenger and bool parameter config dialogs.
+
+Textures:
+- load and save texture paths relative to the effect.
+- add dds image plugin.
+- add noise plugin to generate noise texture.
+- add support for procedural texture generation.
+- get supported texture extensions from QImageReader::supported...
+
+Effects:
+- Fix threading on linux, solve Xlib problems.
+- add support for matrix parameters in cgfx.
+- add support for texture parameters in ARB programs.
+- add support for custom xml effect file format.
+- integrated help.
+
+Performance panel:
+- add effect performance interface.
+- add performance panel to display performance info.
+- use NVShaderPerf.
+
+Scene:
+- add more shapes.
+- add simple mesh class to compute normals, tangents, binormals.
+
+KDE integration:
+- port to KDE4.
+- use ktexteditor interface.
+- add support for autocompletion and syntax highlight.
+- highlight errors.
+
+
+Effect file formats:
+- Luxinia shaders: http://www.luxinia.de/index.php/Api/Shader
+- Ogre materials: http://www.ogre3d.org/docs/manual/manual_14.html#SEC23
+- Hyperion shaders (o3shd) and effects (xml): www.oZone3D.Net
+- glfx: http://glfx.sourceforge.net/
+- pyfx: http://graphics.cs.lth.se/pyfx/
+- unity shaders: http://www.unifycommunity.com/wiki/index.php?title=Shader_Archive
+- Collada FX: http://www.khronos.org/collada/
+
+Useful links:
+
+HLSL to GLSL translator:
+It's kind of nice, but still very limited.
+http://sourceforge.net/projects/hlsl2glsl
+
