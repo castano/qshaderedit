@@ -328,6 +328,8 @@ void QShaderEdit::initGL()
 			delete m_glWidget;
 			m_glWidget = NULL;
 		}
+		
+		if (m_glWidget) m_glWidget->doneCurrent();
 	}
 }
 
@@ -415,7 +417,7 @@ void QShaderEdit::createDockWindows()
 	addDockWidget(Qt::BottomDockWidgetArea, m_messagePanel);
 	connect(m_messagePanel, SIGNAL(messageClicked(int, int, int)), m_editor, SLOT(gotoLine(int, int, int)));
 
-	m_scenePanel = new ScenePanel(tr("Scene"), this);
+	m_scenePanel = new ScenePanel(tr("Scene"), this, m_glWidget);
 	m_scenePanel->setObjectName("SceneDock");
 	m_scenePanel->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 	addDockWidget(Qt::RightDockWidgetArea, m_scenePanel);
