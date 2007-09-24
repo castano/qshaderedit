@@ -345,6 +345,7 @@ public:
 	virtual ~GLSLEffect()
 	{
 		deleteProgram();
+		ReportGLErrors();
 		delete m_outputParser;
 		qDeleteAll(m_parameterArray);
 	}
@@ -552,11 +553,11 @@ public:
 		glGetObjectParameterivARB(program, GL_OBJECT_LINK_STATUS_ARB, &linkSucceed);
 		if( linkSucceed == GL_FALSE )
 		{
-			glDetachObjectARB(m_program, m_vertexShader);
-			glDetachObjectARB(m_program, m_fragmentShader);
-			glDeleteObjectARB(m_program);
-			glDeleteObjectARB(m_vertexShader);
-			glDeleteObjectARB(m_fragmentShader);
+			glDetachObjectARB(program, vertexShader);
+			glDetachObjectARB(program, fragmentShader);
+			glDeleteObjectARB(vertexShader);
+			glDeleteObjectARB(fragmentShader);
+			glDeleteObjectARB(program);
 			return false;
 		}
 		
@@ -581,11 +582,12 @@ public:
 #if defined(Q_OS_LINUX)
 		threaded = false;
 #endif
-		
+
 		if (threaded) {
 			m_thread.start();
 		}
 		else {
+			m_widget->makeCurrent();
 			bool succeed = threadedBuild();
 			emit built(succeed);
 		}
