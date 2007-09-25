@@ -43,11 +43,11 @@ X Error: 0 0
 
 = OpenGL problems and Qt =
 
-Another issue is that OpenGL is not thread safe either. So, OpenGL calls need to be protected by some other access mechanism, for example using a mutex. It's possible to guard every OpenGL calls to guarantee serial processing. However, Qt also does some OpenGL calls in response to user events (for example when resizing).
+Another issue is that OpenGL is not thread safe either. So, OpenGL calls need to be protected by some other access mechanism, for example using a mutex. It's possible to guard every OpenGL call to guarantee serial processing. However, Qt also does some OpenGL calls in response to user events (for example when resizing windows).
 
 In Mac OSX when using Objective-C there's a mechanism that allows you to lock the current context using `CGLLockContext` and `CGLUnlockContext`, so that two threads cannot use it at the same time. However, the same mechanism does not exist in Qt.
 
-In theory it's possible to have multiple threads using separate contexts concurrently. However, when these two contexts share resources (using `wglShareLists()` for example) it's not very clear whether this is still valid. In practice, this solution seems to work fine as long as rendering is stopped while the worker thread creates the resources.
+In theory it's possible to have multiple threads using separate contexts concurrently. However, when these two contexts share resources (using `wglShareLists()` for example) it's not very clear whether this is still valid. The [http://developer.apple.com/documentation/GraphicsImaging/Conceptual/OpenGL-MacProgGuide/opengl_threading/chapter_12_section_3.html apple guidelines] recommend that, and in practice, this solution seems to work fine as long as rendering is stopped while the worker thread creates the resources.
 
 In some rare cases I've seen texture corruption, but I've been running the OSX OpenGL debugger with the "Break on thread error" option enabled, and no error was displayed when this happened, so I suspect it's a driver problem.
 
@@ -61,5 +61,3 @@ http://tronche.com/gui/x/xlib/display/XInitThreads.html
 http://doc.trolltech.com/qq/qq06-glimpsing.html
 
 http://developer.apple.com/documentation/GraphicsImaging/Conceptual/OpenGL-MacProgGuide/opengl_threading/chapter_12_section_1.html
-
- 
