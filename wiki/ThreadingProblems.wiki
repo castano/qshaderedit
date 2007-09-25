@@ -49,7 +49,7 @@ In Mac OSX when using Objective-C there's a mechanism that allows you to lock th
 
 In theory it's possible to have multiple threads using separate contexts concurrently. However, when these two contexts share resources (using `wglShareLists()` for example) it's not very clear whether this is still valid. The [http://developer.apple.com/documentation/GraphicsImaging/Conceptual/OpenGL-MacProgGuide/opengl_threading/chapter_12_section_3.html apple guidelines] recommend that, and in practice, this solution seems to work fine as long as rendering is stopped while the worker thread creates the resources.
 
-In some rare cases I've seen texture corruption, but I've been running the OSX OpenGL debugger with the "Break on thread error" option enabled, and no error was displayed when this happened, so I suspect it's a driver problem.
+In some rare cases I've seen texture corruption, but I've been running the OSX OpenGL debugger with the "Break on thread error" option enabled, and no error was ever displayed, so I suspect it was a driver problem.
 
 I need to investigate the issue in more detail, but I think it would be good to add a context locking mechanism to Qt, to make this problems easier to avoid.
 
