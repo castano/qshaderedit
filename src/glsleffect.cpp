@@ -314,12 +314,10 @@ private:
 	friend class BuilderThread;
 	BuilderThread m_thread;
 	
-	QGLWidget * m_widget;
-	
 public:
 
 	// Ctor.
-	GLSLEffect(const EffectFactory * factory, QGLWidget * widget) : Effect(factory),
+	GLSLEffect(const EffectFactory * factory, QGLWidget * widget) : Effect(factory, widget),
 		m_vertexShader(0),
 		m_fragmentShader(0),
 		m_program(0),
@@ -327,10 +325,9 @@ public:
 		m_fragmentShaderText(s_fragmentShaderText),
 		m_timeUniform(-1),
 		m_outputParser(0),
-		m_thread(widget, this), 
-		m_widget(widget)
+		m_thread(widget, this)
 	{
-		widget->makeCurrent();
+		this->makeCurrent();
 		
 		const char* vendor = (const char*)glGetString(GL_VENDOR);
 		if (strcmp(vendor, "ATI Technologies Inc.") == 0)
@@ -344,6 +341,8 @@ public:
 	// Dtor.
 	virtual ~GLSLEffect()
 	{
+		this->makeCurrent();
+		
 		deleteProgram();
 		ReportGLErrors();
 		delete m_outputParser;
@@ -359,6 +358,8 @@ public:
 		m_vertexShaderText.clear();
 		m_fragmentShaderText.clear();
 
+		this->makeCurrent();
+		
 		QByteArray line;
 		while (!file->atEnd()) {
 
@@ -587,7 +588,7 @@ public:
 			m_thread.start();
 		}
 		else {
-			m_widget->makeCurrent();
+			this->makeCurrent();
 			bool succeed = threadedBuild();
 			emit built(succeed);
 		}

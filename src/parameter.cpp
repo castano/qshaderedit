@@ -59,11 +59,13 @@ void Parameter::setValue(const QVariant& value)
 		return;
 
 	// copy list contents, preserving size.
-	if (m_value.type() == QVariant::List && value.type() == QVariant::List) {
+	if (m_value.type() == QVariant::List && value.type() == QVariant::List)
+	{
 		QVariantList thisList = m_value.toList();
 		QVariantList thatList = value.toList();
 		
-		if(thisList.count() != thatList.count()) {
+		if(thisList.count() != thatList.count())
+		{
 			// @@ This works fine for vectors, but matrices need to be handled better.
 			int count = qMin(thisList.count(), thatList.count());
 			for(int i = 0; i < count; i++) {
@@ -71,25 +73,34 @@ void Parameter::setValue(const QVariant& value)
 			}
 			m_value = thisList;
 		}
-		else {
+		else
+		{
 			m_value = value;
 		}
 	}
-	
-	else if (m_value.userType() == qMetaTypeId<GLTexture>()) {
+	else if (m_value.userType() == qMetaTypeId<GLTexture>())
+	{
 		// convert strings to GLTexture
-		if (value.type() == QVariant::String) {
-			m_value.setValue(GLTexture::open(value.toString()));
+		if (value.type() == QVariant::String)
+		{
+			GLTexture tex = m_value.value<GLTexture>();
+			if (tex.name() != value.toString())
+			{
+				m_value.setValue(GLTexture::open(value.toString()));
+			}
 		}
-		else if(value.userType() == qMetaTypeId<GLTexture>()) {
+		else if(value.userType() == qMetaTypeId<GLTexture>())
+		{
 			m_value = value;
 		}
 	}
-	else if (m_value.isValid()) {
+	else if (m_value.isValid())
+	{
 		// only take new value if it can be converted to the new one.
 		assignVariant(m_value, value);
 	}
-	else {
+	else
+	{
 		m_value = value;
 	}
 }
