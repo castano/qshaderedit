@@ -6,13 +6,11 @@
 #include "parameter.h"
 #include "glutils.h"
 
-#include <QtCore/QCoreApplication>
-#include <QtCore/QDebug>	// !!!
-#include <QtCore/QObject>
 #include <QtCore/QFile>
 #include <QtCore/QByteArray>
 #include <QtCore/QTime>
 #include <QtCore/QVariant>
+#include <QtCore/QDir>
 
 #include <QtGui/QImage>
 
@@ -360,6 +358,8 @@ public:
 
 		this->makeCurrent();
 		
+		QDir dir = QFileInfo(*file).dir();
+		
 		QByteArray line;
 		while (!file->atEnd()) {
 
@@ -397,7 +397,7 @@ public:
 						break;
 					}
 					// Parse parameter->
-					parseParameter(line);
+					parseParameter(line, dir);
 				}
 				continue;
 			}
@@ -427,12 +427,14 @@ public:
 			file->write("\n");
 		}
 
+		QDir dir = QFileInfo(*file).dir();
+		
 		if( this->parameterCount() > 0 ) {
 			// [Parameters]
 			file->write(s_parametersTag, strlen(s_parametersTag));
 
 			foreach(GLSLParameter* p, m_parameterArray) {
-				QString str = getParameterAssignment(p);
+				QString str = getParameterAssignment(p, dir);
 				file->write(str.toLatin1());
 			}
 		}
@@ -1089,7 +1091,7 @@ private:
 		return QVariant();
 	}
 
-	static QString getParameterAssignment(const GLSLParameter * param)
+	static QString getParameterAssignment(const GLSLParameter * param, const QDir & dir)
 	{
 		QString typeName = getTypeName(param->glType());
 		
@@ -1123,8 +1125,11 @@ private:
 			case GL_SAMPLER_1D_SHADOW_ARB:
 			case GL_SAMPLER_2D_SHADOW_ARB:
 			case GL_SAMPLER_2D_RECT_SHADOW_ARB:
+			{
 				GLTexture tex = param->value().value<GLTexture>();
-				return typeName + " " + param->name() + " = load(\"" + tex.name() + "\");\n";
+				QString path = dir.relativeFilePath(tex.name());
+				return typeName + " " + param->name() + " = load(\"" + path + "\");\n";
+			}
 		}
 		
 		return "";
@@ -1132,7 +1137,7 @@ private:
 	
 
 	// Hacky parameter parser.
-	void parseParameter(QString line)
+	void parseParameter(QString line, const QDir & dir)
 	{
 		if( line.startsWith("//") ) {
 			// Skip C++ comments.
@@ -1197,12 +1202,21 @@ private:
 				return;
 			}
 
+			QString fileName = loadRegExp.cap(1);
+			QString filePath = dir.absoluteFilePath(fileName);
+			
+			QFileInfo pathInfo(filePath);
+			if (!pathInfo.isFile() || !pathInfo.exists())
+			{
+				filePath = fileName;
+			}
+			
 			QVariant tex;
-			tex.setValue(GLTexture::open(loadRegExp.cap(1)));
+			tex.setValue(GLTexture::open(filePath));
 			param->setValue(tex);
 		}
 		else {
-			qDebug() << "unknown parameter type";
+			qDebug("unknown parameter type");
 		}
 
 		m_parameterArray.append(param);
