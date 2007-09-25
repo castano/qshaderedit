@@ -2,6 +2,7 @@
 #include "parameter.h"
 #include "texmanager.h"
 
+#include <QtCore/QFileInfo>
 #include <QtGui/QColor>
 #include <QtGui/QPixmap>
 
@@ -112,7 +113,7 @@ QString Parameter::displayValue() const
 	}
 
 	if (m_value.userType() == qMetaTypeId<GLTexture>()) {
-		return m_value.value<GLTexture>().name();
+		return QFileInfo(m_value.value<GLTexture>().name()).fileName();
 	}
 	
 	if (m_value.canConvert(QVariant::String)) {
