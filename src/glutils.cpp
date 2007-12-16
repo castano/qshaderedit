@@ -1,13 +1,14 @@
 	
-#include <QtGui/QX11Info>
 
 #include "glutils.h"
 
-extern "C"
-{
-#include <X11/Xlib-xcb.h>
-#include <xcb/xcbxlib.h>
-}
+//#include <QtGui/QX11Info>
+
+//extern "C"
+//{
+//#include <X11/Xlib-xcb.h>
+//#include <xcb/xcbxlib.h>
+//}
 
 
 
@@ -41,7 +42,7 @@ void ReportGLErrors()
 		}
 	}
 }
-
+/*
 class XLock
 {
 	Display * const dpy;
@@ -59,7 +60,7 @@ public:
 		XUnlockDisplay(dpy);
 	}
 };
-
+*/
 
 void GLThread::makeCurrent()
 {

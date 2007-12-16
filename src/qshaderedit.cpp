@@ -361,7 +361,7 @@ void QShaderEdit::createEditor()
 
 	
 	// Create editor actions.
-	m_findAction = new QAction(tr("&Find"), this);
+	m_findAction = new QAction(QIcon(s_resourcePath + "/find.png"), tr("&Find"), this);
 	m_findAction->setEnabled(false);
 	m_findAction->setShortcut(tr("Ctrl+F"));
 	connect(m_findAction, SIGNAL(triggered()), m_editor, SLOT(findDialog()));
