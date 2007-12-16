@@ -317,6 +317,7 @@ void QShaderEdit::initGL()
 		format.setDoubleBuffer(true);
 		
 		m_glWidget = new QGLWidget(format, this);
+		m_glWidget->setVisible(false);
 		m_glWidget->makeCurrent();
 		
 		GLenum err = glewInit();
