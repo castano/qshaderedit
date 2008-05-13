@@ -1,6 +1,4 @@
 
-#include <QtOpenGL/QGLWidget>
-
 #include "effect.h"
 
 namespace {
@@ -54,16 +52,5 @@ void EffectFactory::removeFactory(const EffectFactory * factory)
 		delete s_factoryList;
 		s_factoryList = NULL;
 	}
-}
-
-
-void Effect::makeCurrent()
-{
-	m_widget->makeCurrent();
-}
-
-void Effect::doneCurrent()
-{
-	m_widget->makeCurrent();
 }
 

@@ -122,8 +122,6 @@ class TgaImagePlugin : public ImagePlugin
 	}
 };
 
-//REGISTER_IMAGE_PLUGIN(TgaImagePlugin);
-
 
 // Image plugin that supports all the image types that Qt supports.
 class QtImagePlugin : public ImagePlugin

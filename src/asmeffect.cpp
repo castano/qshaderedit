@@ -154,12 +154,12 @@ private:
 public:
 	
 	// Ctor.
-	ArbEffect(const EffectFactory * factory, QGLWidget * widget) : Effect(factory, widget),
+	ArbEffect(const EffectFactory * factory, QGLWidget * widget) : Effect(factory),
 		m_vertexProgramText(s_vertexProgramText),
 		m_fragmentProgramText(s_fragmentProgramText),
 		m_outputParser(NULL)
 	{
-		this->makeCurrent();
+		widget->makeCurrent();
 		m_time.start();
 
 		const char* vendor = (const char*)glGetString(GL_VENDOR);
@@ -173,8 +173,6 @@ public:
 	
 	virtual ~ArbEffect()
 	{
-		this->makeCurrent();
-		
 		deletePrograms();
 		delete m_outputParser;
 		qDeleteAll(m_parameterArray);
@@ -188,8 +186,6 @@ public:
 		
 		m_vertexProgramText.clear();
 		m_fragmentProgramText.clear();
-		
-		this->makeCurrent();
 		
 		QByteArray line;
 		while (!file->atEnd()) {
@@ -318,8 +314,6 @@ public:
 	virtual void build(bool threaded)
 	{
 		Q_UNUSED(threaded);
-		
-		this->makeCurrent();
 		
 		bool succeed = true;
 		

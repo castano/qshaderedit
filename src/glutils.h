@@ -47,10 +47,38 @@ public:
 		delete m_glWidget;
 	}
 	
-	void makeCurrent();
-	void doneCurrent();
+	void makeCurrent()
+	{
+		m_glWidget->makeCurrent();
+	}
+	void doneCurrent()
+	{
+		m_glWidget->doneCurrent();
+	}
 };
 
+
+/*
+/// A thread that wraps a dummy GL context. 
+class GLThread : public QThread
+{
+	QGLContext m_context;
+	
+public:
+	GLThread(const QGLContext * shareContext) : m_context(shareContext->format())
+	{
+		m_context.create(shareContext);
+	}
+	
+	void makeCurrent()
+	{
+		if (m_context.isValid())
+		{
+			m_context.makeCurrent();
+		}
+	}
+};
+*/
 
 
 inline float toDegrees(float radians) { return radians * (180.0f / M_PI); }

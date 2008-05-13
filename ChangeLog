@@ -6,8 +6,6 @@
 	New improved parameter panel.
 	Move document handling to its own class.
 	Fix double compilation bug.
-	Don't stop rendering when compilation fails.
-	Save texture paths as relative paths.
 
 0.1.2
 	Improved syntax highlighting by Lars Uebernickel <larsuebernickel@gmx.de>.

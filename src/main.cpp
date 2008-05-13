@@ -12,8 +12,8 @@
 int main(int argc, char **argv)
 {
 #if defined(Q_WS_X11)
-	// This causes lockups in some X servers.
-	XInitThreads();
+	// This causes lockups in the X server.
+	//XInitThreads();
 #endif
 	
     QApplication app(argc, argv);

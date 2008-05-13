@@ -1,15 +1,5 @@
 	
-
 #include "glutils.h"
-
-//#include <QtGui/QX11Info>
-
-//extern "C"
-//{
-//#include <X11/Xlib-xcb.h>
-//#include <xcb/xcbxlib.h>
-//}
-
 
 
 // Report OpenGL errors.
@@ -42,37 +32,5 @@ void ReportGLErrors()
 		}
 	}
 }
-/*
-class XLock
-{
-	Display * const dpy;
-	
-public:
-	XLock() : dpy(QX11Info::display())
-	{
-		XLockDisplay(dpy);
-		//xcb_connection_t * c = XGetXCBConnection(dpy);
-		//xcb_xlib_lock(c);
-	}
-	~XLock()
-	{
-		//xcb_xlib_unlock(c);
-		XUnlockDisplay(dpy);
-	}
-};
-*/
 
-void GLThread::makeCurrent()
-{
-	//XLock lock;
-	//XLockDisplay(QX11Info::display());
-	m_glWidget->makeCurrent();
-}
-
-void GLThread::doneCurrent()
-{
-	//XLock lock;
-	m_glWidget->doneCurrent();
-	//XUnlockDisplay(QX11Info::display());
-}
 

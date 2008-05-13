@@ -425,7 +425,7 @@ private:
 	{
 		CgFxEffect * m_effect;
 	public:
-		BuilderThread(QGLWidget * widget, CgFxEffect * effect) : GLThread(widget), m_effect(effect)
+		BuilderThread(CgFxEffect * effect, QGLWidget * widget) : GLThread(widget), m_effect(effect)
 		{
 		}
 		void run() 
@@ -441,16 +441,16 @@ private:
 
 public:
 
-	CgFxEffect(const EffectFactory * factory, QGLWidget * widget) : Effect(factory, widget),
+	CgFxEffect(const EffectFactory * factory, QGLWidget * widget) : Effect(factory),
 		m_context(NULL),
 		m_effect(NULL),
 		m_technique(NULL),
 		m_pass(NULL),
 		m_effectText(s_effectText),
 		m_animated(false),
-		m_thread(widget, this)
+		m_thread(this, widget)
 	{
-		this->makeCurrent();
+		widget->makeCurrent();
 
 		m_context = qcgCreateContext();
 
@@ -501,8 +501,6 @@ public:
 
 	virtual ~CgFxEffect()
 	{
-		this->makeCurrent();
-		
 		qcgDestroyContext(m_context);
 		delete m_outputParser;
 		qDeleteAll(m_parameterArray);
@@ -617,7 +615,6 @@ public:
 			m_thread.start();
 		}
 		else {
-			this->makeCurrent();
 			bool succeed = threadedBuild();
 			emit built(succeed);
 		}

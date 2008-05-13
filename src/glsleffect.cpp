@@ -6,11 +6,13 @@
 #include "parameter.h"
 #include "glutils.h"
 
+#include <QtCore/QCoreApplication>
+#include <QtCore/QDebug>	// !!!
+#include <QtCore/QObject>
 #include <QtCore/QFile>
 #include <QtCore/QByteArray>
 #include <QtCore/QTime>
 #include <QtCore/QVariant>
-#include <QtCore/QDir>
 
 #include <QtGui/QImage>
 
@@ -312,10 +314,12 @@ private:
 	friend class BuilderThread;
 	BuilderThread m_thread;
 	
+	QGLWidget * m_widget;
+	
 public:
 
 	// Ctor.
-	GLSLEffect(const EffectFactory * factory, QGLWidget * widget) : Effect(factory, widget),
+	GLSLEffect(const EffectFactory * factory, QGLWidget * widget) : Effect(factory),
 		m_vertexShader(0),
 		m_fragmentShader(0),
 		m_program(0),
@@ -323,9 +327,10 @@ public:
 		m_fragmentShaderText(s_fragmentShaderText),
 		m_timeUniform(-1),
 		m_outputParser(0),
-		m_thread(widget, this)
+		m_thread(widget, this), 
+		m_widget(widget)
 	{
-		this->makeCurrent();
+		widget->makeCurrent();
 		
 		const char* vendor = (const char*)glGetString(GL_VENDOR);
 		if (strcmp(vendor, "ATI Technologies Inc.") == 0)
@@ -339,8 +344,6 @@ public:
 	// Dtor.
 	virtual ~GLSLEffect()
 	{
-		this->makeCurrent();
-		
 		deleteProgram();
 		ReportGLErrors();
 		delete m_outputParser;
@@ -356,10 +359,6 @@ public:
 		m_vertexShaderText.clear();
 		m_fragmentShaderText.clear();
 
-		this->makeCurrent();
-		
-		QDir dir = QFileInfo(*file).dir();
-		
 		QByteArray line;
 		while (!file->atEnd()) {
 
@@ -397,7 +396,7 @@ public:
 						break;
 					}
 					// Parse parameter->
-					parseParameter(line, dir);
+					parseParameter(line);
 				}
 				continue;
 			}
@@ -427,14 +426,12 @@ public:
 			file->write("\n");
 		}
 
-		QDir dir = QFileInfo(*file).dir();
-		
 		if( this->parameterCount() > 0 ) {
 			// [Parameters]
 			file->write(s_parametersTag, strlen(s_parametersTag));
 
 			foreach(GLSLParameter* p, m_parameterArray) {
-				QString str = getParameterAssignment(p, dir);
+				QString str = getParameterAssignment(p);
 				file->write(str.toLatin1());
 			}
 		}
@@ -590,7 +587,7 @@ public:
 			m_thread.start();
 		}
 		else {
-			this->makeCurrent();
+			m_widget->makeCurrent();
 			bool succeed = threadedBuild();
 			emit built(succeed);
 		}
@@ -1091,7 +1088,7 @@ private:
 		return QVariant();
 	}
 
-	static QString getParameterAssignment(const GLSLParameter * param, const QDir & dir)
+	static QString getParameterAssignment(const GLSLParameter * param)
 	{
 		QString typeName = getTypeName(param->glType());
 		
@@ -1125,11 +1122,8 @@ private:
 			case GL_SAMPLER_1D_SHADOW_ARB:
 			case GL_SAMPLER_2D_SHADOW_ARB:
 			case GL_SAMPLER_2D_RECT_SHADOW_ARB:
-			{
 				GLTexture tex = param->value().value<GLTexture>();
-				QString path = dir.relativeFilePath(tex.name());
-				return typeName + " " + param->name() + " = load(\"" + path + "\");\n";
-			}
+				return typeName + " " + param->name() + " = load(\"" + tex.name() + "\");\n";
 		}
 		
 		return "";
@@ -1137,7 +1131,7 @@ private:
 	
 
 	// Hacky parameter parser.
-	void parseParameter(QString line, const QDir & dir)
+	void parseParameter(QString line)
 	{
 		if( line.startsWith("//") ) {
 			// Skip C++ comments.
@@ -1202,21 +1196,12 @@ private:
 				return;
 			}
 
-			QString fileName = loadRegExp.cap(1);
-			QString filePath = dir.absoluteFilePath(fileName);
-			
-			QFileInfo pathInfo(filePath);
-			if (!pathInfo.isFile() || !pathInfo.exists())
-			{
-				filePath = fileName;
-			}
-			
 			QVariant tex;
-			tex.setValue(GLTexture::open(filePath));
+			tex.setValue(GLTexture::open(loadRegExp.cap(1)));
 			param->setValue(tex);
 		}
 		else {
-			qDebug("unknown parameter type");
+			qDebug() << "unknown parameter type";
 		}
 
 		m_parameterArray.append(param);
