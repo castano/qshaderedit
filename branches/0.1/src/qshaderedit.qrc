@@ -1,0 +1,24 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+	<qresource>
+    	<file>images/default.png</file>
+		<file>images/mac/filenew.png</file>
+		<file>images/mac/fileopen.png</file>
+		<file>images/mac/filesave.png</file>
+		<file>images/mac/editundo.png</file>
+		<file>images/mac/editredo.png</file>
+		<file>images/mac/editcut.png</file>
+		<file>images/mac/editcopy.png</file>
+		<file>images/mac/editpaste.png</file>
+		<file>images/win/filenew.png</file>
+		<file>images/win/fileopen.png</file>
+		<file>images/win/filesave.png</file>
+		<file>images/win/editundo.png</file>
+		<file>images/win/editredo.png</file>
+		<file>images/win/editcut.png</file>
+		<file>images/win/editcopy.png</file>
+		<file>images/win/editpaste.png</file>
+		<file>images/toolbutton.png</file>
+		<file>images/colorpicker.png</file>
+    </qresource>
+</RCC>
