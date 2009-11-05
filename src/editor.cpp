@@ -312,8 +312,8 @@ bool Editor::find(const QString & text, QTextDocument::FindFlags flags/*=0*/)
 
 void Editor::onCurrentChanged(int idx)
 {
-	Q_ASSERT(idx >= 0);
-	Q_UNUSED(idx);
+	if(idx < 0) return;
+
 	emit cursorPositionChanged();
 
 	QTextDocument * document = currentTextEdit()->document();

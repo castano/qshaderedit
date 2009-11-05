@@ -213,67 +213,37 @@ void animate_scene(float time)
 	objects[1].centre.z = cos(time) * 1.5;
 }
 
+float planeDistance(float3 p, float4 plane)
+{
+	return dot(p, plane.xyz) - plane.w;
+}
+
+float sceneDistance(float3 p)
+{
+	return planeDistance(p, float4(0, 1, 0, -1));
+}
+
 // Pixel shader
 float4 RayTracePS(VertexOutput IN) : COLOR
 {
-	animate_scene(time);
+	float d;
+	float3 p = IN.rO;
 	
-	Ray eyeray;
-	eyeray.o = IN.rO;
-	eyeray.d = normalize(IN.rD);
-
-	// find nearest hit
-	Sphere hitobj;
-	bool hit;
-	float3 i = NearestHit(eyeray, hitobj, hit);
-	fixed3 c = backgroundColor;
-	if (hit) {
-		// shade surface
-		float3 n = SphereNormal(hitobj, i);
-		c = Shade(i, n, eyeray.d, hitobj);
+	do {
+		d = sceneDistance(p);
+		p += d * IN.rD;
+	} while (d < 0.1);
 	
-		// shoot reflection ray
-		float3 r = reflect(eyeray.d, n);
-		Ray reflray;
-		reflray.o = i;
-		reflray.d = r;
-		Sphere hitobj2;
-		i = NearestHit(reflray, hitobj2, hit);
-		if (hit) {
-			n = SphereNormal(hitobj2, i);
-			c += Shade(i, n, reflray.d, hitobj2) * hitobj.Kr;
-		} else {
-			c += backgroundColor;
-		}
-	}
-
-	return fixed4(c, 1.0);
+	return float4(d, d, d, 1.0);
 }
 
-technique arbfp1
+
+technique gp4fp
 {
 	pass p0
 	{
-		VertexProgram = compile arbvp1 RayTraceVS();
-		FragmentProgram = compile arbfp1 RayTracePS();
-	}
-}
-
-technique fp30
-{
-	pass p0
-	{
-		VertexProgram = compile arbvp1 RayTraceVS();
-		FragmentProgram = compile fp30 RayTracePS();
-	}
-}
-
-technique fp40
-{
-	pass p0
-	{
-		VertexProgram = compile arbvp1 RayTraceVS();
-		FragmentProgram = compile fp40 RayTracePS();
+		VertexProgram = compile gp4vp RayTraceVS();
+		FragmentProgram = compile gp4fp RayTracePS();
 	}
 }
 
