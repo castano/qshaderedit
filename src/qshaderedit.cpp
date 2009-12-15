@@ -1,22 +1,3 @@
-/*
-    QShaderEdit - Simple multiplatform shader editor
-    Copyright (C) 2007 Ignacio Castaño <castano@gmail.com>
-    Copyright (C) 2007 Lars Uebernickel <larsuebernickel@gmx.de>
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-*/
 
 // Include GLEW before anything else.
 #include <GL/glew.h>
@@ -31,6 +12,11 @@
 #include "scene.h"
 #include "document.h"
 #include "glutils.h"
+#include "titlebar.h"
+#include "configdlg.h"
+#include "managerpanel.h"
+
+#include "qglview.h"
 
 #include <QtCore/QFile>
 #include <QtCore/QTimer>
@@ -50,30 +36,84 @@
 #include <QtGui/QMessageBox>
 #include <QtGui/QCloseEvent>
 #include <QtGui/QComboBox>
-#include <QtGui/QLabel>
+#include <QtGui/QSplashScreen>
+#include <QtGui/QPainter>
+#include <QtGui/QBitmap>
 
-namespace {
-#ifdef Q_WS_MAC
-	static const QString s_resourcePath = ":/images/mac";
-#else
-	static const QString s_resourcePath = ":/images/win";
-#endif
-}
+#include <QtGui/QWheelEvent>
+#include <QtGui/QDesktopWidget>
+
+static const QString s_resourcePath = ":/images";
 
 // @@ Find a better name!
 #define ORGANIZATION	"Castano Inc"
 
+/**************************************Peter Komar code, august 2009 *************************/
+QAbout::QAbout(const QPixmap& pixmap, const QString& version, const QString& text, const QColor& color,QWidget * parent)
+        : QLabel(parent)
+        ,m_pixmap(pixmap)
+        ,m_text(text)
+        ,m_color(color)
+{
+    setFrameStyle(QFrame::NoFrame);
+    setWindowFlags(Qt::Popup);
+
+    m_version = QString("%1 : %2").arg(tr("Version")).arg(version);
+
+    if(!m_pixmap.isNull() && !m_version.isEmpty() && !text.isEmpty())
+          init_data();
+    QDesktopWidget *desktop = QApplication::desktop();
+
+    QRect rc = desktop->screenGeometry();
+
+    int x = 3*rc.width()/10;
+    int y = 2 * rc.height() / 10;
+
+    move(x,y);
+}
+
+void QAbout::init_data()
+{
+    //QImage img = m_pixmap.toImage();
+    QPainter p(&m_pixmap);
+
+    QFontMetrics m(QApplication::font());
+    int width = m.width(m_version);
+
+    p.setFont(QApplication::font());
+    p.setPen(QColor(Qt::white));
+    p.drawText(m_pixmap.width()-width-2, 20,m_version);
+
+    int y = 40;
+    int x = m_pixmap.width() - m.width(m_text)-2;
+
+    if(x<0)
+        x = 1;
+    p.drawText(x,y,m_text);
+
+    p.end();
+
+    setPixmap(m_pixmap);
+}
+
+void QAbout::mousePressEvent(QMouseEvent * event )
+{
+    event->accept();
+
+    close();
+}
+
+/**************************************************************************************/
 
 QShaderEdit::QShaderEdit(const QString& fileName) :
 	m_document(NULL)
 {
-	setAcceptDrops(true);
+        setAcceptDrops(true);
 	
 	initGL();
 	
 	createDocument();
-	
-	createEditor();
+        createEditor();
 	createActions();
 	createToolbars();
 	createDockWindows();
@@ -81,17 +121,32 @@ QShaderEdit::QShaderEdit(const QString& fileName) :
 	createStatusbar();
 	
 	loadSettings();
-	
-	show();
+
+        setWindowIcon(QIcon(":/images/ico.png"));
+
 
 	// Make sure the main window is shown before the new file dialog.
 	QApplication::processEvents();
+
+        //hide();
+        //RenderPreview();
+
+        //show();
 	
 	// Open document, or show new file dialog.
-	if (fileName.isEmpty() || !m_document->loadFile(fileName))
-	{
-		m_document->reset(true);
-	}
+        //if (fileName.isEmpty() || !m_document->loadFile(fileName))
+        //{
+        //	m_document->reset(true);
+        //}
+        setFocusPolicy(Qt::NoFocus);
+
+        // Open document, or show new file dialog.
+        if (fileName.isEmpty() || !m_document->loadFile(fileName))
+        {
+                m_document->reset(true);
+        }
+
+        QTimer::singleShot(1,this,SLOT(slotRenderPreview()));
 }
 
 QShaderEdit::~QShaderEdit()
@@ -112,7 +167,18 @@ QSize QShaderEdit::sizeHint() const
 void QShaderEdit::about()
 {
 	// @@ Write a better about dialog.
-	QMessageBox::about(this, tr("About QShaderEdit"), tr("<b>QShaderEdit</b> is a simple shader editor"));
+        //QMessageBox::about(this, tr("About QShaderEdit"), tr("<b>QShaderEdit</b> is a simple shader editor"));
+
+    QString s = tr("Simple shader editor. Provides GPL license.");
+
+    QAbout *about = new QAbout(QPixmap(":/images/about.jpg"),"0.2.0",s);
+    about->show();
+
+    QEventLoop loop;
+
+    loop.exec();
+
+    delete about;
 }
 
 
@@ -160,7 +226,7 @@ void QShaderEdit::onCursorPositionChanged()
 void QShaderEdit::onShaderTextChanged()
 {
 	// Compile after 1.5 seconds of inactivity.
-	m_activityTimer->start(1500);
+        m_activityTimer->start(1500);
 }
 
 void QShaderEdit::onModifiedChanged(bool changed)
@@ -209,12 +275,62 @@ void QShaderEdit::onFileNameChanged(QString fileName)
 	addRecentFile(fileName);
 }
 
+void QShaderEdit::takeEffectPreview(const QString& name_lib)
+{
+    QFile *filelib = new QFile(name_lib);
+
+    if (!filelib->open(QIODevice::ReadOnly))
+       return;
+
+    int idx = name_lib.lastIndexOf('.');
+    QString Ext = name_lib.mid(idx+1);
+    Effect *m_effect = NULL, *m_tmp_effect=NULL;
+
+    m_tmp_effect = m_scenePanel->viewScene()->effect();//save previous effect
+
+    const EffectFactory * m_effectFactory = EffectFactory::factoryForExtension(Ext);
+    if (m_effectFactory != NULL)
+    {
+         Q_ASSERT(m_effectFactory->isSupported());
+         m_effect = m_effectFactory->createEffect(m_glWidget);
+         m_effect->load(filelib);
+         m_effect->build(false);
+    }
+
+    filelib->close();
+    delete filelib;
+
+    m_scenePanel->setEffect(m_effect);
+
+    
+    if (m_effect->isAnimated()) {
+		m_scenePanel->startAnimation();
+	}
+	else {
+		m_scenePanel->stopAnimation();
+	}
+	
+        Ext.insert(0,".");
+	m_scenePanel->setViewUpdatesEnabled(true);
+	m_scenePanel->refresh();
+
+        QString s = name_lib;
+        s.replace(idx,1,"_");
+
+        CreatePixmap(s+".png");
+
+        delete m_effect;
+        m_effect = NULL;
+        m_scenePanel->setEffect(m_tmp_effect);
+        m_scenePanel->refresh();
+}
+
 void QShaderEdit::onEffectCreated()
 {
 	Effect * effect = m_document->effect();
 	Q_ASSERT(effect != NULL);
-	
-	m_editor->setEffect(effect);
+
+        m_editor->setEffect(effect);
 	
 	// Connect effect signals.
 	connect(effect, SIGNAL(infoMessage(QString)), m_messagePanel, SLOT(info(QString)));
@@ -233,8 +349,8 @@ void QShaderEdit::onEffectDeleted()
 {
 	m_scenePanel->setEffect(NULL);
 	m_parameterPanel->setEffect(NULL);
-	m_editor->setEffect(NULL);
-	
+        m_editor->setEffect(NULL);
+
 	updateTechniques();
 	updateActions();
 }
@@ -314,7 +430,7 @@ void QShaderEdit::updateEffectInputs()
 	const int inputNum = effect->getInputNum();
 	for (int i = 0; i < inputNum; i++)
 	{
-		const QTextEdit * textEdit = qobject_cast<const QTextEdit *>(m_editor->widget(i));
+                const QPlainTextEdit * textEdit = qobject_cast<const QPlainTextEdit *>(m_editor->widget(i));
 		
 		if (textEdit != NULL)
 		{
@@ -329,17 +445,16 @@ void QShaderEdit::initGL()
 	if (QGLFormat::hasOpenGL())
 	{
 		QGLFormat format;
-		//format.setRgba(true);
-		//format.setAlpha(false);
+                //format.setRgba(true);
+                //format.setAlpha(false);
 		format.setDepth(true);
-		//format.setStencil(false);	// not for now...
+                //format.setStencil(false);	// not for now...
 		format.setDoubleBuffer(true);
 		
 		m_glWidget = new QGLWidget(format, this);
-		m_glWidget->setVisible(false);
 		m_glWidget->makeCurrent();
 		
-		GLenum err = glewInit();
+                GLenum err = glewInit();
 		if (GLEW_OK != err)
 		{
 			// Problem: glewInit failed, something is seriously wrong.
@@ -348,7 +463,7 @@ void QShaderEdit::initGL()
 			delete m_glWidget;
 			m_glWidget = NULL;
 		}
-		
+
 		if (m_glWidget) m_glWidget->doneCurrent();
 	}
 }
@@ -381,7 +496,7 @@ void QShaderEdit::createEditor()
 
 	
 	// Create editor actions.
-	m_findAction = new QAction(QIcon(s_resourcePath + "/find.png"), tr("&Find"), this);
+	m_findAction = new QAction(tr("&Find"), this);
 	m_findAction->setEnabled(false);
 	m_findAction->setShortcut(tr("Ctrl+F"));
 	connect(m_findAction, SIGNAL(triggered()), m_editor, SLOT(findDialog()));
@@ -430,7 +545,18 @@ void QShaderEdit::createEditor()
 
 void QShaderEdit::createDockWindows()
 {
-	m_messagePanel = new MessagePanel(tr("Messages"), this);
+    /************************* code makus **************************************/
+    m_managerPanel = new ManagerPanel("Manager shaders", this);
+    m_managerPanel->setObjectName("ManagerDock");
+    m_managerPanel->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    addDockWidget(Qt::LeftDockWidgetArea, m_managerPanel);
+    connect(m_managerPanel,SIGNAL(emit_shader_name(QString)),m_document,
+            SLOT(slot_load_from_library_shader(QString)));
+
+    /*******************************************************************************/
+
+        m_messagePanel = new MessagePanel(tr("Messages"), this);
+        m_messagePanel->setTitleBarWidget(new TitleBar(m_messagePanel));
 	m_messagePanel->setObjectName("MessagesDock");
 	m_messagePanel->setAllowedAreas(Qt::BottomDockWidgetArea);
 	m_messagePanel->setVisible(false);
@@ -439,15 +565,18 @@ void QShaderEdit::createDockWindows()
 
 	m_scenePanel = new ScenePanel(tr("Scene"), this, m_glWidget);
 	m_scenePanel->setObjectName("SceneDock");
+        m_scenePanel->setTitleBarWidget(new TitleBar(m_scenePanel));
 	m_scenePanel->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 	addDockWidget(Qt::RightDockWidgetArea, m_scenePanel);
 	
 	m_parameterPanel = new ParameterPanel(tr("Parameters"), this);
 	m_parameterPanel->setObjectName("ParameterDock");
+        m_parameterPanel->setTitleBarWidget(new TitleBar(m_parameterPanel));
 	m_parameterPanel->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 	addDockWidget(Qt::RightDockWidgetArea, m_parameterPanel);
 	connect(m_parameterPanel, SIGNAL(parameterChanged()), m_document, SLOT(onParameterChanged()));
 	connect(m_parameterPanel, SIGNAL(parameterChanged()), this, SLOT(onParameterChanged()));
+
 }
 
 
@@ -484,6 +613,45 @@ void QShaderEdit::createActions()
 	m_clearRecentAction = new QAction(tr("&Clear Recent"), this);
 	m_clearRecentAction->setEnabled(false);
 	connect(m_clearRecentAction, SIGNAL(triggered()), this, SLOT(clearRecentFiles()));
+
+        /********************Peter Komar code, august 2009 *****************************/
+         //create menu styles
+        QAction *ac = new QAction(tr("Light"),this);
+        ac->setObjectName("light");
+        ac->setCheckable(true);
+        connect(ac, SIGNAL(triggered()), this, SLOT(slot_styles()));
+        stylesActions.append(ac);
+        ac = new QAction(tr("Dark"),this);
+        ac->setObjectName("dark");
+        ac->setCheckable(true);
+        connect(ac, SIGNAL(triggered()), this, SLOT(slot_styles()));
+        stylesActions.append(ac);
+
+
+        QString path1 = "styles";
+
+        find_data_dir(path1);
+
+        QDir dir(path1);
+        dir.setFilter(QDir::Files | QDir::NoSymLinks);
+        dir.setSorting(QDir::Size | QDir::Reversed);
+
+        QFileInfoList list = dir.entryInfoList();
+
+        for (int i = 0; i < list.size(); ++i) {
+            QFileInfo fileInfo = list.at(i);
+
+         if(fileInfo.suffix() == "qss")
+         {
+             ac = new QAction(fileInfo.baseName(),this);
+             ac->setObjectName(fileInfo.baseName());
+             ac->setCheckable(true);
+             connect(ac, SIGNAL(triggered()), this, SLOT(slot_styles()));
+             stylesActions.append(ac);
+         }
+     }
+
+        /*************************************************************/
 }
 
 void QShaderEdit::createMenus()
@@ -559,23 +727,35 @@ void QShaderEdit::createMenus()
 	editMenu->addAction(m_findNextAction);
 	editMenu->addAction(m_findPreviousAction);
 	editMenu->addAction(m_gotoAction);
-	
+
+        editMenu->addSeparator();
+        editMenu->addAction(tr("Options..."),this, SLOT(slotConfigureEditor()));
+
 	QMenu * viewMenu = menuBar()->addMenu(tr("&View"));
 
+	viewMenu->addAction(m_managerPanel->toggleViewAction());
 	viewMenu->addAction(m_scenePanel->toggleViewAction());
 	viewMenu->addAction(m_parameterPanel->toggleViewAction());
 	viewMenu->addAction(m_messagePanel->toggleViewAction());
 	
 	viewMenu->addSeparator();
+
+        /********************************Peter Komar code, august 2009 ************************/
+        QMenu *sub = viewMenu->addMenu(tr("Styles"));
+        QActionGroup *viewGroup = new QActionGroup(viewMenu);
+
+        for(int i=0;i<stylesActions.size();i++)
+        {
+            sub->addAction(stylesActions.at(i));
+            viewGroup->addAction(stylesActions.at(i));
+        }
+
+        viewMenu->addSeparator();
+        /*****************************************************************************/
 	
 	viewMenu->addAction(m_fileToolBar->toggleViewAction());
 	viewMenu->addAction(m_techniqueToolBar->toggleViewAction());
-	
-	// On KDE this should be under the "Preferences" menu.
-	//QMenu * toolbarMenu = viewMenu->addMenu(tr("&Toolbars"));
-	//toolbarMenu->addAction(m_fileToolBar->toggleViewAction());
-	//toolbarMenu->addAction(m_techniqueToolBar->toggleViewAction());
-	
+			
 	Q_ASSERT( m_scenePanel != NULL );
 	menuBar()->addMenu(m_scenePanel->menu());
 	
@@ -735,15 +915,51 @@ void QShaderEdit::addRecentFile(QString fileName)
 
 	settings.setValue("recentFileList", files);
 
-	/*foreach (QWidget *widget, QApplication::topLevelWidgets()) {
-		MainWindow *mainWin = qobject_cast<MainWindow *>(widget);
-		if (mainWin)
-			mainWin->updateRecentFileActions();
-	}*/
-	
 	// Only a single main window.
 	updateRecentFileActions();
 }
+
+/************************************* code makus *******************************************/
+
+void QShaderEdit::slot_styles()
+{
+    QObject* obj = sender();
+
+    if(!obj)
+        return;
+
+    QString sname = obj->objectName();
+    QString path = "styles";
+
+    find_data_dir(path);
+    path+="/";
+
+    if(sname.isEmpty())
+        return;
+
+    for(int i=0; i< stylesActions.size();i++)
+    {
+        QAction *ac = stylesActions.at(i);
+
+        if(sname == ac->objectName())
+        {
+            if( i <= 1 )
+                sname = ":/styles/"+sname+".qss";
+            else
+                sname = path+sname+".qss";
+        }
+    }
+
+    QFile file(sname);
+    file.open(QIODevice::ReadOnly | QIODevice::Text);
+    QTextStream ts(&file);
+    sname = ts.readAll();
+
+    qApp->setStyleSheet(sname);
+    QApplication::processEvents();
+}
+
+/********************************************************************************************/
 
 
 /*virtual*/ void QShaderEdit::closeEvent(QCloseEvent * event)
@@ -839,6 +1055,39 @@ void QShaderEdit::loadSettings()
 	if (maximize) {
 		setWindowState(windowState() | Qt::WindowMaximized);
 	}
+
+        /********************************Peter Komar code, august 2009 ***********************/
+
+        QString path = "styles";
+        find_data_dir(path);
+        path += "/";
+        QString styleSheet = pref.value("StyleSheet", "light").toString();
+        for(int i=0; i< stylesActions.size();i++)
+        {
+            QAction *ac = stylesActions.at(i);
+
+            QString s1 = ac->objectName();
+
+            if(styleSheet == s1)
+            {
+                ac->setChecked(true);
+                if( i <= 1 )
+                    styleSheet = ":/styles/"+styleSheet+".qss";
+                else
+                     styleSheet = path+styleSheet+".qss";
+
+                break;
+
+            }
+        }
+
+        QFile file(styleSheet);
+        file.open(QIODevice::ReadOnly | QIODevice::Text);
+        QTextStream ts(&file);
+        styleSheet = ts.readAll();
+
+        qApp->setStyleSheet(styleSheet);
+        /**************************************************************************************/
 }
 
 void QShaderEdit::saveSettings()
@@ -860,5 +1109,146 @@ void QShaderEdit::saveSettings()
 	pref.setValue("lastEffect", Document::lastEffect());
 	pref.setValue("lastScene", SceneFactory::lastFile());
 	pref.setValue("lastParameterPath", ParameterPanel::lastPath());
+
+        /****************************** code makus **********************************/
+        for(int i=0; i< stylesActions.size();i++)
+        {
+            QAction *ac = stylesActions.at(i);
+
+            if(ac->isChecked())
+            {
+                pref.setValue("StyleSheet", ac->objectName());
+                break;
+            }
+        }
+        /********************************************************************************/
+}
+
+void QShaderEdit::CreatePixmap(const QString& name)
+{
+    //m_scenePanel->ViewScene()->updateGL();
+    QImage imageToSave = m_scenePanel->viewScene()->takeSnapshot();
+
+    if(imageToSave.isNull())
+    {
+       imageToSave.load(":/images/notmb.png","PNG");
+       imageToSave.save(name,"PNG",100);
+       return;
+   }
+
+    QImage imageTransparentBackground(imageToSave.size(),QImage::Format_ARGB32_Premultiplied);
+    imageTransparentBackground.fill(Qt::transparent);
+    int max_j = 0;
+    int min_j = imageToSave.width();
+    int max_i = 0;
+    int min_i = imageToSave.height();
+
+    for(int i=0; i<imageToSave.height();i++)//create image with transparent background
+        for(int j=0; j<imageToSave.width();j++)
+        {
+            QRgb pix = imageToSave.pixel(j,i);
+
+            if(pix != qRgb(55,55,55))
+            {
+                imageTransparentBackground.setPixel(j,i,pix);
+
+                //find size object in image
+                if(i<min_i)
+                    min_i = i;
+                if(i>max_i)
+                    max_i = i;
+
+                if(j<min_j)
+                    min_j = j;
+                if(j>max_j)
+                    max_j = j;
+            }
+        }
+
+    //remove excrescent area, leave only object
+    QImage img(max_j-min_j+2, max_i-min_i+2,QImage::Format_ARGB32_Premultiplied);
+
+    if(img.isNull())
+    {
+       img.load(":/images/notmb.png","PNG");
+       img.save(name,"PNG",100);
+       return;
+    }
+
+    img.fill(Qt::transparent);
+
+    for(int i=0; i<imageTransparentBackground.height();i++)
+     for(int j=0; j<imageTransparentBackground.width();j++)
+     {
+       if((i>min_i) && (i<max_i) && (j>min_j) && (j<max_j))
+       {
+         QRgb pix = imageTransparentBackground.pixel(j,i);
+         img.setPixel(j-min_j,i-min_i,pix);
+       }
+      }
+
+    imageToSave = img.scaled(img.width()/1.5,img.height(),Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+
+   imageToSave.save(name,"PNG",100);
+}
+
+void QShaderEdit::slotConfigureEditor()
+{
+    ConfigDlg *dlg = new ConfigDlg(this);
+
+    dlg->exec();
+
+    if(dlg->b_update_data)
+        m_editor->updateHighlighter();
+
+    delete dlg;
+}
+
+void QShaderEdit::find_data_dir(QString& path)
+{
+   QString fpath = QApplication::applicationDirPath();
+#if defined(Q_OS_DARWIN)
+    fpath += "/"+path; //I dont't now a Mac system's, please change this, if this wrong.
+#elif defined(Q_OS_WIN32)
+    fpath += "/"+path;
+#else
+    fpath = QDir::homePath();
+    fpath += "/qshaderedit/"+path;
+#endif
+    path = fpath;
+}
+
+
+void QShaderEdit::slotRenderPreview()
+{
+    QSplashScreen *m_splash_scrren = new QSplashScreen(QPixmap(":/images/about.jpg"));
+    m_splash_scrren->show();
+    m_splash_scrren->showMessage(tr("Initialise library shaders... "),Qt::AlignRight,QColor(Qt::white));
+     QString path_shaders = "library";
+
+    find_data_dir(path_shaders);
+
+     QDir dir(path_shaders);
+     dir.setFilter(QDir::Files | QDir::NoSymLinks);
+     dir.setSorting(QDir::Size | QDir::Reversed);
+     dir.setNameFilters(QStringList()<< "*.glsl" << "*.cgfx" << "*.asm");
+
+     QFileInfoList list = dir.entryInfoList();
+
+     for (int i = 0; i < list.size(); ++i) {
+         QFileInfo fileInfo = list.at(i);
+
+         QString s = path_shaders+"/"+fileInfo.baseName()+"_"
+                     + fileInfo.suffix()+".png";
+
+         if(!QFile::exists(s))
+             takeEffectPreview(fileInfo.filePath());
+     }
+
+     m_managerPanel->loadShaders();
+
+     m_splash_scrren->finish(this);
+     delete m_splash_scrren;
 }
 

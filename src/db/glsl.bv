@@ -1,0 +1,91 @@
+gl_Position
+gl_PointSize
+gl_ClipVertex
+gl_FragCoord
+gl_FrontFacing
+gl_FragColor
+gl_FragData[gl_MaxDrawBuffers]
+gl_FragDepth
+gl_Color
+gl_SecondaryColor
+gl_Normal
+gl_Vertex
+gl_MultiTexCoord0
+gl_MultiTexCoord1
+gl_MultiTexCoord2
+gl_MultiTexCoord3
+gl_MultiTexCoord4
+gl_MultiTexCoord5
+gl_MultiTexCoord6
+gl_MultiTexCoord7
+gl_FogCoord
+gl_MaxLights = 8 // GL 1.0
+gl_MaxClipPlanes = 6 // GL 1.0
+gl_MaxTextureUnits = 2 // GL 1.3
+gl_MaxTextureCoords = 2 // ARB_fragment_program
+gl_MaxVertexAttribs = 16 // ARB_vertex_shader
+gl_MaxVertexUniformComponents = 512 // ARB_vertex_shader
+gl_MaxVaryingFloats = 32 // ARB_vertex_shader
+gl_MaxVertexTextureImageUnits = 0 // ARB_vertex_shader
+gl_MaxCombinedTextureImageUnits = 2 // ARB_vertex_shader
+gl_MaxTextureImageUnits = 2 // ARB_fragment_shader
+gl_MaxFragmentUniformComponents = 64 // ARB_fragment_shader
+gl_MaxDrawBuffers = 1 // proposed ARB_draw_buffers
+gl_ModelViewMatrix
+gl_ProjectionMatrix
+gl_ModelViewProjectionMatrix
+gl_TextureMatrix[gl_MaxTextureCoords]
+gl_NormalMatrix // transpose of the inverse of the upper leftmost 3x3 of gl_ModelViewMatrix
+gl_ModelViewMatrixInverse
+gl_ProjectionMatrixInverse
+gl_ModelViewProjectionMatrixInverse
+gl_TextureMatrixInverse[gl_MaxTextureCoords]
+gl_ModelViewMatrixTranspose
+gl_ProjectionMatrixTranspose
+gl_ModelViewProjectionMatrixTranspose
+gl_TextureMatrixTranspose[gl_MaxTextureCoords]
+gl_ModelViewMatrixInverseTranspose
+gl_ProjectionMatrixInverseTranspose
+gl_ModelViewProjectionMatrixInverseTranspose
+gl_TextureMatrixInverseTranspose[gl_MaxTextureCoords]
+gl_NormalScale
+gl_DepthRangeParameters{near;far;float diff}
+gl_DepthRange{near;far;diff}
+gl_ClipPlane[gl_MaxClipPlanes]
+gl_PointParameters{size;sizeMin;sizeMax;fadeThresholdSize;distanceConstantAttenuation;distanceLinearAttenuation;distanceQuadraticAttenuation}
+gl_Point{size;sizeMin;sizeMax;fadeThresholdSize;distanceConstantAttenuation;distanceLinearAttenuation;distanceQuadraticAttenuation}
+gl_MaterialParameters{emission;ambient;diffuse;specular;shininess}
+gl_FrontMaterial{emission;ambient;diffuse;specular;shininess}
+gl_BackMaterial{emission;ambient;diffuse;specular;shininess}
+gl_LightSourceParameters{ambient;diffuse;specular;position;halfVector;spotDirection;spotExponent;spotCutoff;spotCosCutoff;constantAttenuation;linearAttenuation;quadraticAttenuation}
+gl_LightSource{ambient;diffuse;specular;position;halfVector;spotDirection;spotExponent;spotCutoff;spotCosCutoff;constantAttenuation;linearAttenuation;quadraticAttenuation}
+gl_LightModelParameters{ambient;}
+gl_LightModel{ambient;}
+gl_LightModelProducts{sceneColor;}
+gl_FrontLightModelProduct{sceneColor;}
+gl_BackLightModelProduct{sceneColor;}
+gl_LightProducts{ambient;diffuse;specular;}
+gl_FrontLightProduct{ambient;diffuse;specular;}
+gl_BackLightProduct{ambient;diffuse;specular;}
+gl_TextureEnvColor[gl_MaxTextureUnits]
+gl_EyePlaneS[gl_MaxTextureCoords]
+gl_EyePlaneT[gl_MaxTextureCoords]
+gl_EyePlaneR[gl_MaxTextureCoords]
+gl_EyePlaneQ[gl_MaxTextureCoords]
+gl_ObjectPlaneS[gl_MaxTextureCoords]
+gl_ObjectPlaneT[gl_MaxTextureCoords]
+gl_ObjectPlaneR[gl_MaxTextureCoords]
+gl_ObjectPlaneQ[gl_MaxTextureCoords]
+gl_FogParameters{color;density;start;end;scale;}
+gl_Fog{color;density;start;end;scale;}
+gl_FrontColor
+gl_BackColor
+gl_FrontSecondaryColor
+gl_BackSecondaryColor
+gl_TexCoord[] // at most will be gl_MaxTextureCoords
+gl_FogFragCoord
+gl_Color
+gl_SecondaryColor
+gl_TexCoord[] // at most will be gl_MaxTextureCoords
+gl_FogFragCoord
+gl_PointCoord

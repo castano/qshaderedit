@@ -10,7 +10,7 @@ REQUIREMENTS
 
 You will need at least:
 
-* Qt 4.1
+* Qt 4.4, recommended Qt4.5
 * GLEW 1.3
 * cmake 2.4
 
@@ -32,6 +32,12 @@ that will generate native makefiles or projects. For example, on unix platforms 
 to run make.
 
 $ cmake && make
+
+or
+
+1.qmake
+2.make
+3.sudo make install
 
 For more info about cmake, look at cmake's documentation.
 

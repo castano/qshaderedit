@@ -1,0 +1,85 @@
+void //for functions that do not return a value
+bool //a conditional type, taking on values of true or false
+int //a signed integer
+float //a single floating-point scalar
+vec2 //a two component floating-point vector
+vec3 //a three component floating-point vector
+vec4 //a four component floating-point vector 
+bvec2 //a two component Boolean vector
+bvec3 //a three component Boolean vector
+bvec4 //a four component Boolean vector
+ivec2 //a two component integer vector
+ivec3 //a three component integer vector
+ivec4 //a four component integer vector
+mat2 //a 2×2 floating-point matrix 
+mat3 //a 3×3 floating-point matrix
+mat4 //a 4×4 floating-point matrix
+mat2x2 //same as a mat2
+mat2x3 //a floating-point matrix with 2 columns and 3 rows
+mat2x4 //a floating-point matrix with 2 columns and 4 rows
+mat3x2 //a floating-point matrix with 3 columns and 2 rows
+mat3x3 //same as a mat3
+mat3x4 //a floating-point matrix with 3 columns and 4 rows
+mat4x2 //a floating-point matrix with 4 columns and 2 rows
+mat4x3 //a floating-point matrix with 4 columns and 3 rows
+mat4x4 //same as a mat4
+sampler1D //a handle for accessing a 1D texture
+sampler2D //a handle for accessing a 2D texture
+sampler3D //a handle for accessing a 3D texture
+samplerCube //a handle for accessing a cube mapped texture
+sampler1DShadow //a handle for accessing a 1D depth texture with comparison
+sampler2DShadow //a handle for accessing a 2D depth texture with comparison
+const //a compile-time constant, or a function parameter that is read-only
+attribute //linkage between a vertex shader and OpenGL for per-vertex data
+uniform //value does not change across the primitive being processed, uniforms form the linkage between a shader, OpenGL, and the application
+varying //linkage between a vertex shader and a fragment shader for interpolated data
+centroid varying //linkage between a vertex shader and a fragment shader for interpolated data
+in //for function parameters passed into a function
+out //for function parameters passed back out of a function, but not initialized for use when passed in
+inout //for function parameters passed both into and out of a function
+asm //experimental, maybe not suported
+class //experimental, maybe not suported
+goto //experimental, maybe not suported
+inline //experimental, maybe not suported
+long //experimental, maybe not suported
+lowp //experimental, maybe not suported
+input //experimental, maybe not suported
+hvec2 //experimental, maybe not suported
+sizeof //experimental, maybe not suported
+union //experimental, maybe not suported
+switch //experimental, maybe not suported
+short //experimental, maybe not suported
+enum //experimental, maybe not suported
+default //experimental, maybe not suported
+volatile //experimental, maybe not suported
+half //experimental, maybe not suported
+public //experimental, maybe not suported
+fixed //experimental, maybe not suported
+precision //experimental, maybe not suported
+dvec3 //experimental, maybe not suported
+dvec4 //experimental, maybe not suported
+fvec2 //experimental, maybe not suported
+fvec3 //experimental, maybe not suported
+fvec4 //experimental, maybe not suported
+static //experimental, maybe not suported
+extern //experimental, maybe not suported
+external //experimental, maybe not suported
+interface //experimental, maybe not suported
+double //experimental, maybe not suported
+unsigned //experimental, maybe not suported
+template //experimental, maybe not suported
+this //experimental, maybe not suported
+packed //experimental, maybe not suported
+noinline //experimental, maybe not suported
+mediump //experimental, maybe not suported
+highp //experimental, maybe not suported
+output //experimental, maybe not suported
+hvec3 //experimental, maybe not suported
+cast //experimental, maybe not suported
+using //experimental, maybe not suported
+hvec4 //experimental, maybe not suported
+dvec2 //experimental, maybe not suported
+sampler2DRect //experimental, maybe not suported
+namespace //experimental, maybe not suported
+sampler3DRect //experimental, maybe not suported
+sampler2DRectShadow //experimental, maybe not suported
