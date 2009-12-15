@@ -24,7 +24,9 @@
 // Include GLEW before anything else.
 #include <GL/glew.h>
 
+
 #include <QtOpenGL/QGLWidget>
+#include <QtGui/QImage>
 
 
 class QRectF;
@@ -50,6 +52,12 @@ public:
 
 	bool isWireframe() const;
 	bool isOrtho() const;
+
+        /************* code makus **********/
+        QImage takeSnapshot();
+        Effect* effect() const { return m_effect; };
+        /***********************************/
+
 	
 public slots:
 	
@@ -89,6 +97,7 @@ private:
 	
 	bool m_wireframe;
 	bool m_ortho;
+
 };
 
 #endif // QGLVIEW_H

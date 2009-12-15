@@ -18,8 +18,8 @@ fi
 
 
 help=false
-build="Debug"	# release
-prefix=/usr/local
+build="Release"
+prefix=/usr
 
 # Parse the args
 for i in "$@"

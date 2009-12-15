@@ -1,21 +1,3 @@
-/*
-    QShaderEdit - Simple multiplatform shader editor
-    Copyright (C) 2007 Ignacio Castaño <castano@gmail.com>
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-*/
 
 #include "document.h"
 #include "effect.h"
@@ -29,10 +11,10 @@
 
 namespace
 {
-	static QString strippedName(const QString & fileName)
+        static QString strippedName(const QString & fileName)
 	{
 		return QFileInfo(fileName).fileName();
-	}
+        }
 	
 	static QString strippedName(const QFile & file)
 	{
@@ -143,6 +125,54 @@ bool Document::canLoadFile(const QString & fileName) const
 	
 	return (effectFactory != NULL) && m_effectFactory->isSupported();
 }
+
+/*************************Peter Komar code, august 2009 ************************************/
+void Document::slot_load_from_library_shader(const QString& name_lib)
+{
+    if (!close())
+        {
+                // User cancelled the operation.
+                return;
+        }
+
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
+    QFile *filelib = new QFile(name_lib);
+
+    if (!filelib->open(QIODevice::ReadOnly))
+        {
+                QMessageBox::critical(m_owner, tr("Error"), tr("Can't open library."));
+                return;
+        }
+
+    int idx = name_lib.lastIndexOf('.');
+    QString Ext = name_lib.mid(idx+1);
+
+    m_effectFactory = EffectFactory::factoryForExtension(Ext);
+        if (m_effectFactory != NULL)
+        {
+                Q_ASSERT(m_effectFactory->isSupported());
+                m_effect = m_effectFactory->createEffect(m_glWidget);
+                Q_ASSERT(m_effect != NULL);
+
+                connect(m_effect, SIGNAL(built(bool)), this, SIGNAL(effectBuilt(bool)));
+
+                m_effect->load(filelib);
+
+                emit effectCreated();
+
+                build(false);
+        }
+
+        emit titleChanged(name_lib.mid(name_lib.lastIndexOf("/")+1,idx));
+
+        filelib->close();
+        delete filelib;
+
+    QApplication::restoreOverrideCursor();
+}
+
+/**************************************************************************/
 
 bool Document::loadFile(const QString & fileName)
 {
@@ -261,7 +291,7 @@ void Document::reset(bool startup)
 void Document::open()
 {
 	// Find supported effect types.
-	QStringList effectTypes;
+        QStringList effectTypes;
 	QStringList effectExtensions;
 	foreach (const EffectFactory * factory, EffectFactory::factoryList())
 	{
@@ -279,7 +309,7 @@ void Document::open()
 	{
 		QMessageBox::critical(m_owner, tr("Error"), tr("No effect files supported"), QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
 		return;
-	}
+        }
 
 	//QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), tr("."), effectTypes.join(";"));
 	QString fileName = QFileDialog::getOpenFileName(m_owner, tr("Open File"),
@@ -454,6 +484,7 @@ bool Document::saveEffect()
 	emit titleChanged(title());
 	
 	//updateActions();				// qshaderedit listens to modifiedChanged
+        return true;
 }
 
 

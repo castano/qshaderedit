@@ -45,12 +45,20 @@ public:
 	
 	void startAnimation();
 	void stopAnimation();
+
+        /**************Peter Komar code, august 2009 **************************/
+        SceneView* viewScene() const{ return m_view; };
+        /*****************************************************/
 	
 	
 public slots:
 	
 	void refresh();
-	void selectScene();	
+        void selectScene();
+
+        /*********************** code makus **************************************/
+        void slot_snapshot();
+        /*************************************************************************/
 	
 private:
 

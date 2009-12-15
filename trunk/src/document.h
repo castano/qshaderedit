@@ -64,6 +64,9 @@ public slots:
 	bool save();
 	void saveAs();
 	bool close();
+        /**************Peter Komar code, august 2009 ***********************/
+        void slot_load_from_library_shader(const QString& name_lib);
+        /*************************************************/
 	
 	void build(bool threaded = true);
 	
@@ -89,6 +92,7 @@ signals:
 	void effectDeleted();
 	void effectBuilding();
 	void effectBuilt(bool);
+
 	
 private:	
 	

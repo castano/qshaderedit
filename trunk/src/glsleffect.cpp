@@ -1,22 +1,3 @@
-/*
-    QShaderEdit - Simple multiplatform shader editor
-    Copyright (C) 2007 Ignacio Castaño <castano@gmail.com>
-    Copyright (C) 2007 Lars Uebernickel <larsuebernickel@gmx.de>
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-*/
 
 #include "effect.h"
 #include "messagepanel.h"
@@ -366,8 +347,7 @@ public:
 		qDeleteAll(m_parameterArray);
 	}
 
-
-	// Load the effect from the given file.
+        // Load the effect from the given file.
 	virtual void load(QFile * file)
 	{
 		Q_ASSERT(file != NULL);
@@ -1288,17 +1268,23 @@ class GLSLEffectFactory : public EffectFactory
 		Highlighter::Rule rule;
 
 		rule.type = Highlighter::Keyword;
-		rule.pattern = QRegExp("\\b(if|else|for|while|do|struct|break|continue|discard|return|true|false)\\b");
+                /*rule.pattern = QRegExp("\\b(if|else|for|while|do|struct|break|continue|discard|return|true|false)\\b");*/
+                QString s = Highlighter::getSyntaxKeyWords(extension(),"kw");
+                if(!s.isEmpty())
+                    rule.pattern = QRegExp("\\b("+s+")\\b");
 		rules.append(rule);
 
 		rule.type = Highlighter::DataType;
-		rule.pattern = QRegExp(
+                /*rule.pattern = QRegExp(
 			"\\b(void|float|vec[2-4]|int|ivec[2-4]|bool|bvec[2-4]|mat[2-4]|sampler[1-3]D|"
-			"samplerCube|sampler[1-2]DShadow|uniform|attribute|varying|const|in|out|inout)\\b");
+                        "samplerCube|sampler[1-2]DShadow|uniform|attribute|varying|const|in|out|inout)\\b");*/
+                s = Highlighter::getSyntaxKeyWords(extension(),"dt");
+                if(!s.isEmpty())
+                    rule.pattern = QRegExp("\\b("+s+")\\b");
 		rules.append(rule);
 
 		rule.type = Highlighter::BuiltinVar;
-		rule.pattern = QRegExp(
+                /*rule.pattern = QRegExp(
 			"\\b(gl_(Position|PointSize|ClipVertex|FragCoord|FragFacing|FragColor|"
 			"FragData|FragDepth|Color|SecondaryColor|Normal|Vertex|MultiTexCoord[0-7]|FogColor|"
 			"MaxLights|MaxClipPlanes|MaxTextureUnits|MaxTextureCoords|MaxVertexAttributes|"
@@ -1312,18 +1298,26 @@ class GLSLEffectFactory : public EffectFactory
 			"LightModelParameters|LightModel|LightModelProducts|FrontLightModelProduct|BackLightModelProduct|LightProducts|"
 			"FrontLightProduct|BackLightProduct|TextureEnvColor|EyePlaneS|EyePlaneT|EyePlaneR|EyePlaneQ|ObjectPlaneS|ObjectPlaneT|"
 			"ObjectPlaneR|ObjectPlaneQ|FogParameters|Fog|FrontColor|BackColor|FrontSecondaryColor|BackSecondaryColor|TexCoord|FogFragCoord|Color|"
-			"SecondaryColor))\\b");
+                        "SecondaryColor))\\b");*/
+                s = Highlighter::getSyntaxKeyWords(extension(),"bv");
+                if(!s.isEmpty())
+                    rule.pattern = QRegExp("\\b("+s+")\\b");
 		rules.append(rule);
 
 		rule.type = Highlighter::BuiltinFunction;
-		rule.pattern = QRegExp(
+                /*rule.pattern = QRegExp(
 			"\\b(radians|degrees|sin|cos|tan|asin|acos|atan|pow|exp|log|exp2|log2|sqrt|inversesqrt|"
 			"abs|sign|floor|ceil|fract|mod|min|max|clamp|mix|step|smoothstep|length|distance|dot|cross|normalize|ftransform|"
 			"faceforward|reflect|refract|matrixCompMult|lessThan|lessThenEqual|greaterThan|greaterThanEqual|equal|notEqual|"
 			"any|all|not|texture1D|texture1DProj|texture1DLod|texture1DProjLod|texture2D|texture2DProj|texture2DLod|"
 			"texture2DProjLod|texture3D|texture3DProj|texture3DLod|texture3DProjLod|textureCube|textureCubeLod|shadow1D|"
 			"shadow2D|shadow1DProj|shadow2DProj|shadow1DLod|shadow2DLod|shadow1DProjLod|shadow2DProjLod|dFdx|dFdy|fwidth|"
-			"noise1|noise2|noise3|noise4)\\b");
+                        "noise1|noise2|noise3|noise4)\\b");*/
+
+                s = Highlighter::getSyntaxKeyWords(extension(),"bf");
+                if(!s.isEmpty())
+                    rule.pattern = QRegExp("\\b("+s+")\\b");
+
 		rules.append(rule);
 
 		rule.type = Highlighter::Number;

@@ -68,10 +68,10 @@ void MessagePanel::log(const QString& s, Type type, int inputNumber, int line, i
 	QTextCharFormat format;
 	switch (type) {
 		case Info:
-			format.setForeground(QColor(0, 160, 0));
+                        format.setForeground(QColor(0, 0, 0));
 			break;
 		case Warning:
-			format.setForeground(QColor(160, 160, 0));
+                        format.setForeground(QColor(0, 0, 255));
 			break;
 		case Error:
 			format.setForeground(QColor(160, 0, 0));
