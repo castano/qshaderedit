@@ -178,7 +178,7 @@ static double tex[2][2][2] =
 	{ {0.0, 1.0}, {1.0, 1.0} }
 };
 
-static void teapot( GLint grid, GLdouble /*scale*/, GLenum type )
+static void teapot( GLint grid, GLdouble scale, GLenum type )
 {
 	double p[4][4][3], q[4][4][3], r[4][4][3], s[4][4][3];
 	long i, j, k, l;

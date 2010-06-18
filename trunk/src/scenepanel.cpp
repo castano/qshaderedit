@@ -22,32 +22,16 @@
 #include <QtCore/QTimer>
 #include <QtGui/QMenu>
 #include <QtGui/QAction>
-#include <QtGui/QVBoxLayout>
-#include <QtGui/QHBoxLayout>
-#include <QtGui/QCheckBox>
-#include <QtGui/QPushButton>
-#include <QtGui/QFileDialog>
+
 #include "qglview.h"
 #include "scene.h"
-#include <QtGui/QImage>
-#include <QtGui/QBitmap>
 
 
 ScenePanel::ScenePanel(const QString & title, QWidget * parent /*= 0*/, QGLWidget * shareWidget /*= 0*/, Qt::WFlags flags /*= 0*/) :
 	QDockWidget(title, parent, flags), m_view(NULL)
 {
-
-        m_view = new SceneView(this, shareWidget);
-
-        QVBoxLayout *vl = new QVBoxLayout;
-
-        QPushButton *pbtn = new QPushButton(tr("Snapshot"));
-        connect(pbtn,SIGNAL(clicked()),this,SLOT(slot_snapshot()));
-
-        vl->addWidget(pbtn,0,Qt::AlignLeft | Qt::AlignTop);
-        m_view->setLayout(vl);
-
-        setWidget(m_view);
+	m_view = new SceneView(this, shareWidget);
+	setWidget(m_view);
 	
 	m_animationTimer = new QTimer(this);
 	connect(m_animationTimer, SIGNAL(timeout()), this, SLOT(refresh()));
@@ -69,7 +53,7 @@ ScenePanel::ScenePanel(const QString & title, QWidget * parent /*= 0*/, QGLWidge
 		sceneSelectionMenu->addAction(action);
 	}
 	
-        m_renderMenu = m_sceneMenu->addMenu(tr("Render Options"));
+	m_renderMenu = m_sceneMenu->addMenu(tr("Render Options"));
 	
 	m_wireframeAction = new QAction(tr("Wireframe"), this);
 	m_wireframeAction->setCheckable(true);
@@ -129,19 +113,5 @@ void ScenePanel::selectScene()
 		Q_ASSERT(factory != NULL);
 		m_view->setScene(factory->createScene());
 	}
-}
-
-void ScenePanel::slot_snapshot()
-{
-    QImage img = m_view->takeSnapshot();
-
-    QString s = QFileDialog::getSaveFileName(this,tr("Save picture"), QDir::homePath(),"Picture files (*.png)");
-
-    if(s != "" )
-    {
-        if(!s.endsWith(".png"))
-            s+=".png";
-        img.save(s,"PNG");
-    }
 }
 

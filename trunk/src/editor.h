@@ -21,17 +21,15 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
-#include <QtGui/QToolBox>
+#include <QtGui/QTabWidget>
 #include <QtGui/QTextDocument>
-#include <QtGui/QPlainTextEdit>
+#include <QtGui/QTextEdit>
 
+class QTextEdit;
 
 class Effect;
-class Highlighter;
-class SourceEdit;
-class Completer;
 
-class Editor : public QToolBox
+class Editor : public QTabWidget
 {
 	Q_OBJECT
 public:
@@ -40,19 +38,14 @@ public:
 	
 	void setEffect(Effect * effect);
 	
-        QPlainTextEdit * addEditor(const QString & name, const Effect * effect, int i);
-        QPlainTextEdit * currentTextEdit() const;
+	QTextEdit * addEditor(const QString & name, const Effect * effect, int i);
+	QTextEdit * currentTextEdit() const;
 
 	int line() const;
 	int column() const;
-
+	
 	bool isModified() const;
 	void setModified(bool b);
-
-        /************************Peter Komar code, august 2009 ***********************/
-        void updateHighlighter();
-        /***************************************************************/
-
 	
 public slots:
 	void undo();
@@ -81,8 +74,8 @@ signals:
 	void modifiedChanged(bool modified);
 	
 protected:
-        virtual void  itemInserted(int index);
-        virtual void itemRemoved(int index);
+	virtual void tabInserted(int index);
+	virtual void tabRemoved(int index);
 
 	bool find(const QString & text, QTextDocument::FindFlags flags=0);
 	
@@ -98,68 +91,29 @@ private:
 	// @@ This should be pdata, so that QTextDocument is not included in the header
 	QString lastSearch;
 	QTextDocument::FindFlags lastSearchOptions;
-        //Highlighter *m_highlighter;
-        //SourceEdit *m_sourcer;
+	
 };
 
 
-class SourceEdit : public QPlainTextEdit
+class SourceEdit : public QTextEdit
 {
 Q_OBJECT
 
 public:
 	SourceEdit(QWidget * parent = 0);
-        ~SourceEdit();
-    void lineNumberAreaPaintEvent(QPaintEvent *event);
-    int lineNumberAreaWidth();
-
-    void setHighlighter(Highlighter *highlighter);
-    Highlighter* highlighter() const;
-    void setCompleter(Completer* completer);
-    Completer* completer() const { return m_completer; };
 
 protected:
 	void keyPressEvent(QKeyEvent * event);
-        //void paintEvent(QPaintEvent * event);
-        void resizeEvent(QResizeEvent *event);
+	void paintEvent(QPaintEvent * event);
 
-private slots:
-    void updateLineNumberAreaWidth(int newBlockCount);
-    void updateLineNumberArea(const QRect &, int);
-
-private:
-    QWidget *lineNumberArea;
-    Highlighter *m_highlighter;
-    Completer *m_completer;
-
-        //QRect lineRect();
+	QRect lineRect();
 	
-//protected slots:
-//	void cursorChanged();
-
-//private:
-        //int m_line;
-        //QRect m_lineRect;
-};
-
-class LineNumberArea : public QWidget
-{
-public:
-    LineNumberArea(SourceEdit *editor) : QWidget(editor) {
-        codeEditor = editor;
-    }
-
-    QSize sizeHint() const {
-        return QSize(codeEditor->lineNumberAreaWidth(), 0);
-    }
-
-protected:
-    void paintEvent(QPaintEvent *event) {
-        codeEditor->lineNumberAreaPaintEvent(event);
-    }
+protected slots:
+	void cursorChanged();
 
 private:
-    SourceEdit *codeEditor;
+	int m_line;
+	QRect m_lineRect;
 };
 
 #endif // EDITOR_H

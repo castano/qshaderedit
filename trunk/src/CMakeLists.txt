@@ -43,18 +43,7 @@ SET(SRCS
 	cgexplicit.h
 	cgexplicit.cpp
 	document.h
-	document.cpp
-	titlebar.h
-	titlebar.cpp 
-	nofocusstyle.h
-	nofocusstyle.cpp
-	managerpanel.h	
-	managerpanel.cpp
-	configdlg.h	
-	configdlg.cpp
-	completer.h
-	completer.cpp
-)
+	document.cpp)
 
 SET(QT_SRCS ${SRCS}
 	main.cpp
@@ -74,12 +63,7 @@ SET(MOC_SRCS
 	finddialog.h
 	gotodialog.h
 	effect.h
-	document.h
-	titlebar.h
-	managerpanel.h
-	configdlg.h
-	completer.h
-)
+	document.h)
 
 SET(QT_MOC_SRCS qshaderedit.h)
 
@@ -101,19 +85,38 @@ QT4_ADD_RESOURCES(RCCS ${RCC_SRCS})
 QT4_WRAP_CPP(MOCS ${MOC_SRCS})
 QT4_WRAP_CPP(QT_MOCS ${QT_MOC_SRCS})
 
-ADD_EXECUTABLE(qshaderedit ${QT_SRCS} ${MOCS} ${QT_MOCS} ${UICS} ${RCCS})
+ADD_EXECUTABLE(qshaderedit MACOSX_BUNDLE ${QT_SRCS} ${MOCS} ${QT_MOCS} ${UICS} ${RCCS})
 TARGET_LINK_LIBRARIES(qshaderedit ${LIBS})
+INSTALL(TARGETS qshaderedit DESTINATION bin)
 
-IF(UNIX)
-  INSTALL(TARGETS qshaderedit DESTINATION bin)
-  INSTALL(FILES ${Data_Dir}/linux/qshaderedit DESTINATION bin 
-  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-  INSTALL(FILES ${Data_Dir}/COPYING DESTINATION /usr/share/qshaderedit)
-  INSTALL(DIRECTORY ${Data_Dir}/qshaderedit/ DESTINATION share/qshaderedit FILES_MATCHING PATTERN "*.*")
-  INSTALL(FILES ${Data_Dir}/linux/qshaderedit.desktop DESTINATION share/applications)
-ELSE (UNIX)
-  INSTALL(TARGETS qshaderedit DESTINATION ${Data_Dir}/../QShaderEdit CONFIGURATIONS Release)
-  INSTALL(FILES ${Data_Dir}/COPYING DESTINATION ${Data_Dir}/../QShaderEdit)
-  INSTALL(DIRECTORY ${Data_Dir}/qshaderedit/ DESTINATION ${Data_Dir}/../QShaderEdit FILES_MATCHING PATTERN "*.*")
-ENDIF(UNIX)
+# KDE4 target
+#FIND_PACKAGE(KDE4)
+
+IF(KDE4_FOUND)
+
+	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR} ${KDE4_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+
+	SET(KDE_SRCS ${SRCS}
+		kde/main.cpp
+		kde/kshaderedit.h
+		kde/kshaderedit.cpp)
+
+	SET(KDE_MOC_SRCS kde/kshaderedit.h)
+
+	QT4_WRAP_CPP(KDE_MOCS ${KDE_MOC_SRCS})
+
+	#KDE4_AUTOMOC(${KDE_SRCS})
+	#kde4_add_ui_files(kapp4_SRCS)
+	#kde4_add_kcfg_files(kapp4_SRCS kde/kshaderedit.kcfgc)
+	KDE4_ADD_EXECUTABLE(kshaderedit ${KDE_SRCS} ${MOCS} ${KDE_MOCS} ${UICS} ${RCCS})
+
+	TARGET_LINK_LIBRARIES(kshaderedit ${KDE4_KDEUI_LIBS} ${KDE4_KIO_LIBS} ${LIBS})
+
+	INSTALL(TARGETS kshaderedit DESTINATION ${BIN_INSTALL_DIR})
+
+	INSTALL(FILES kde/kshaderedit.desktop  DESTINATION  ${XDG_APPS_DIR})
+	INSTALL(FILES kde/kshaderedit.kcfg  DESTINATION  ${KCFG_INSTALL_DIR})
+	install(FILES kde/kshadereditui.rc  DESTINATION  ${DATA_INSTALL_DIR}/kshaderedit)
+
+ENDIF(KDE4_FOUND)
 

@@ -22,9 +22,6 @@
 #define QSHADEREDIT_H
 
 #include <QtGui/QMainWindow>
-#include <QtGui/QLabel>
-#include <QtGui/QPixmap>
-#include <QtGui/QColor>
 
 class QTimer;
 class QComboBox;
@@ -32,8 +29,6 @@ class QLabel;
 class QToolBar;
 
 class QGLWidget;
-
-class ManagerPanel;
 
 class MessagePanel;
 class ParameterPanel;
@@ -51,9 +46,6 @@ public:
 	~QShaderEdit();
 
 	virtual QSize sizeHint() const;
-        /********************** code makus **************************************************/
-        static void find_data_dir(QString& path); //return path to data: styles, lybrary
-        /***********************************************************************************/
 
 protected slots:
 	
@@ -76,14 +68,6 @@ protected slots:
 	void onEffectBuilt(bool succeed);
 	void onParameterChanged();
 	void onTechniqueChanged(int index);
-
-        /*****************Peter Komar code, august 2009 ********************/
-
-        void slot_styles();
-        void slotRenderPreview();
-        void slotConfigureEditor();
-
-        /**************************************************/
 	
 	void updateEffectInputs();	
 	
@@ -100,12 +84,6 @@ protected:
 	void createToolbars();
 	void createStatusbar();
 	void createDockWindows();
-
-        /******************Peter Komar code, august 2009 ****************************/
-        //creates preview shaders in manager
-        void takeEffectPreview(const QString& name);
-        void CreatePixmap(const QString& name);
-        /**********************************************************/
 
 	
 	void updateActions();
@@ -159,7 +137,6 @@ protected:
 	MessagePanel * m_messagePanel;
 	ParameterPanel * m_parameterPanel;
 	ScenePanel * m_scenePanel;
-	ManagerPanel * m_managerPanel;
 	
 	// Actions.
 	QAction * m_newAction;
@@ -179,32 +156,11 @@ protected:
 	QAction * m_findNextAction;
 	QAction * m_findPreviousAction;
 	QAction * m_gotoAction;
-
-        QList<QAction*> stylesActions;
-
-
+	
 	// Timer.
 	QTimer * m_activityTimer;
 };
 
-/**********************Peter Komar code, august 2009 *********************/
-
-class QAbout : public QLabel
-{
-        Q_OBJECT
-public:
-    QAbout(const QPixmap& pixmap, const QString& version, const QString& text, const QColor& color=Qt::white,QWidget * parent = 0);
-
-protected:
-    void init_data();
-    void mousePressEvent( QMouseEvent * event );
-
-    QPixmap m_pixmap;
-    QString m_version;
-    QString m_text;
-    QColor m_color;
-};
-/*******************************************************/
 
 #endif //QSHADEREDIT_H
 
