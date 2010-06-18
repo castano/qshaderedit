@@ -18,15 +18,15 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "highlighter.h"
 #include "editor.h"
 #include "finddialog.h"
 #include "gotodialog.h"
+#include "highlighter.h"
 #include "effect.h"
-#include "completer.h"
 
 #include <QtCore/QDebug>
 #include <QtGui/QTabBar>
+#include <QtGui/QTextEdit>
 #include <QtGui/QTextCursor>
 #include <QtGui/QTextLayout>
 #include <QtGui/QTextBlock>
@@ -35,36 +35,14 @@
 #include <QtGui/QPainter>
 
 
-SourceEdit::SourceEdit(QWidget * parent): QPlainTextEdit(parent)
-        ,m_highlighter(NULL)
-        ,m_completer(NULL)
+SourceEdit::SourceEdit(QWidget * parent): QTextEdit(parent), m_line(0), m_lineRect(lineRect())
 {
-        //connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(cursorChanged()));
-
-    lineNumberArea = new LineNumberArea(this);
-
-    connect(this, SIGNAL(blockCountChanged(int)), this, SLOT(updateLineNumberAreaWidth(int)));
-    connect(this, SIGNAL(updateRequest(const QRect &, int)), this, SLOT(updateLineNumberArea(const QRect &, int)));
-
-    updateLineNumberAreaWidth(0);
-}
-
-SourceEdit::~SourceEdit()
-{
-    if(lineNumberArea)
-        delete lineNumberArea;
-
-    if(m_highlighter)
-        delete m_highlighter;
-
-    if(m_completer)
-        delete m_completer;
-
+	connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(cursorChanged()));
 }
 
 void SourceEdit::keyPressEvent(QKeyEvent * event)
 {
-        QPlainTextEdit::keyPressEvent(event);
+	QTextEdit::keyPressEvent(event);
 	if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
 	{
 		QTextCursor cursor = this->textCursor();
@@ -99,136 +77,29 @@ void SourceEdit::keyPressEvent(QKeyEvent * event)
 		if (cursor.block().text().endsWith("\t{"))
 			cursor.deletePreviousChar();		
 	}
-
-        if(((event->modifiers() == Qt::CTRL) && (event->key() == Qt::Key_Space))
-            || (event->key() == Qt::Key_Period))
-        {
-            if ( m_completer )
-                m_completer->invokeCompletion( this );
-        }
 }
 
-int SourceEdit::lineNumberAreaWidth()
+void SourceEdit::paintEvent(QPaintEvent * event)
 {
-    int digits = 1;
-    int max = qMax(1, blockCount());
-    while (max >= 10) {
-        max /= 10;
-        ++digits;
-    }
-
-    int space = 15 + fontMetrics().width(QLatin1Char('9')) * digits;
-
-    return space;
-}
-
-void SourceEdit::updateLineNumberAreaWidth(int /* newBlockCount */)
-{
-    setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
-}
-
-
-void SourceEdit::updateLineNumberArea(const QRect &rect, int dy)
-{
-    if (dy)
-        lineNumberArea->scroll(0, dy);
-    else
-        lineNumberArea->update(0, rect.y(), lineNumberArea->width(), rect.height());
-
-    if (rect.contains(viewport()->rect()))
-        updateLineNumberAreaWidth(0);
-}
-
-
-void SourceEdit::resizeEvent(QResizeEvent *e)
-{
-    QPlainTextEdit::resizeEvent(e);
-
-    QRect cr = contentsRect();
-    lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
-}
-
-void SourceEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
-{
-    QPainter painter(lineNumberArea);
-    painter.fillRect(event->rect(), QColor("#8F8F8F"));
-
-
-    QTextBlock block = firstVisibleBlock();
-    int blockNumber = block.blockNumber();
-    int top = (int) blockBoundingGeometry(block).translated(contentOffset()).top();
-    int bottom = top + (int) blockBoundingRect(block).height();
-
-    int icursor = this->textCursor().blockNumber();
-
-    while (block.isValid() && top <= event->rect().bottom()) {
-        if (block.isVisible() && bottom >= event->rect().top()) {
-            QString number = QString::number(blockNumber + 1);
-
-            if(icursor == blockNumber)
-                painter.setPen(Qt::black);
-            else
-                painter.setPen(QColor("#B3B2B1"));
-            painter.drawText(0, top, lineNumberArea->width(), fontMetrics().height(),
-                             Qt::AlignCenter, number);
-        }
-
-        block = block.next();
-        top = bottom;
-        bottom = top + (int) blockBoundingRect(block).height();
-        ++blockNumber;
-    }
-}
-
-/*********************************Peter Komar code, august 2009 *******************************/
-void SourceEdit::setHighlighter(Highlighter *highlighter)
-{
-    if(m_highlighter)
-        delete m_highlighter;
-
-    m_highlighter = highlighter;
-    m_highlighter->setDocument(document());
-}
-
-Highlighter* SourceEdit::highlighter() const
-{
-    return  m_highlighter;
-}
-
-void SourceEdit::setCompleter(Completer* completer)
-{
-    if(completer == m_completer)
-        return;
-
-    if(m_completer)
-        delete m_completer;
-
-    m_completer = completer;
-}
-
-/****************************************************************************************/
-
-//void SourceEdit::paintEvent(QPaintEvent * event)
-//{
-//        //QPainter p(viewport());
-        //QRect rect = lineRect().intersected(event->region().boundingRect());
-        //p.fillRect(rect, QBrush(QColor(248, 248, 248)));
-        //p.end();
+	QPainter p(viewport());
+	QRect rect = lineRect().intersected(event->region().boundingRect());
+	p.fillRect(rect, QBrush(QColor(248, 248, 248)));
+	p.end();
 	
-//	QTextEdit::paintEvent(event);
-//}
+	QTextEdit::paintEvent(event);
+}
 
-//QRect SourceEdit::lineRect()
-//{
-//	QRect rect = cursorRect();
-//	rect.setLeft(0);
-//	rect.setWidth(viewport()->width());
-//	return rect;
-//}
+QRect SourceEdit::lineRect()
+{
+	QRect rect = cursorRect();
+	rect.setLeft(0);
+	rect.setWidth(viewport()->width());
+	return rect;
+}
 
-//void SourceEdit::cursorChanged()
-//{
-        /*if (m_line != textCursor().blockNumber())
+void SourceEdit::cursorChanged()
+{
+	if (m_line != textCursor().blockNumber())
 	{
 		viewport()->update();
 
@@ -239,43 +110,44 @@ void SourceEdit::setCompleter(Completer* completer)
 		m_line = textCursor().blockNumber();
 		
 		//viewport()->update(m_lineRect);
-        }*/
-//}
+	}
+}
 
 
-Editor::Editor(QWidget * parent)
-        : QToolBox(parent)
+Editor::Editor(QWidget * parent) : QTabWidget(parent)
 {
-        //this->hide();
+	tabBar()->hide();
 
 	connect(this, SIGNAL(currentChanged(int)), this, SLOT(onCurrentChanged(int)));
 
-        m_font = Highlighter::readFontSettings();
-
+#if defined(Q_OS_DARWIN)
+	m_font.setFamily("Monaco");
+	m_font.setPointSize(11);
+#elif defined(Q_OS_WIN32)
+	m_font.setFamily("Courier");
+	m_font.setPointSize(8);
+#else
+	m_font.setFamily("Monospace");
+	m_font.setPointSize(8);
+#endif
+	m_font.setFixedPitch(true);
 //	m_font.setStyleHint(QFont::Courier, QFont::PreferQuality);
 }
 
-QPlainTextEdit * Editor::currentTextEdit() const
+QTextEdit * Editor::currentTextEdit() const
 {
-    if(this->count())
-        return static_cast<QPlainTextEdit *>(currentWidget());
-    return NULL;
+	return static_cast<QTextEdit *>(currentWidget());
 }
 
 int Editor::line() const
 {
-    if(currentTextEdit())
-       return currentTextEdit()->textCursor().blockNumber() + 1;
-    return 0;
+    return currentTextEdit()->textCursor().blockNumber() + 1;
 }
 
 int Editor::column() const
 {
-        if(currentTextEdit())
-            return currentTextEdit()->textCursor().columnNumber() + 1;
-        return 0;
+	return currentTextEdit()->textCursor().columnNumber() + 1;
 }
-
 
 bool Editor::isModified() const
 {
@@ -284,7 +156,7 @@ bool Editor::isModified() const
 	const int num = this->count();
 	for (int i = 0; i < num; i++)
 	{
-                QPlainTextEdit * editor = qobject_cast<QPlainTextEdit *>(this->widget(i));
+		QTextEdit * editor = qobject_cast<QTextEdit *>(this->widget(i));
 		
 		if (editor != NULL && editor->document()->isModified()) {
 			modified = true;
@@ -299,7 +171,7 @@ void Editor::setModified(bool b)
 	const int num = this->count();
 	for (int i = 0; i < num; i++)
 	{
-                QPlainTextEdit * editor = qobject_cast<QPlainTextEdit *>(this->widget(i));
+		QTextEdit * editor = qobject_cast<QTextEdit *>(this->widget(i));
 		
 		if (editor != NULL) {
 			editor->document()->setModified(b);
@@ -310,27 +182,22 @@ void Editor::setModified(bool b)
 // slots.
 void Editor::undo()
 {
-    if(currentTextEdit())
 	currentTextEdit()->document()->undo();
 }
 void Editor::redo()
 {
-    if(currentTextEdit())
 	currentTextEdit()->document()->redo();
 }
 void Editor::cut()
 {
-    if(currentTextEdit())
 	currentTextEdit()->cut();
 }
 void Editor::copy()
 {
-    if(currentTextEdit())
 	currentTextEdit()->copy();
 }
 void Editor::paste()
 {
-    if(currentTextEdit())
 	currentTextEdit()->paste();
 }
 
@@ -445,11 +312,9 @@ bool Editor::find(const QString & text, QTextDocument::FindFlags flags/*=0*/)
 
 void Editor::onCurrentChanged(int idx)
 {
-        Q_UNUSED(idx);
-	emit cursorPositionChanged();
+	if(idx < 0) return;
 
-        if(!currentTextEdit())
-            return;
+	emit cursorPositionChanged();
 
 	QTextDocument * document = currentTextEdit()->document();
 	QTextCursor cursor = currentTextEdit()->textCursor();
@@ -486,10 +351,10 @@ void Editor::setEffect(Effect * effect)
 	if (effect == NULL)
 	{
 		// Remove all tabs.
-                while (this->count() > 0)
-                {
-                    this->removeItem(0);
-                }
+		while (this->count() > 0)
+		{
+			this->removeTab(0);
+		}
 	}
 	else
 	{
@@ -501,80 +366,51 @@ void Editor::setEffect(Effect * effect)
 	}
 }
 
-QPlainTextEdit * Editor::addEditor(const QString & name, const Effect * effect, int i)
+QTextEdit * Editor::addEditor(const QString & name, const Effect * effect, int i)
 {
-        SourceEdit *m_sourcer = new SourceEdit(this);
-        this->addItem(m_sourcer, name);
-        m_sourcer->setFont(m_font);
-        m_sourcer->setLineWrapMode(QPlainTextEdit::NoWrap);
-        m_sourcer->setTabStopWidth(28);
-        //textEdit->setAcceptRichText(false);
+	SourceEdit * textEdit = new SourceEdit(this);
+	this->addTab(textEdit, name);
+	textEdit->setFont(m_font);
+	textEdit->setLineWrapMode(QTextEdit::NoWrap);
+	textEdit->setTabStopWidth(28);
+	textEdit->setAcceptRichText(false);
 	
-        QTextDocument * textDocument = m_sourcer->document();
+	QTextDocument * textDocument = textEdit->document();
 	
-        //Highlighter *m_highlighter = new Highlighter(textDocument);
-        Highlighter *m_highlighter = new Highlighter;
-        m_highlighter->setRules(effect->factory()->highlightingRules());
-        m_highlighter->setMultiLineCommentStart(effect->factory()->multiLineCommentStart());
-        m_highlighter->setMultiLineCommentEnd(effect->factory()->multiLineCommentEnd());
-        Completer *m_completer = new Completer(effect->factory()->extension());
-
-        m_sourcer->setHighlighter(m_highlighter);
-        m_sourcer->setCompleter(m_completer);
-
-        m_sourcer->setPlainText(effect->getInput(i));
+	Highlighter * hl = new Highlighter(textDocument);
+	hl->setRules(effect->factory()->highlightingRules());
+	hl->setMultiLineCommentStart(effect->factory()->multiLineCommentStart());
+	hl->setMultiLineCommentEnd(effect->factory()->multiLineCommentEnd());
+	
+	textEdit->setPlainText(effect->getInput(i));
 	textDocument->setModified(false);
 	
-        connect(m_sourcer, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
-        connect(m_sourcer, SIGNAL(cursorPositionChanged()), this, SIGNAL(cursorPositionChanged()));
+	connect(textEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
+	connect(textEdit, SIGNAL(cursorPositionChanged()), this, SIGNAL(cursorPositionChanged()));
 	connect(textDocument, SIGNAL(modificationChanged(bool)), this, SIGNAL(modifiedChanged(bool)));
 	
 	if (count() == 1) {
 		emit onCurrentChanged(currentIndex());
 	}
 	
-        return m_sourcer;
+	return textEdit;
 }
 
-/*******************************Peter Komar code, august 2009 *****************************/
-void Editor::updateHighlighter()
+void Editor::tabInserted(int index)
 {
-    if(!this->count())
-        return;
-    for(int i=0; i<count(); i++)
-    {
-        SourceEdit* ed = static_cast<SourceEdit *>(widget(i));
-        if(!ed)
-            return;
-
-        Highlighter* m_highlighter = ed->highlighter();
-        if(!m_highlighter)
-            return;
-
-        m_highlighter->createFormats();
-        m_highlighter->rehighlight();
-        m_font = Highlighter::readFontSettings();
-        ed->setFont(m_font);
-        ed->update();
-    }
-}
-/*******************************************************************************************/
-
-void Editor::itemInserted(int index)
-{
-        QToolBox::itemInserted(index);
+	QTabWidget::tabInserted(index);
 	
-        //if( count() == 2 ) {
-        //        this->show();
-        //}
+	if( count() == 2 ) {
+		tabBar()->show();
+	}
 }
 
-void Editor::itemRemoved(int index)
+void Editor::tabRemoved(int index)
 {
-        QToolBox::itemRemoved(index);
-
-        //if( count() == 1 ) {
-        //        this->hide();
-        //}
+	QTabWidget::tabRemoved(index);
+	
+	if( count() == 1 ) {
+		tabBar()->hide();
+	}
 }
 

@@ -105,7 +105,7 @@ namespace {
 	// ARB shader file tags.
 	static const char * s_vertexProgramTag = "[VertexProgram]\n";
 	static const char * s_fragmentProgramTag = "[FragmentProgram]\n";
-    static const char * s_parametersTag = "[Parameters]\n";
+	static const char * s_parametersTag = "[Parameters]\n";
 	
 	enum Stage {
 		Stage_Vertex,
@@ -198,8 +198,9 @@ public:
 		delete m_outputParser;
 		qDeleteAll(m_parameterArray);
 	}
-
-        // Load the effect from the given file.
+	
+	
+	// Load the effect from the given file.
 	virtual void load(QFile * file)
 	{
 		Q_ASSERT(file != NULL);
@@ -633,14 +634,13 @@ class ArbEffectFactory : public EffectFactory
  		return new ArbEffect(this, widget);
 	}
 
-
 	virtual QList<Highlighter::Rule> highlightingRules() const
 	{
 		QList<Highlighter::Rule> rules;
 		Highlighter::Rule rule;
 
 		rule.type = Highlighter::Keyword;
-                /*rule.pattern = QRegExp(
+		rule.pattern = QRegExp(
 			"\\b(ABS|ABS_SAT|ADD|ADD_SAT|ADDRESS|ALIAS|ARL|ATTRIB|CMP(_SAT)?|COS(_SAT)?|"
 			"DP3(_SAT)?|DP4(_SAT)?|DPH(_SAT)?|DST(_SAT)?|"
 			"END|EXP|EX2(_SAT)?|FLR(_SAT)?|FRC(_SAT)?|KIL|LG2(_SAT)?|"
@@ -649,10 +649,7 @@ class ArbEffectFactory : public EffectFactory
 			"POW(_SAT)?|RCP(_SAT)?|RSQ(_SAT)?|SIN(_SAT)|SCS(_SAT)?|"
 			"SGE(_SAT)?|SLT(_SAT)?|SUB(_SAT)?|SWZ(_SAT)|"
 			"TEMP|TEX(_SAT)?|TXB(_SAT)?|TXP(_SAT)?|XPD(_SAT)?|"
-                        "fragment|program|result|state|texture|vertex)\\b");*/
-                QString s = Highlighter::getSyntaxKeyWords(extension(),"kw");
-                if(!s.isEmpty())
-                    rule.pattern = QRegExp("\\b("+s+")\\b");
+			"fragment|program|result|state|texture|vertex)\\b");
 		rules.append(rule);
 		
 		rule.type = Highlighter::Misc;

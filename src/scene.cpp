@@ -33,7 +33,6 @@
 #include <math.h>
 
 
-
 extern void drawTeapot();
 
 class DisplayListScene : public Scene
@@ -97,9 +96,9 @@ public:
 	virtual void transform() const
 	{
 		// Object transform:
-                glRotated(270.0, 1.0, 0.0, 0.0);
-                glScaled(0.5, 0.5, 0.5);
-                glTranslated(0.0, 0.0, -1.5);
+		glRotated(270.0, 1.0, 0.0, 0.0);
+		glScaled(0.5, 0.5, 0.5);
+		glTranslated(0.0, 0.0, -1.5);			
 	}
 };
 
@@ -126,59 +125,6 @@ public:
 };
 
 REGISTER_SCENE_FACTORY(TeapotSceneFactory);
-
-
-class SphereScene : public DisplayListScene
-{
-public:
-        SphereScene()
-        {
-                m_dlist = glGenLists(1);
-                glNewList(m_dlist, GL_COMPILE);
-                GLUquadricObj *quadricObj = gluNewQuadric();
-
-
-                gluSphere(quadricObj,2,32,32);
-
-
-                gluDeleteQuadric(quadricObj);
-
-
-                glEndList();
-        }
-
-        virtual void transform() const
-        {
-                // Object transform:
-                glRotated(130, 0.0, 1.0, 0.0);
-                glScaled(0.5, 0.5, 0.5);
-                glTranslated(0.0, 0.0, 0.0);
-        }
-};
-
-// Teapot scene factory.
-class SphereFactory : public SceneFactory
-{
-public:
-        virtual QString name() const
-        {
-                return tr("Sphere");
-        }
-        virtual QString description() const
-        {
-                return tr("Sphere");
-        }
-        virtual QIcon icon() const
-        {
-                return QIcon();
-        }
-        virtual Scene * createScene() const
-        {
-                return new SphereScene();
-        }
-};
-
-REGISTER_SCENE_FACTORY(SphereFactory);
 
 
 

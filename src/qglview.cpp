@@ -34,7 +34,7 @@ SceneView::SceneView(QWidget * parent, QGLWidget * shareWidget) : QGLWidget(pare
 	m_effect(NULL), 
 	m_scene(NULL), 
 	m_wireframe(false), 
-    m_ortho(false)
+	m_ortho(false)
 {
 	setAutoBufferSwap(false);
 }
@@ -114,17 +114,14 @@ void SceneView::init(MessagePanel * output)
 
 void SceneView::initializeGL()
 {
-        //glClearColor (0.0, 0.0, 0.0, 0.0);
-
-        glClearColor(0.217,0.216, 0.215, 1.0);
-
+	glClearColor (0.0, 0.0, 0.0, 0.0);
 	glEnable(GL_DEPTH_TEST);
 	
-        m_alpha = -138.421f;
-        m_beta = 24.2105f;
-        m_x = -0.29f;
-        m_y = 0.0f;
-        m_z = 5.0f;
+	m_alpha = 0.0f;
+	m_beta = 0.0f;
+	m_x = 0.0f;
+	m_y = 0.0f;
+	m_z = 5.0f;	
 
 	m_scene = SceneFactory::defaultScene();
 	
@@ -165,9 +162,9 @@ void SceneView::paintGL()
 		if (m_effect != NULL && !m_effect->isBuilding() && m_effect->isValid())
 		{
 			// Setup ligh parameters @@ Move this to scene->setup() or begin()
-            float light_vector[4] = {1.2f/sqrt(3.08f), 1.0f/sqrt(3.08f), 0.8f/sqrt(3.08f), 0.0f};
-            glLightfv( GL_LIGHT0, GL_POSITION, light_vector );
-
+			float light_vector[4] = {1.2f/sqrt(3.08f), 1.0f/sqrt(3.08f), 0.8f/sqrt(3.08f), 0.0f};
+			glLightfv( GL_LIGHT0, GL_POSITION, light_vector );
+			
 			if (m_wireframe) {
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			}
@@ -193,22 +190,11 @@ void SceneView::paintGL()
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			m_scene->draw(NULL);
 		}
-
 	}
-
-    /*qglColor(Qt::white);
-
-    QFont f("Sans",10,10,false);
-    qglColor(Qt::white);
-    QString str = QString("%1 RX: %2, RY: %3").arg(tr("Rotation")).arg(m_alpha).arg(m_beta);
-    str += QString("   %1: X=%2, Y=%3, Z=%4").arg(tr("Position")).arg(m_x).arg(m_y).arg(m_z);
-
-    renderText(0,15,str,f);*/
-
-
-    swapBuffers();
 	
-    //qDebug("paint!");
+ 	swapBuffers();
+	
+	//qDebug("paint!");
 }
 
 
@@ -232,12 +218,12 @@ void SceneView::updateMatrices()
 	glLoadIdentity();
 	
 	// World transform:
-    gluLookAt(m_x, m_y, m_z, m_x, m_y, m_z-1, 0, 1, 0);
-    glRotatef(m_beta, 1, 0, 0);
+	gluLookAt(m_x, m_y, m_z, m_x, m_y, m_z-1, 0, 1, 0);
+	glRotatef(m_beta, 1, 0, 0);
 	glRotatef(m_alpha, 0, 1, 0);
 	
 	// Object transform:
-    m_scene->transform();
+	m_scene->transform();
 }
 
 
@@ -291,11 +277,11 @@ void SceneView::wheelEvent(QWheelEvent *e)
 
 void SceneView::resetTransform()
 {
-    m_alpha = -138.421f;
-    m_beta = 24.2105f;
-    m_x = -0.29f;
-    m_y = 0.0f;
-    m_z = 5.0f;
+	m_alpha = 0.0f;
+	m_beta = 0.0f;
+	m_x = 0.0f;
+	m_y = 0.0f;
+	m_z = 5.0f;
 	updateMatrices();	
 }
 
@@ -321,17 +307,3 @@ void SceneView::setOrtho(bool b)
 	updateMatrices();
 	emit updateGL();
 }
-
-/*************************Peter Komar code, august 2009 ************************/
-QImage SceneView::takeSnapshot()
-{
-    emit updateGL();
-
-    //QPixmap pix = renderPixmap();
-
-    QImage imageToSave = /*pix.toImage();//*/grabFrameBuffer(false);
-
-    return imageToSave;
-}
-
-/********************************************************************/

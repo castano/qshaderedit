@@ -1,3 +1,22 @@
+/*
+    QShaderEdit - Simple multiplatform shader editor
+    Copyright (C) 2007 Ignacio Castaño <castano@gmail.com>
+    Copyright (C) 2007 Lars Uebernickel <larsuebernickel@gmx.de>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
 
 #include "effect.h"
 #include "messagepanel.h"
@@ -27,6 +46,7 @@ namespace {
 		"float3 color : DIFFUSE < string UILabel = \"Base Color\"; > = {1.0f, 0.0f, 0.0f};\n"
 		"float amb < string UILabel = \"Ambient\"; float UIMin = 0; float UIMax = 1; > = 0.1f;\n\n"
 		"float4x4 mvp : ModelViewProjection;\n"
+		"float4x4 mv : ModelView;\n"
 		"float3x3 normalMatrix : ModelViewInverseTranspose;\n\n"
 		"struct VertexInput {\n"
 		"	float4 position : POSITION;\n"
@@ -35,22 +55,25 @@ namespace {
 		"struct VertexOutput {\n"
 		"	float4 position : POSITION;\n"
 		"	float3 normal : TEXCOORD0;\n"
+		"	float3 view : TEXCOORD1;\n"
 		"};\n\n"
 		"VertexOutput vp(VertexInput input)\n"
 		"{\n"
 		"	VertexOutput output;\n"
 		"	output.position = mul(input.position, mvp);\n"
 		"	output.normal = mul(input.normal, normalMatrix);\n"
+		"	output.view = mul(input.position, mv).xyz;\n"
 		"	return output;\n"
 		"}\n\n"
 		"float4 fp(VertexOutput input) : COLOR\n"
 		"{\n"
 		"	float3 N = normalize(input.normal);\n"
+		"	float3 V = normalize(input.view);\n"
+		"	float3 R = reflect(V, N);\n"
 		"	float3 L = normalize(gl_LightSource[0].position.xyz);\n"
-		"	float3 H = normalize(gl_LightSource[0].halfVector.xyz);\n\n"
 		"	float3 ambient = color * amb;\n"
 		"	float3 diffuse = color * (1.0 - amb) * saturate(dot(L, N));\n"
-		"	float3 specular = pow(saturate(dot(H, N)), 16.0);\n\n"
+		"	float3 specular = pow(saturate(dot(R, L)), 16.0);\n\n"
 		"	return float4(ambient + diffuse + specular, 1.0);\n"
 		"}\n\n"
 		"technique main\n"
@@ -387,7 +410,7 @@ namespace {
 		fflush(stderr);
 	}
 	
-        static void errorHandler(CGcontext /*ctx*/, CGerror err, void */*data*/)
+	static void errorHandler(CGcontext ctx, CGerror err, void *data)
 	{
 		fprintf(stderr, "Cg error: %s\n", qcgGetErrorString(err));
 		fflush(stderr);
@@ -508,7 +531,8 @@ public:
 		qDeleteAll(m_parameterArray);
 	}
 
-        // Load/Save the effect.
+
+	// Load/Save the effect.
 	virtual void load(QFile * file)
 	{
 		Q_ASSERT(file != NULL);
@@ -945,25 +969,19 @@ public:
 		Highlighter::Rule rule;
 
 		rule.type = Highlighter::Keyword;
-                /*rule.pattern = QRegExp("\\b(if|else|for|while|do|struct|break|continue|discard|return|technique|pass|sampler_state|"
-                        "compile|true|false|packed|typedef)\\b");*/
-                QString s = Highlighter::getSyntaxKeyWords(extension(),"kw");
-                if(!s.isEmpty())
-                    rule.pattern = QRegExp("\\b("+s+")\\b");
+		rule.pattern = QRegExp("\\b(if|else|for|while|do|struct|break|continue|discard|return|technique|pass|sampler_state|"
+			"compile|true|false|packed|typedef)\\b");
 		rules.append(rule);
 
 		rule.type = Highlighter::DataType;
-                /*rule.pattern = QRegExp(
+		rule.pattern = QRegExp(
 			"\\b(void|float|float[1-4]|float[1-4]x[1-4]|int|int[1-4]|int[1-4]x[1-4]|bool|bool[1-4]|bool[1-4]x[1-4]|"
 			"half|half[1-4]|half[1-4]x[1-4]|fixed|fixed[1-4]|fixed[1-4]x[1-4]|"
-                        "sampler[1-3]D|samplerCUBE|samplerRECT|texture|string|uniform|varying|static|const|in|out|inout)\\b");*/
-                s = Highlighter::getSyntaxKeyWords(extension(),"dt");
-                if(!s.isEmpty())
-                    rule.pattern = QRegExp("\\b("+s+")\\b");
+			"sampler[1-3]D|samplerCUBE|samplerRECT|texture|string|uniform|varying|static|const|in|out|inout)\\b");
 		rules.append(rule);
 
 		rule.type = Highlighter::BuiltinVar;
-                /*rule.pattern = QRegExp(
+		rule.pattern = QRegExp(
 			"\\b(gl_(Position|PointSize|ClipVertex|FragCoord|FragFacing|FragColor|"
 			"FragData|FragDepth|Color|SecondaryColor|Normal|Vertex|MultiTexCoord[0-7]|FogColor|"
 			"MaxLights|MaxClipPlanes|MaxTextureUnits|MaxTextureCoords|MaxVertexAttributes|"
@@ -982,23 +1000,17 @@ public:
 			"World(Inverse)?(Transpose)?|Projection(Inverse)?(Transpose)?|Time|ViewportSize|"
 			"MinFilter|MagFilter|WrapS|WrapT|BorderColor|"
 			"POSITION|COLOR[0-1]?|TEXCOORD[0-7]?|NORMAL|"
-                        "VertexProgram|FragmentProgram|DepthTestEnable|CullFaceEnable|register\\(c[1-2]+\\))\\b");*/
-                s = Highlighter::getSyntaxKeyWords(extension(),"bv");
-                if(!s.isEmpty())
-                    rule.pattern = QRegExp("\\b("+s+"|register\\(c[1-2]+\\))\\b");
+			"VertexProgram|FragmentProgram|DepthTestEnable|CullFaceEnable|register\\(c[1-2]+\\))\\b");
 		rules.append(rule);
 
 		rule.type = Highlighter::BuiltinFunction;
-                /*rule.pattern = QRegExp(
+		rule.pattern = QRegExp(
 			"\\b(abs|acos|all|any|asin|atan|atan2|ceil|clamp|cos|cosh|cross|degrees|determinant|dot|floor|length|lerp|"
 			"max|min|mul|normalize|radians|reflect|refract|round|saturate|sin|sinh|tan|tanh|transpose|"
 			"tex1D(proj)?|tex2D(proj)?|texRECT(proj)?|tex3D(proj)?|texCUBE(proj)?|"
 			"offsettex2D|offsettexRECT|offsettex2DScaleBias|offsettexRECTScaleBias|tex1D_dp3|tex2D_dp3x2|"
 			"texRECT_dp3x2|tex3D_dp3x3|texCUBE_dp3x3|texCUBE_reflect_dp3x3|texCUBE_reflect_eye_dp3x3|tex_dp3x2_depth|"
-                        "(un)?pack_4(u)?byte|(un)?pack_2ushort|(un)?pack_2half)\\b");*/
-               s = Highlighter::getSyntaxKeyWords(extension(),"bf");
-                if(!s.isEmpty())
-                    rule.pattern = QRegExp("\\b("+s+")\\b");
+			"(un)?pack_4(u)?byte|(un)?pack_2ushort|(un)?pack_2half)\\b");
 		rules.append(rule);
 		
 		
