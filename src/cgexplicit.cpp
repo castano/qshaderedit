@@ -438,14 +438,22 @@ CGbool cgLoadLibrary()
 
 #if defined(Q_OS_DARWIN)
 	QLibrary library("/System/Library/Frameworks/Cg.framework/Cg");
+
+        if (!library.load()) {
+            library.setFileName("/Library/Frameworks/Cg.framework/Cg");
+
+            if (!library.load()) {
+                    return false;
+            }
+        }
 #else
 	QLibrary library("Cg");
+
+        if (!library.load()) {
+                return false;
+        }
 #endif
 	
-	if (!library.load())
-	{
-		return false;
-	}
 
 	/* 1.1 entry points */
 	
@@ -785,14 +793,21 @@ CGbool cgGLLoadLibrary()
 	
 #if defined(Q_OS_DARWIN)
 	QLibrary library("/System/Library/Frameworks/Cg.framework/CgGL");
+
+        if (!library.load()) {
+            library.setFileName("/Library/Frameworks/Cg.framework/Cg");
+
+            if (!library.load()) {
+                    return false;
+            }
+        }
 #else
 	QLibrary library("CgGL");
+
+        if (!library.load()) {
+                return false;
+        }
 #endif
-	
-	if (!library.load())
-	{
-		return false;
-	}
 
 	/* 1.1 entry points */
 	

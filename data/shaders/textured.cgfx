@@ -30,8 +30,8 @@ VertexOutput vp(VertexInput input)
 float4 fp(VertexOutput input) : COLOR
 {
 	float3 N = normalize(input.normal);
-	float3 L = normalize(gl_LightSource[0].position.xyz);
-	float3 H = normalize(gl_LightSource[0].halfVector.xyz);
+	float3 L = normalize(glstate.light[0].position.xyz);
+	float3 H = normalize(glstate.light[0].half.xyz);
 
 	float3 texColor = tex2D(tex, input.tex).rgb;
 	float3 ambient = texColor * color * amb;

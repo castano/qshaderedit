@@ -31,7 +31,7 @@ float4 fp_phong(VertexOutput input) : COLOR
 	float3 N = normalize(input.normal);
 	float3 V = normalize(input.view);
 	float3 R = reflect(V, N);
-	float3 L = normalize(gl_LightSource[0].position.xyz);
+	float3 L = normalize(glstate.light[0].position.xyz);
 
 	float3 ambient = color * amb;
 	float3 diffuse = color * (1.0 - amb) * saturate(dot(L, N));
@@ -43,8 +43,8 @@ float4 fp_phong(VertexOutput input) : COLOR
 float4 fp_blinn(VertexOutput input) : COLOR
 {
 	float3 N = normalize(input.normal);
-	float3 L = normalize(gl_LightSource[0].position.xyz);
-	float3 H = normalize(gl_LightSource[0].halfVector.xyz);
+	float3 L = normalize(glstate.light[0].position.xyz);
+	float3 H = normalize(glstate.light[0].half.xyz);
 
 	float3 ambient = color * amb;
 	float3 diffuse = color * (1.0 - amb) * saturate(dot(L, N));
