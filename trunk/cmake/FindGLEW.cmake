@@ -17,7 +17,7 @@ IF (WIN32)
 		${GLEW_ROOT_DIR}/lib
 		DOC "The GLEW library")
 ELSE (WIN32)
-        FIND_PATH( GLEW_INCLUDE_PATH GL/glew.h
+    FIND_PATH( GLEW_INCLUDE_PATH GL/glew.h
 		/usr/include
 		/usr/local/include
 		/sw/include
@@ -35,13 +35,12 @@ ELSE (WIN32)
 		/opt/local/lib
         ${GLEW_ROOT_DIR}/lib
 		DOC "The GLEW library")
-SET(GLEW_LIBRARY "/usr/lib/libGLEW.so")
 ENDIF (WIN32)
 
 IF (GLEW_INCLUDE_PATH)
-  SET( FOUND_GLEW 1)
+	SET( FOUND_GLEW 1)
 ELSE (GLEW_INCLUDE_PATH)
-  SET( FOUND_GLEW 0)
+	SET( FOUND_GLEW 0)
 ENDIF (GLEW_INCLUDE_PATH)
 
 MARK_AS_ADVANCED( FOUND_GLEW )

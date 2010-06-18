@@ -453,20 +453,20 @@ void QShaderEdit::createDockWindows()
 
 void QShaderEdit::createActions()
 {
-	m_newAction = new QAction(QIcon(s_resourcePath + "/filenew.png"), tr("&New"), this);
+        m_newAction = new QAction(QIcon(s_resourcePath + "/filenew.png"), tr("&New Shader"), this);
 	m_newAction->setShortcut(tr("Ctrl+N"));
-	m_newAction->setStatusTip(tr("Create a new effect"));
+        m_newAction->setStatusTip(tr("Create a new shader"));
 	connect(m_newAction, SIGNAL(triggered()), m_document, SLOT(reset()));
 
-	m_openAction = new QAction(QIcon(s_resourcePath + "/fileopen.png"), tr("&Open"), this);
+        m_openAction = new QAction(QIcon(s_resourcePath + "/fileopen.png"), tr("&Open Shader"), this);
 	m_openAction->setShortcut(tr("Ctrl+O"));
-	m_openAction->setStatusTip(tr("Open an existing effect"));
+        m_openAction->setStatusTip(tr("Open an existing shader"));
 	connect(m_openAction, SIGNAL(triggered()), m_document, SLOT(open()));
 
-	m_saveAction = new QAction(QIcon(s_resourcePath + "/filesave.png"), tr("&Save"), this);
+        m_saveAction = new QAction(QIcon(s_resourcePath + "/filesave.png"), tr("&Save Shader"), this);
 	m_saveAction->setEnabled(false);
 	m_saveAction->setShortcut(tr("Ctrl+S"));
-	m_saveAction->setStatusTip(tr("Save this effect"));
+        m_saveAction->setStatusTip(tr("Save this shader"));
 	connect(m_saveAction, SIGNAL(triggered()), m_document, SLOT(save()));
 
 	m_saveAsAction = new QAction(tr("Save &As..."), this);
@@ -495,14 +495,16 @@ void QShaderEdit::createMenus()
 	fileMenu->addAction(m_newAction);
 	fileMenu->addAction(m_openAction);
 	
-	QMenu * recentFileMenu = fileMenu->addMenu(tr("Open Recent"));
+        QMenu * recentFileMenu = fileMenu->addMenu(tr("Recent Shaders"));
 	for(int i = 0; i < MaxRecentFiles; i++) {
 		recentFileMenu->addAction(m_recentFileActions[i]);
 	}
 	m_recentFileSeparator = recentFileMenu->addSeparator();
 	recentFileMenu->addAction(m_clearRecentAction);
 	updateRecentFileActions();
-	
+
+        fileMenu->addSeparator();
+
 	fileMenu->addAction(m_saveAction);
 	fileMenu->addAction(m_saveAsAction);
 

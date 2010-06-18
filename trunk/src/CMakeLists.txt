@@ -89,34 +89,3 @@ ADD_EXECUTABLE(qshaderedit MACOSX_BUNDLE ${QT_SRCS} ${MOCS} ${QT_MOCS} ${UICS} $
 TARGET_LINK_LIBRARIES(qshaderedit ${LIBS})
 INSTALL(TARGETS qshaderedit DESTINATION bin)
 
-# KDE4 target
-#FIND_PACKAGE(KDE4)
-
-IF(KDE4_FOUND)
-
-	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR} ${KDE4_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-
-	SET(KDE_SRCS ${SRCS}
-		kde/main.cpp
-		kde/kshaderedit.h
-		kde/kshaderedit.cpp)
-
-	SET(KDE_MOC_SRCS kde/kshaderedit.h)
-
-	QT4_WRAP_CPP(KDE_MOCS ${KDE_MOC_SRCS})
-
-	#KDE4_AUTOMOC(${KDE_SRCS})
-	#kde4_add_ui_files(kapp4_SRCS)
-	#kde4_add_kcfg_files(kapp4_SRCS kde/kshaderedit.kcfgc)
-	KDE4_ADD_EXECUTABLE(kshaderedit ${KDE_SRCS} ${MOCS} ${KDE_MOCS} ${UICS} ${RCCS})
-
-	TARGET_LINK_LIBRARIES(kshaderedit ${KDE4_KDEUI_LIBS} ${KDE4_KIO_LIBS} ${LIBS})
-
-	INSTALL(TARGETS kshaderedit DESTINATION ${BIN_INSTALL_DIR})
-
-	INSTALL(FILES kde/kshaderedit.desktop  DESTINATION  ${XDG_APPS_DIR})
-	INSTALL(FILES kde/kshaderedit.kcfg  DESTINATION  ${KCFG_INSTALL_DIR})
-	install(FILES kde/kshadereditui.rc  DESTINATION  ${DATA_INSTALL_DIR}/kshaderedit)
-
-ENDIF(KDE4_FOUND)
-

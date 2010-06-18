@@ -393,8 +393,8 @@ technique main
 {
 	pass p0
 	{
-		VertexProgram = compile arbvp1 vp();
-		FragmentProgram = compile fp40 main(epsilon, false, 8);
+		VertexProgram = compile latest vp();
+		FragmentProgram = compile latest main(epsilon, false, 8);
 		DepthTestEnable = true;
 		CullFaceEnable = true;
 	}
@@ -404,8 +404,8 @@ technique shadowed
 {
 	pass p0
 	{
-		VertexProgram = compile arbvp1 vp();
-		FragmentProgram = compile fp40 main(epsilon, true, 8);
+		VertexProgram = compile latest vp();
+		FragmentProgram = compile latest main(epsilon, true, 8);
 		DepthTestEnable = true;
 		CullFaceEnable = true;
 	}

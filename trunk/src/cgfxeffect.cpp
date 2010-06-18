@@ -70,7 +70,7 @@ namespace {
 		"	float3 N = normalize(input.normal);\n"
 		"	float3 V = normalize(input.view);\n"
 		"	float3 R = reflect(V, N);\n"
-		"	float3 L = normalize(gl_LightSource[0].position.xyz);\n"
+                "	float3 L = normalize(glstate.light[0].position.xyz);\n"
 		"	float3 ambient = color * amb;\n"
 		"	float3 diffuse = color * (1.0 - amb) * saturate(dot(L, N));\n"
 		"	float3 specular = pow(saturate(dot(R, L)), 16.0);\n\n"
