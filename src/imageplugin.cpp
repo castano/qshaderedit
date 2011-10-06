@@ -98,11 +98,24 @@ void ImagePluginManager::removePlugin(const ImagePlugin * plugin)
 	}
 }
 
+QList<QByteArray> ImagePluginManager::supportedFormats()
+{
+	QList<QByteArray> list;
+
+	if (s_pluginList != NULL) {
+		foreach(const ImagePlugin * plugin, *s_pluginList) {
+			list.append(plugin->supportedFormats());
+		}
+	}
+
+	return list;
+}
+
 QImage ImagePluginManager::load(QString name, GLuint obj, GLuint * target)
 {
-	if(s_pluginList != NULL) {
+	if (s_pluginList != NULL) {
 		foreach(const ImagePlugin * plugin, *s_pluginList) {
-			if(plugin->canLoad(name)) {
+			if (plugin->canLoad(name)) {
 				return plugin->load(name, obj, target);
 			}
 		}
@@ -115,33 +128,47 @@ QImage ImagePluginManager::load(QString name, GLuint obj, GLuint * target)
 // @@ Add dds plugin.
 // @@ Add exr plugin.
 // @@ Add hdr plugin.
-// @@ Add tga plugin.
 
 
-class TgaImagePlugin : public ImagePlugin
+static void updateOpenGLImage(QImage image, GLuint obj, GLuint * target)
 {
-	virtual QList<QByteArray> supportedFormats() const
-	{
-		return QList<QByteArray>() << ".tga";
-	}
-	
-	virtual bool canLoad(const QString & fileName) const
-	{
-		Q_UNUSED(fileName);
-		return false;
-	}
-	
-	virtual QImage load(const QString & name, GLuint obj, GLuint * target) const
-	{
-		Q_ASSERT(obj != 0);
-		Q_ASSERT(target != NULL);
-		
-		return QImage();
-	}
-};
+	QImage glImage = convertToBGRA(image);
 
-//REGISTER_IMAGE_PLUGIN(TgaImagePlugin);
+	int w = glImage.width();
+	int h = glImage.height();
 
+	// Resize texture if NP2 not supported.
+	if (!GLEW_ARB_texture_non_power_of_two) {
+		w = nextPowerOfTwo(w);
+		h = nextPowerOfTwo(h);
+	}
+
+	// Clamp to maximum texture size.
+	GLint maxTextureSize = 256;
+	glGetIntegerv( GL_MAX_TEXTURE_SIZE, &maxTextureSize );
+	if (w > maxTextureSize ) w = maxTextureSize;
+	if (h > maxTextureSize ) h = maxTextureSize;
+
+	if (glImage.width() != w || glImage.height() != h) {
+		glImage = glImage.scaled(w, h);
+	}
+
+	*target = GL_TEXTURE_2D;
+	glBindTexture(GL_TEXTURE_2D, obj);
+
+	if (GLEW_SGIS_generate_mipmap || GLEW_VERSION_1_4) {
+		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glImage.width(), glImage.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, glImage.bits());
+	}
+	else {
+		gluBuild2DMipmaps(GL_TEXTURE_2D, 4, glImage.width(), glImage.height(), GL_BGRA, GL_UNSIGNED_BYTE, glImage.bits());
+	}
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	ReportGLErrors();
+}
 
 // Image plugin that supports all the image types that Qt supports.
 class QtImagePlugin : public ImagePlugin
@@ -168,43 +195,8 @@ public:
 		if( name.isEmpty() || !image.load(name) ) {
 			image.load(":/images/default.png");
 		}
-		
-		QImage glImage = convertToBGRA(image);
-		
-		int w = glImage.width();
-		int h = glImage.height();
-		
-		// Resize texture if NP2 not supported.
-		if( !GLEW_ARB_texture_non_power_of_two ) {
-			w = nextPowerOfTwo(w);
-			h = nextPowerOfTwo(h);
-		}
-		
-		// Clamp to maximum texture size.
-		GLint maxTextureSize = 256;
-		glGetIntegerv( GL_MAX_TEXTURE_SIZE, &maxTextureSize );
-		if( w > maxTextureSize ) w = maxTextureSize; 
-		if( h > maxTextureSize ) h = maxTextureSize; 
-		
-		if(glImage.width() != w || glImage.height() != h) {
-			glImage = glImage.scaled(w, h);
-		}
-		
-		*target = GL_TEXTURE_2D;
-		glBindTexture(GL_TEXTURE_2D, obj);
-		
-		if(GLEW_SGIS_generate_mipmap || GLEW_VERSION_1_4) {
-			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glImage.width(), glImage.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, glImage.bits());
-		}
-		else {
-			gluBuild2DMipmaps(GL_TEXTURE_2D, 4, glImage.width(), glImage.height(), GL_BGRA, GL_UNSIGNED_BYTE, glImage.bits());
-		}
-		
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		
-		ReportGLErrors();
+
+		updateOpenGLImage(image, obj, target);
 		
 		return image;
 	}
@@ -212,3 +204,55 @@ public:
 
 REGISTER_IMAGE_PLUGIN(QtImagePlugin);
 
+
+#define STBI_NO_HDR
+#include "stb_image.c"
+
+class StbImagePlugin : public ImagePlugin
+{
+	virtual QList<QByteArray> supportedFormats() const
+	{
+		return QList<QByteArray>() << "tga" << "bmp" << "psd" << "pic";
+	}
+
+	virtual bool canLoad(const QString & fileName) const
+	{
+		Q_UNUSED(fileName);
+		return true;
+
+		//QByteArray name = fileName.toAscii();
+		//int x, y, comp;
+		//return stbi_info(name.data(), &x, &y, &comp) != 0;
+	}
+
+	virtual QImage load(const QString & fileName, GLuint obj, GLuint * target) const
+	{
+		Q_ASSERT(obj != 0);
+		Q_ASSERT(target != NULL);
+
+		QByteArray name = fileName.toAscii();
+
+		int w, h, comp;
+		unsigned char * data = stbi_load(name.data(), &w, &h, &comp, 4);
+
+		if (data == NULL) {
+			return QImage();
+		}
+
+		QImage image(w, h, QImage::Format_ARGB32);
+
+		for (int y = 0; y < h; y++) {
+			for (int x = 0; x < w; x++) {
+				QRgb value = qRgba(data[0], data[1], data[2], data[3]);
+				image.setPixel(x, y, value);
+				data += 4;
+			}
+		}
+
+		updateOpenGLImage(image, obj, target);
+
+		return image;
+	}
+};
+
+REGISTER_IMAGE_PLUGIN(StbImagePlugin);

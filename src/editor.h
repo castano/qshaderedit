@@ -29,6 +29,7 @@ class QTextEdit;
 
 class Effect;
 
+// @@ Instead of tabs it would be better to use a split screen.
 class Editor : public QTabWidget
 {
 	Q_OBJECT

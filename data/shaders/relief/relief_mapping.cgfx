@@ -163,7 +163,7 @@ fixed4 normal_mapping(v2f input, half2 texcoord)
 	
 	// color map
 	fixed4 color = tex2D(color_map, texcoord, dsdx, dsdy);
-
+	
 	// normal map
 	half3 N = tex2D(relief_map, texcoord, dsdx, dsdy).xyz;
 	N = 2 * N - 1;
@@ -172,11 +172,10 @@ fixed4 normal_mapping(v2f input, half2 texcoord)
 	N.x = -N.x;
 //	N = normalize(N);
 //	N = float3(0, 0, 1);
-	
 
 	// light and view in tangent space
-	half3 L = normalize(input.light);
-	half3 V = normalize(input.view);
+	half3 L = normalize(-input.light);
+	half3 V = normalize(-input.view);
 	half3 R = reflect(-V, N);
 
 	// compute diffuse and specular terms
@@ -450,12 +449,12 @@ technique relief_mapping
 {
     pass p0 
     {
-		VertexProgram = compile arbvp1 vertex_shader();
+		VertexProgram = compile vp40 vertex_shader();
 		FragmentProgram  = compile fp40 pixel_shader_relief();
 		AlphaTestEnable = true;
 		AlphaFunc = float2(GEqual, 0.1);
 		CullFaceEnable = true;
-		CullFace = Front;
+		CullFace = Back;
     }
 }
 
@@ -464,11 +463,11 @@ technique interval_mapping
     pass p0 
     {
 		VertexProgram = compile arbvp1 vertex_shader();
-		FragmentProgram  = compile fp30 pixel_shader_interval();
+		FragmentProgram  = compile fp40 pixel_shader_interval();
 		AlphaTestEnable = true;
 		AlphaFunc = float2(GEqual, 0.1);
 		CullFaceEnable = true;
-		CullFace = Front;
+		CullFace = Back;
     }
 }
 
@@ -477,11 +476,11 @@ technique interval_mapping2
     pass p0 
     {
 		VertexProgram = compile arbvp1 vertex_shader();
-		FragmentProgram  = compile fp30 pixel_shader_interval2();
+		FragmentProgram  = compile fp40 pixel_shader_interval2();
 		AlphaTestEnable = true;
 		AlphaFunc = float2(GEqual, 0.1);
 		CullFaceEnable = true;
-		CullFace = Front;
+		CullFace = Back;
     }
 }
 
@@ -489,12 +488,12 @@ technique cone_mapping
 {
     pass p0 
     {
-   		VertexProgram = compile arbvp1 vertex_shader();
-		FragmentProgram  = compile fp30 pixel_shader_cone();
+   		VertexProgram = compile vp40 vertex_shader();
+		FragmentProgram  = compile fp40 pixel_shader_cone();
 		AlphaTestEnable = true;
 		AlphaFunc = float2(GEqual, 0.1);
 		CullFaceEnable = true;
-		CullFace = Front;
+		CullFace = Back;
     }
 }
 
@@ -502,12 +501,12 @@ technique parallax_occlusion_mapping
 {
     pass p0 
     {
-		VertexProgram = compile arbvp1 vertex_shader();
+		VertexProgram = compile vp40 vertex_shader();
 		FragmentProgram = compile fp40 pixel_shader_pom();
 		AlphaTestEnable = true;
 		AlphaFunc = float2(GEqual, 0.1);
 		CullFaceEnable = true;
-		CullFace = Front;
+		CullFace = Back;
     }
 }
 
@@ -515,10 +514,10 @@ technique normal_mapping
 {
     pass p0 
     {
-		VertexProgram = compile arbvp1 vertex_shader();
-		FragmentProgram = compile fp30 pixel_shader_normal();
+		VertexProgram = compile vp40 vertex_shader();
+		FragmentProgram = compile fp40 pixel_shader_normal();
 		CullFaceEnable = true;
-		CullFace = Front;
+		CullFace = Back;
     }
 }
 

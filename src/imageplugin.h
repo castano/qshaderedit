@@ -42,6 +42,8 @@ namespace ImagePluginManager
 {
 	void addPlugin(const ImagePlugin * plugin);
 	void removePlugin(const ImagePlugin * factory);
+
+	QList<QByteArray> supportedFormats();
 	
 	QImage load(QString name, GLuint obj, GLuint * target);	
 };

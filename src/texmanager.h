@@ -63,7 +63,7 @@ private:
 	QSharedDataPointer<Private> m_data;
 };
 
-Q_DECLARE_METATYPE(GLTexture);
+Q_DECLARE_METATYPE(GLTexture)
 
 
 #endif // TEXMANAGER_H

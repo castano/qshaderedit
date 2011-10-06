@@ -21,6 +21,7 @@
 #include "parameterdelegate.h"
 #include "parameter.h"
 #include "parametermodel.h"
+#include "imageplugin.h" // supportedFormats
 
 #include <QtGui/QHeaderView>
 #include <QtGui/QDoubleSpinBox>
@@ -468,10 +469,23 @@ FileEditor::FileEditor(QWidget * parent /*= 0*/) : QWidget(parent)
 //	setFocusProxy(m_lineEdit);
 }
 
+#include <QtCore/QDebug>
+
 void FileEditor::openFileDialog()
 {
 	emit activated();
-	QString fileName = QFileDialog::getOpenFileName(this, "Choose file", s_lastPath, "Images (*.png *.jpg *.ppm)");
+
+	QString filter = "Images(";
+	QList<QByteArray> imageFormats = ImagePluginManager::supportedFormats();
+	foreach (QByteArray format, imageFormats) {
+		filter += "*." + format + " ";
+	}
+	filter += ")";
+
+	qDebug() << filter;
+
+
+	QString fileName = QFileDialog::getOpenFileName(this, "Choose file", s_lastPath, filter);
 	if( !fileName.isEmpty() && fileName != m_lineEdit->text() ) {
 		m_lineEdit->setText(fileName);
 		s_lastPath = fileName;
