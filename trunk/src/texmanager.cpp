@@ -79,11 +79,13 @@ private:
 QMap<QString, GLTexture::Private *> GLTexture::Private::s_textureMap;
 
 
-/// Constructor.
 GLTexture::GLTexture() : m_data(new Private)
 {
 }
 GLTexture::GLTexture(const GLTexture & t) : m_data(t.m_data)
+{
+}
+GLTexture::GLTexture(GLTexture::Private * p) : m_data(p)
 {
 }
 void GLTexture::operator= (const GLTexture & t)
@@ -91,11 +93,6 @@ void GLTexture::operator= (const GLTexture & t)
 	m_data = t.m_data;
 }
 GLTexture::~GLTexture()
-{
-}
-
-/// Constructor.
-GLTexture::GLTexture(GLTexture::Private * p) : m_data(p)
 {
 }
 
@@ -167,7 +164,7 @@ void GLTexture::setWrapMode(GLint s, GLint t) const
 
 GLint GLTexture::minifyingFilter() const
 {
-	glBindTexture(m_data->target(), m_data->object());	
+	glBindTexture(m_data->target(), m_data->object());
 	GLint mode;
 	glGetTexParameteriv(m_data->target(), GL_TEXTURE_MIN_FILTER, &mode);
 	return mode;
@@ -183,7 +180,7 @@ GLint GLTexture::magnificationFilter() const
 
 void GLTexture::setFilteringMode(GLint min, GLint mag) const
 {
-	glBindTexture(m_data->target(), m_data->object());
+        glBindTexture(m_data->target(), m_data->object());
  	glTexParameteri(m_data->target(), GL_TEXTURE_MIN_FILTER, min);
  	glTexParameteri(m_data->target(), GL_TEXTURE_MAG_FILTER, mag);
 }

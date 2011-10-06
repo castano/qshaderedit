@@ -227,24 +227,24 @@ void Editor::previousTab()
 void Editor::findDialog()
 {
     FindDialog dialog(this);
-    
+
     // Get current selection and set default value.
     QTextCursor cursor = currentTextEdit()->textCursor();
     QString selection = cursor.selectedText();
     if( selection != "" ) {
         dialog.setSearchText(selection);
     }
-    
+
     int result = dialog.exec();
     if( result == QDialog::Accepted ) {
-            
+
         lastSearch = dialog.searchText();
-        
+
         lastSearchOptions = 0;
         if( dialog.caseSensitive() ) lastSearchOptions |= QTextDocument::FindCaseSensitively;
         if( dialog.wholeWord() ) lastSearchOptions |= QTextDocument::FindWholeWords;
         if( dialog.direction() == FindDialog::Direction_Backward ) lastSearchOptions |= QTextDocument::FindBackward;
-        
+
         if( !find(lastSearch, lastSearchOptions) ) {
             QMessageBox::information(this, tr("Find"), tr("String '%0' not found").arg(lastSearch));
         }
@@ -254,13 +254,14 @@ void Editor::findDialog()
 void Editor::gotoDialog()
 {
     GotoDialog dialog(this);
-    
+
     // Get current line and set default value.
     dialog.setLine(line());
 
     // Set valid range.
-    dialog.setRange(1, 1000);
-    
+    int lineCount = currentTextEdit()->document()->blockCount();
+    dialog.setRange(1, lineCount);
+
     int result = dialog.exec();
     if( result == QDialog::Accepted ) {
         gotoLine(currentIndex(), dialog.line());
@@ -270,7 +271,7 @@ void Editor::gotoDialog()
 void Editor::findNext()
 {
     if( lastSearch == "" ) {
-            findDialog();
+        findDialog();
     }
     else {
         if( !find(lastSearch, lastSearchOptions) ) {

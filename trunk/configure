@@ -18,7 +18,7 @@ fi
 
 
 help=false
-build="Release"
+build="release"
 prefix=/usr
 
 # Parse the args
@@ -26,8 +26,8 @@ for i in "$@"
 do
 	case $i in
 		--help )				help=true ;;
-		--debug )				build="Debug" ;;
-		--release )				build="Release" ;;
+		--debug )				build="debug" ;;
+		--release )				build="release" ;;
 		--prefix=* )			prefix="${i#--prefix=}" ;;
 		* )						echo "Unrecognised argument $i" ;;
 	esac
@@ -48,8 +48,8 @@ fi
 
 echo "-- Configuring QShaderEdit "`cat VERSION`
 
-mkdir -p ./build
-cd ./build
+mkdir -p ./build-$build
+cd ./build-$build
 $CMAKE .. -DCMAKE_BUILD_TYPE=$build -DCMAKE_INSTALL_PREFIX=$prefix -G "Unix Makefiles" || exit 1
 cd ..
 
@@ -59,11 +59,11 @@ echo ""
 
 cat > Makefile << EOF
 all:
-	@make --no-print-directory -C build/
+	@make --no-print-directory -C build-$build/
 install:
-	@make install --no-print-directory -C build/
+	@make install --no-print-directory -C build-$build/
 clean:
-	@make clean --no-print-directory -C build/
+	@make clean --no-print-directory -C build-$build/
 distclean:
-	@rm -Rf build/
+	@rm -Rf build-$build/
 EOF
