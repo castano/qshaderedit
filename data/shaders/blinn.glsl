@@ -9,6 +9,7 @@ void main () {
 varying vec3 v_N;
 
 uniform float amb;
+uniform float specularPower;
 uniform vec3 color;
 
 void main () {
@@ -18,10 +19,11 @@ void main () {
 
 	vec3 ambient = color * amb;
 	vec3 diffuse = color * (1.0 - amb) * max(dot(L, N), 0.0);
-	vec3 specular = vec3(1.0, 1.0, 1.0) * pow(max(dot(H, N), 0.0), 16.0);
+	vec3 specular = vec3(1.0, 1.0, 1.0) * pow(max(dot(H, N), 0.0), specularPower);
 
 	gl_FragColor = vec4(ambient + diffuse + specular, 1.0);
 }
 [Parameters]
+vec3 color = vec3(1, 0, 0.532173647669184);
 float amb = 0.1;
-vec3 color = vec3(1, 0, 0);
+float specularPower = 0;

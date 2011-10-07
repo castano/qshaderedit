@@ -79,13 +79,13 @@ sampler2D relief_map = sampler_state
 	MagFilter = Linear;
 };
 
-/*static float3 lightdir = gl_LightSource[0].position;
-<
+//static float3 lightdir = gl_LightSource[0].position;
+/*<
     string Object = "PointLight";
     string Space = "World";
     string UIWidget = "none";
-> = {-10.0f, 10.0f, -10.0f};
-*/
+> = {-10.0f, 10.0f, -10.0f};*/
+
 
 float4x4 mvp : ModelViewProjection <string UIWidget = "none";>;
 float4x4 mv : ModelView <string UIWidget = "none";>;
@@ -97,8 +97,8 @@ struct a2v
     float4 pos       : POSITION;
     float3 normal    : NORMAL;
     float2 texcoord  : TEXCOORD0;
-    float3 tangent   : TANGENT0;
-    float3 binormal  : BINORMAL0;
+    float3 tangent   : TEXCOORD6; // TANGENT0
+    float3 binormal  : TEXCOORD7; // BITANGENT0
 };
 
 struct v2f
@@ -117,10 +117,14 @@ v2f vertex_shader(a2v input)
 	output.texcoord = input.texcoord * tile;
 
 	// tangent vectors in view space
-	float3x3 tangentspace = float3x3(input.tangent, input.binormal, input.normal);
+	float3x3 tangentspace = float3x3(input.tangent, input.binormal, -input.normal);
 
 	// view vector in tangent space
+	//output.view = mul(input.pos, mv).xyz;
+	//output.view = -input.normal; 
+	//output.view = mul(tangentspace, output.view);
 	output.view = mul(tangentspace, input.pos.xyz - mvi[3].xyz);
+	
 	
 	output.light = output.view;
 	//output.light = mul(gl_LightSource[0].position, mvi).xyz;
@@ -169,7 +173,7 @@ fixed4 normal_mapping(v2f input, half2 texcoord)
 	N = 2 * N - 1;
 //	N = normalize(2 * N - 1);
 	N.z = sqrt(1.0 - dot(N.xy, N.xy));
-	N.x = -N.x;
+	N.yz = -N.yz;
 //	N = normalize(N);
 //	N = float3(0, 0, 1);
 
@@ -194,7 +198,7 @@ fixed4 normal_mapping(v2f input, half2 texcoord)
 	
 	// compute final color
 	fixed4 finalcolor;
-	finalcolor.xyz = ambient + (color.xyz * diffuse * diff + specular * fixed(pow(spec,shine)));
+	finalcolor.xyz = (color.xyz * (ambient + diffuse * diff) + specular * fixed(pow(spec,shine)));
 	finalcolor.w = alpha;
 	return finalcolor;
 }
@@ -449,8 +453,8 @@ technique relief_mapping
 {
     pass p0 
     {
-		VertexProgram = compile vp40 vertex_shader();
-		FragmentProgram  = compile fp40 pixel_shader_relief();
+		VertexProgram = compile latest vertex_shader();
+		FragmentProgram  = compile latest pixel_shader_relief();
 		AlphaTestEnable = true;
 		AlphaFunc = float2(GEqual, 0.1);
 		CullFaceEnable = true;
@@ -462,8 +466,8 @@ technique interval_mapping
 {
     pass p0 
     {
-		VertexProgram = compile arbvp1 vertex_shader();
-		FragmentProgram  = compile fp40 pixel_shader_interval();
+		VertexProgram = compile latest vertex_shader();
+		FragmentProgram  = compile latest pixel_shader_interval();
 		AlphaTestEnable = true;
 		AlphaFunc = float2(GEqual, 0.1);
 		CullFaceEnable = true;
@@ -475,8 +479,8 @@ technique interval_mapping2
 {
     pass p0 
     {
-		VertexProgram = compile arbvp1 vertex_shader();
-		FragmentProgram  = compile fp40 pixel_shader_interval2();
+		VertexProgram = compile latest vertex_shader();
+		FragmentProgram  = compile latest pixel_shader_interval2();
 		AlphaTestEnable = true;
 		AlphaFunc = float2(GEqual, 0.1);
 		CullFaceEnable = true;
@@ -488,8 +492,8 @@ technique cone_mapping
 {
     pass p0 
     {
-   		VertexProgram = compile vp40 vertex_shader();
-		FragmentProgram  = compile fp40 pixel_shader_cone();
+   		VertexProgram = compile latest vertex_shader();
+		FragmentProgram  = compile latest pixel_shader_cone();
 		AlphaTestEnable = true;
 		AlphaFunc = float2(GEqual, 0.1);
 		CullFaceEnable = true;
@@ -501,8 +505,8 @@ technique parallax_occlusion_mapping
 {
     pass p0 
     {
-		VertexProgram = compile vp40 vertex_shader();
-		FragmentProgram = compile fp40 pixel_shader_pom();
+		VertexProgram = compile latest vertex_shader();
+		FragmentProgram = compile latest pixel_shader_pom();
 		AlphaTestEnable = true;
 		AlphaFunc = float2(GEqual, 0.1);
 		CullFaceEnable = true;
@@ -514,8 +518,8 @@ technique normal_mapping
 {
     pass p0 
     {
-		VertexProgram = compile vp40 vertex_shader();
-		FragmentProgram = compile fp40 pixel_shader_normal();
+		VertexProgram = compile latest vertex_shader();
+		FragmentProgram = compile latest pixel_shader_normal();
 		CullFaceEnable = true;
 		CullFace = Back;
     }
