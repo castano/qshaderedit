@@ -21,7 +21,8 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
-#include <QtGui/QTabWidget>
+//#include <QtGui/QTabWidget>
+#include <QtGui/QSplitter>
 #include <QtGui/QTextDocument>
 #include <QtGui/QTextEdit>
 
@@ -29,14 +30,9 @@ class QTextEdit;
 
 class Effect;
 
-// @@ Instead of tabs it would be better to use a split screen. See editor2.* for an experiment. I'm not entirely convinced.
-// Ideally we should make the tabs look properly on OSX. See Qt Assistant for an example, it does the following:
-// - Uses QWidget instead of QTabWidget.
-// - Uses it's own QTabBar and QStackedWidget
-// - Uses a box layout so that it can add goto and find widgets at the bottom.
-// http://qt.gitorious.org/qt/qttools/blobs/master/src/assistant/assistant/centralwidget.h
-// http://qt.gitorious.org/qt/qttools/blobs/master/src/assistant/assistant/centralwidget.cpp
-class Editor : public QTabWidget
+// @@ Instead of tabs it would be better to use a split screen.
+//class Editor : public QTabWidget
+class Editor : public QSplitter
 {
 	Q_OBJECT
 public:
@@ -81,13 +77,13 @@ signals:
 	void modifiedChanged(bool modified);
 	
 protected:
-	virtual void tabInserted(int index);
-	virtual void tabRemoved(int index);
+	//virtual void tabInserted(int index);
+	//virtual void tabRemoved(int index);
 
 	bool find(const QString & text, QTextDocument::FindFlags flags=0);
 	
 protected slots:
-	void onCurrentChanged(int idx);
+	//void onCurrentChanged(int idx);
 	void onCopyAvailable(bool available);
 	void onUndoAvailable(bool available);
 	void onRedoAvailable(bool available);
