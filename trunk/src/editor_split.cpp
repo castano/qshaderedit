@@ -25,7 +25,7 @@
 #include "effect.h"
 
 #include <QtCore/QDebug>
-#include <QtGui/QTabBar>
+//#include <QtGui/QTabBar>
 #include <QtGui/QTextEdit>
 #include <QtGui/QTextCursor>
 #include <QtGui/QTextLayout>
@@ -114,58 +114,15 @@ void SourceEdit::cursorChanged()
 }
 
 
-Editor::Editor(QWidget * parent) : QTabWidget(parent)
+//Editor::Editor(QWidget * parent) : QTabWidget(parent)
+Editor::Editor(QWidget * parent) : QSplitter(parent)
 {
-#ifdef Q_OS_MAC
-    tabBar()->setDocumentMode(true);
-#endif
-    tabBar()->setShape(QTabBar::RoundedNorth);
-    tabBar()->setContextMenuPolicy(Qt::CustomContextMenu);
-    tabBar()->setSizePolicy(QSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred, QSizePolicy::TabWidget));
-
     //tabBar()->setDocumentMode(true);
-    //tabBar()->setShape(QTabBar::RoundedNorth);
-    //tabBar()->setMovable(true);
-    tabBar()->hide();
+    //tabBar()->hide();
 
-#if 0
-    /*this->setStyleSheet(
-          "QTabBar::tab { background: gray; color: white; padding: 10px; } "
-          "QTabBar::tab:selected { background: lightgray; } "
-          "QTabWidget::pane { border: 0; } ");
-          //"QWidget { background: lightgray; } ");
-    */
-    this->setStyleSheet(
-        "QTabWidget::pane { /* The tab widget frame */"
-            "border-top: 2px solid #C2C7CB;"
-        "}"
-        "QTabWidget::tab-bar {"
-            "left: 5px; /* move to the right by 5px */"
-        "}"
-        "/* Style the tab using the tab sub-control. Note that it reads QTabBar _not_ QTabWidget */"
-        "QTabBar::tab {"
-            "background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #E1E1E1, stop: 0.4 #DDDDDD, stop: 0.5 #D8D8D8, stop: 1.0 #D3D3D3);"
-            "border: 2px solid #C4C4C3;"
-            "border-bottom-color: #C2C7CB; /* same as the pane color */"
-            "border-top-left-radius: 4px;"
-            "border-top-right-radius: 4px;"
-            "min-width: 8ex;"
-            "padding: 2px;"
-        "}"
-        "QTabBar::tab:selected, QTabBar::tab:hover {"
-            "background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #fafafa, stop: 0.4 #f4f4f4, stop: 0.5 #e7e7e7, stop: 1.0 #fafafa);"
-        "}"
-        "QTabBar::tab:selected {"
-            "border-color: #9B9B9B;"
-            "border-bottom-color: #C2C7CB; /* same as pane color */"
-        "}"
-        "QTabBar::tab:!selected {"
-            "margin-top: 2px; /* make non-selected tabs look smaller */"
-        "}"
-    );
-#endif
+    setOrientation(Qt::Vertical);
 
-    connect(this, SIGNAL(currentChanged(int)), this, SLOT(onCurrentChanged(int)));
+    //connect(this, SIGNAL(currentChanged(int)), this, SLOT(onCurrentChanged(int)));
 
 #if defined(Q_OS_DARWIN)
     m_font.setFamily("Monaco");
@@ -183,7 +140,8 @@ Editor::Editor(QWidget * parent) : QTabWidget(parent)
 
 QTextEdit * Editor::currentTextEdit() const
 {
-    return static_cast<QTextEdit *>(currentWidget());
+    //return static_cast<QTextEdit *>(currentWidget());
+    return static_cast<QTextEdit *>(focusWidget());
 }
 
 int Editor::line() const
@@ -250,24 +208,29 @@ void Editor::paste()
 
 void Editor::gotoLine(int tab, int line, int column)
 {
-    setCurrentIndex(tab);
+    //setCurrentIndex(tab);
+    widget(tab)->setFocus();
+
     QTextCursor cursor(currentTextEdit()->textCursor());
     cursor.movePosition(QTextCursor::Start);
     cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, line - 1);
     if (column >= 1)
         cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, column - 1);
     currentTextEdit()->setTextCursor(cursor);
-    currentWidget()->setFocus();
+
+    //currentWidget()->setFocus();
 }
 
 void Editor::nextTab()
 {
-    setCurrentIndex(currentIndex() +1);
+    //setCurrentIndex(currentIndex() +1);
+    //widget(currentIndex()+1)->setFocus();
 }
 
 void Editor::previousTab()
 {
-    setCurrentIndex(currentIndex() -1);	
+    //setCurrentIndex(currentIndex() -1);
+    //widget(currentIndex()-1)->setFocus();
 }
 
 void Editor::findDialog()
@@ -310,7 +273,7 @@ void Editor::gotoDialog()
 
     int result = dialog.exec();
     if( result == QDialog::Accepted ) {
-        gotoLine(currentIndex(), dialog.line());
+        //gotoLine(currentIndex(), dialog.line());
     }
 }
 
@@ -358,7 +321,7 @@ bool Editor::find(const QString & text, QTextDocument::FindFlags flags/*=0*/)
     return currentTextEdit()->find(text, flags);
 }
 
-void Editor::onCurrentChanged(int idx)
+/*void Editor::onCurrentChanged(int idx)
 {
     if(idx < 0) return;
 
@@ -379,7 +342,7 @@ void Editor::onCurrentChanged(int idx)
     connect(currentTextEdit(), SIGNAL(copyAvailable(bool)), this, SLOT(onCopyAvailable(bool)));
     connect(currentTextEdit(), SIGNAL(undoAvailable(bool)), this, SLOT(onUndoAvailable(bool)));
     connect(currentTextEdit(), SIGNAL(redoAvailable(bool)), this, SLOT(onRedoAvailable(bool)));
-}
+}*/
 
 void Editor::onCopyAvailable(bool available)
 {
@@ -401,7 +364,8 @@ void Editor::setEffect(Effect * effect)
         // Remove all tabs.
         while (this->count() > 0)
         {
-            this->removeTab(0);
+            //this->removeTab(0);
+            delete this->widget(0);
         }
     }
     else
@@ -417,7 +381,8 @@ void Editor::setEffect(Effect * effect)
 QTextEdit * Editor::addEditor(const QString & name, const Effect * effect, int i)
 {
     SourceEdit * textEdit = new SourceEdit(this);
-    this->addTab(textEdit, name);
+    this->addWidget(textEdit);
+    //this->addTab(textEdit, name);
     textEdit->setFont(m_font);
     textEdit->setLineWrapMode(QTextEdit::NoWrap);
     textEdit->setTabStopWidth(28);
@@ -437,14 +402,14 @@ QTextEdit * Editor::addEditor(const QString & name, const Effect * effect, int i
     connect(textEdit, SIGNAL(cursorPositionChanged()), this, SIGNAL(cursorPositionChanged()));
     connect(textDocument, SIGNAL(modificationChanged(bool)), this, SIGNAL(modifiedChanged(bool)));
 
-    if (count() == 1) {
+    /*if (count() == 1) {
         emit onCurrentChanged(currentIndex());
-    }
+    }*/
 
     return textEdit;
 }
 
-void Editor::tabInserted(int index)
+/*void Editor::tabInserted(int index)
 {
     QTabWidget::tabInserted(index);
 
@@ -460,5 +425,5 @@ void Editor::tabRemoved(int index)
     if( count() == 1 ) {
         tabBar()->hide();
     }
-}
+}*/
 

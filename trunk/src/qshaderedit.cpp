@@ -622,6 +622,8 @@ void QShaderEdit::createToolbars()
 	techniqueLabel->setBuddy(m_techniqueCombo);
 	m_techniqueToolBar->addWidget(techniqueLabel);
 	m_techniqueToolBar->addWidget(m_techniqueCombo);
+
+	setUnifiedTitleAndToolBarOnMac(true);
 }
 
 void QShaderEdit::createStatusbar()
