@@ -226,24 +226,47 @@ float sceneDistance(float3 p)
 // Pixel shader
 float4 RayTracePS(VertexOutput IN) : COLOR
 {
-	float d;
-	float3 p = IN.rO;
+	animate_scene(time);
 	
-	do {
-		d = sceneDistance(p);
-		p += d * IN.rD;
-	} while (d < 0.1);
+	Ray eyeray;
+	eyeray.o = IN.rO;
+	eyeray.d = normalize(IN.rD);
+
+	// find nearest hit
+	Sphere hitobj;
+	bool hit;
+	float3 i = NearestHit(eyeray, hitobj, hit);
+	fixed3 c = backgroundColor;
+	if (hit) {
+		// shade surface
+		float3 n = SphereNormal(hitobj, i);
+		c = Shade(i, n, eyeray.d, hitobj);
 	
-	return float4(d, d, d, 1.0);
+		// shoot reflection ray
+		float3 r = reflect(eyeray.d, n);
+		Ray reflray;
+		reflray.o = i;
+		reflray.d = r;
+		Sphere hitobj2;
+		i = NearestHit(reflray, hitobj2, hit);
+		if (hit) {
+			n = SphereNormal(hitobj2, i);
+			c += Shade(i, n, reflray.d, hitobj2) * hitobj.Kr;
+		} else {
+			c += backgroundColor;
+		}
+	}
+
+	return fixed4(c, 1.0);
 }
 
 
-technique gp4fp
+technique main
 {
-	pass p0
+	pass
 	{
-		VertexProgram = compile gp4vp RayTraceVS();
-		FragmentProgram = compile gp4fp RayTracePS();
+		VertexProgram = compile latest RayTraceVS();
+		FragmentProgram = compile latest RayTracePS();
 	}
 }
 
